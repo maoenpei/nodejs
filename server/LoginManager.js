@@ -1,0 +1,53 @@
+
+require("./Base");
+
+// 40 minutes
+var expirePeriod = 40 * 60 * 1000;
+
+Base.extends("Login", {
+    _constructor:function(token, serial) {
+        this.token = token;
+        this.serial = serial;
+        this.expire = new Date().getTime() + expirePeriod;
+    },
+    getToken:function() {
+        return this.token;
+    },
+    getSerial:function() {
+        return this.serial;
+    },
+    checkExpired:function() {
+        var now = new Date().getTime();
+        if (now >= this.expire) {
+            return true;
+        }
+        this.expire = now + expirePeriod;
+        return false;
+    },
+    updateTime:function() {
+        
+    },
+});
+
+Base.extends("$LoginManager", {
+    _constructor:function() {
+        this.loginData = {};
+    },
+    login:function(serial) {
+        var token = null;
+        do {
+            token = rkey();
+        } while(this.loginData[token]);
+        var obj = new Login(token, serial);
+        this.loginData[token] = obj;
+        return obj;
+    },
+    query:function(token) {
+        return this.loginData[token];
+    },
+    cancel:function(token) {
+        if (this.loginData[token]) {
+            delete this.loginData[token];
+        }
+    },
+});

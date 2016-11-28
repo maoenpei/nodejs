@@ -1,0 +1,8 @@
+1.main
+	打开输入校验码，后台输入，前端绑定获得serial number存入cookie以绑定设备, 运行时使用动态token
+2.txt
+	自动滚动，分块加载内容，翻页，最前最后
+3.pages
+	控制，上传，列表，显示
+4.modules
+	serial.txt, cookie.txt, token, persistance{file name, blocks}.txt, files, pages

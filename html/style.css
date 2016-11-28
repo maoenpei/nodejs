@@ -1,0 +1,47 @@
+
+.div_title_bar{
+    width:100%;
+    text-align:center;
+}
+
+.div_bottom_bar{
+    width:100%;
+    text-align: right;
+}
+
+.div_file_item{
+    width:100%;
+}
+
+.a_delete_tag{
+    position:absolute;
+    right:5px;
+}
+
+.a_add_file{
+    margin-right: 50px;
+}
+
+/*
+.frame_content{
+    width:100%;
+    height:calc(100%);
+    border:0px;
+}
+
+body{
+    box-sizing:border-box;
+    margin-top:100px;
+    width:100%;
+    height:100%;
+    margin:0;
+    position:relative;
+}
+
+html{
+    margin:0px;
+    padding:0px;
+    width:100%;
+    height:100%;
+}
+*/
