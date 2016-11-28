@@ -17,10 +17,14 @@ Base.extends("$PersistanceManager", {
             }, next);
 
             var jsonStates = yield $FileManager.visitFile("/data/States.d", next);
-            this.states = JSON.parse(jsonStates);
+            if (jsonStates) {
+                this.states = JSON.parse(jsonStates);
+            }
 
             var jsonFiles = yield $FileManager.visitFile("/data/Files.d", next);
-            this.files = JSON.parse(jsonFiles);
+            if (jsonFiles) {
+                this.files = JSON.parse(jsonFiles);
+            }
 
             console.log("loading PersistanceManager:", this.states, this.files);
             later(safe(done));
