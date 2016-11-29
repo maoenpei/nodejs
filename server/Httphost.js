@@ -53,9 +53,7 @@ Base.extends("Httphost", {
 			if (ext == ".essp") {
 				if (!data){
 					ext = ".html"
-					data = yield $TemplateParser.parse({
-						__proto__:this.InfoBase,
-					}, "/html" + requestor.getPath(), next);
+					data = yield $TemplateParser.parse(this.InfoBase, "/html" + requestor.getPath(), next);
 				}
 			} else {
 				// visit file in 'html' folder
@@ -79,6 +77,7 @@ Base.extends("Httphost", {
 			console.log("Error loading '" + requestor.getPath() + "'!");
 			var data = yield $FileCacher.visitFile("/html/error.html", next);
 
+			console.log("urlRoot:", this.InfoBase.urlRoot);
 			responder.redirect(this.InfoBase.urlRoot + "/", 1);
 			responder.setType(".html");
 			responder.respondData(data, safe(done));

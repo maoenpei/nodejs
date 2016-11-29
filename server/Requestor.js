@@ -13,6 +13,7 @@ var doubleLineDivider = stringToAscii("\r\n\r\n");
 Base.extends("Requestor", {
     _constructor:function(req) {
         var parsedUrl = url.parse(req.url);
+        console.log("pathname:", parsedUrl.pathname);
         if (parsedUrl.pathname in pathMapping) {
             parsedUrl.pathname = pathMapping[parsedUrl.pathname];
         }
