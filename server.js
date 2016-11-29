@@ -28,6 +28,8 @@ var port = 6013;
 console.log("Working at:" + __dirname, rkey());
 $FileManager.RootDirectory = __dirname;
 
+console.log("Server running at http://" + ip + ":" + port);
+
 $PersistanceManager.initFiles(() => {
     var host = new Httphost(urlRoot, isHost);
 
@@ -40,5 +42,3 @@ $PersistanceManager.initFiles(() => {
     });
     http.createServer((req, res) => {host.onVisit(req, res)}).listen(port, ip);
 });
-
-console.log("Server running at http://" + ip + ":" + port);

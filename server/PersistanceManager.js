@@ -21,6 +21,11 @@ Base.extends("$PersistanceManager", {
                 this.states = JSON.parse(jsonStates);
             }
 
+            yield $FileManager.parseFile("/data/keys.in", (line) => {
+                this.states[line] = {};
+            }, next);
+            yield $FileManager.saveFile("/data/keys.in", Buffer.alloc(0), next);
+
             var jsonFiles = yield $FileManager.visitFile("/data/Files.d", next);
             if (jsonFiles) {
                 this.files = JSON.parse(jsonFiles);
