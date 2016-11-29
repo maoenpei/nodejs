@@ -1,4 +1,9 @@
 
+var urlRoot = null;
+
+function setRoot(url) {
+    urlRoot = url;
+}
 
 var coroutine = function(generator, self) {
     var g = generator.call(self);
@@ -32,7 +37,7 @@ var next = coroutine(function*() {
     var pageUrl = null;
 
     var exchange = (done) => {
-        sendAjaxJSON("/exchange", {serial:cookieSerialString}, (json) => {
+        sendAjaxJSON(urlRoot + "/exchange", {serial:cookieSerialString}, (json) => {
             cookieSerialString = json.serial;
             pageUrl = json.pageUrl;
             safe(done)();
@@ -86,14 +91,14 @@ var uploadFile = function(url, callback) {
 }
 
 function choosefile() {
-    uploadFile("/addfile", (data) => {
+    uploadFile(urlRoot + "/addfile", (data) => {
         console.log("result:", data);
         window.location.reload();
     });
 }
 
 function deletefile(key) {
-    sendAjax("/delfile", {key:key}, (data) => {
+    sendAjax(urlRoot + "/delfile", {key:key}, (data) => {
         console.log("result:", data);
         window.location.reload();
     });

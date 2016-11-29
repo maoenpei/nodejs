@@ -5,7 +5,7 @@
     <link rel="stylesheet" type="text/css" href="<%=PageInfo.urlRoot%>/style.css">
     <script type="text/javascript" src="<%=PageInfo.urlRoot%>/jquery.js"></script>
     <script type="text/javascript" src="<%=PageInfo.urlRoot%>/load.js"></script>
-    <script type="text/javascript">$(verifyAccess)</script>
+    <script type="text/javascript">setRoot("<%=PageInfo.urlRoot%>");$(verifyAccess);</script>
 </head>
 <body>
     <div class="input_key_div" style="display:none">
