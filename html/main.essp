@@ -15,7 +15,7 @@
 
 <%es for (var key in PageInfo.files) {%>
     <div class="div_file_item">
-        <a href="/view?key=<%=key%>" class="a_view_tag"><%=PageInfo.files[key].dispName%></a>
+        <a href="<%=PageInfo.urlRoot%>/view?key=<%=key%>" class="a_view_tag"><%=PageInfo.files[key].dispName%></a>
         <%es if (PageInfo.isMaster) {%>
             <a href="javascript:deletefile('<%=key%>')" class="a_delete_tag">删除</a>
         <%es }%>
