@@ -11,7 +11,7 @@ Base.extends("$FileManager", {
         var filepath = this.RootDirectory + path;
         console.log("visiting file:", filepath);
         fs.readFile(filepath, (err, data) => {
-            console.log(data ? "success" "failed");
+            console.log(data ? "success" : "failed");
             safe(done)(data);
         });
     },
