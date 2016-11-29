@@ -33,12 +33,14 @@ console.log("Server running at http://" + ip + ":" + port);
 $PersistanceManager.initFiles(() => {
     var host = new Httphost(urlRoot, isHost);
 
-    var reading = readline.createInterface({
-        input:process.stdin,
-    });
-    reading.on("line", (line) => {
-        line.replace(/^\s*|\s*$/g, "");
-        host.onCommand(line);
-    });
+    if (isHost) {
+        var reading = readline.createInterface({
+            input:process.stdin,
+        });
+        reading.on("line", (line) => {
+            line.replace(/^\s*|\s*$/g, "");
+            host.onCommand(line);
+        });
+    }
     http.createServer((req, res) => {host.onVisit(req, res)}).listen(port, ip);
 });
