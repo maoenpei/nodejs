@@ -2,9 +2,9 @@
 <head>
     <meta charset="utf-8">
     <title>Welcome</title>
-    <link rel="stylesheet" type="text/css" href="style.css">
-    <script type="text/javascript" src="jquery.js"></script>
-    <script type="text/javascript" src="load.js"></script>
+    <link rel="stylesheet" type="text/css" href="<%=PageInfo.urlRoot%>/style.css">
+    <script type="text/javascript" src="<%=PageInfo.urlRoot%>/jquery.js"></script>
+    <script type="text/javascript" src="<%=PageInfo.urlRoot%>/load.js"></script>
     <script type="text/javascript">$(verifyAccess)</script>
 </head>
 <body>

@@ -1,5 +1,6 @@
 
 require("./Base");
+require("./StateSwitcher");
 require("./FileManager");
 
 var esspBegin = stringToAscii("<%es");
@@ -26,7 +27,7 @@ Base.extends("TemplateOutput", {
     },
 });
 
-Base.extends("$TemplateParser", {
+StateSwitcher.extends("$TemplateParser", {
     _constructor:function() {
         this.parsedTemplates = {};
     },
@@ -52,7 +53,9 @@ Base.extends("$TemplateParser", {
                     safe(done)(null);
                     return console.log(e);
                 }
-                //this.parsedTemplates[path] = parser;
+                if (this.enabled) {
+                    this.parsedTemplates[path] = parser;
+                }
                 finish(parser);
             });
         }

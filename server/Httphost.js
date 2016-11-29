@@ -9,8 +9,13 @@ require("./LoginManager");
 require("./TemplateParser");
 
 Base.extends("Httphost", {
-	_constructor:function(isHost) {
-		this.isHost = isHost;
+	_constructor:function(urlRoot, isHost) {
+		this.InfoBase = {
+			urlRoot:urlRoot,
+			isHost:isHost,
+		};
+		$FileCacher.setEnabled(!isHost);
+		$TemplateParser.setEnabled(!isHost);
 	},
 	onVisit:function(req, res) {
 		var requestor = new Requestor(req);
@@ -48,7 +53,9 @@ Base.extends("Httphost", {
 			if (ext == ".essp") {
 				if (!data){
 					ext = ".html"
-					data = yield $TemplateParser.parse({}, "/html" + requestor.getPath(), next);
+					data = yield $TemplateParser.parse({
+						__proto__:this.InfoBase,
+					}, "/html" + requestor.getPath(), next);
 				}
 			} else {
 				// visit file in 'html' folder
@@ -72,7 +79,7 @@ Base.extends("Httphost", {
 			console.log("Error loading '" + requestor.getPath() + "'!");
 			var data = yield $FileCacher.visitFile("/html/error.html", next);
 
-			responder.redirect("/", 1);
+			responder.redirect(this.InfoBase.urlRoot + "/", 1);
 			responder.setType(".html");
 			responder.respondData(data, safe(done));
 		}, this);
@@ -91,7 +98,10 @@ Base.extends("Httphost", {
 
 				var obj = $LoginManager.login(serial);
 				responder.setCookies({token:obj.getToken()});
-				responder.respondJson({serial:serial, pageUrl:"/main"}, safe(done));
+				responder.respondJson({
+					serial:serial,
+					pageUrl:this.InfoBase.urlRoot + "/main"
+				}, safe(done));
 			}
 		}, this);
 		next();
@@ -121,11 +131,11 @@ Base.extends("Httphost", {
 			var isMaster = userAgent.match(/Windows/i) != null;
 			var serial = obj.getSerial();
 			var data = yield $TemplateParser.parse({
+				__proto__:this.InfoBase,
 				files:$PersistanceManager.Files(),
+				isMaster:isMaster,
 				state:$PersistanceManager.State(serial),
 				serial:serial,
-				isHost:this.isHost,
-				isMaster:isMaster,
 			}, "/html/main.essp", next);
 			responder.setType(".html");
 			responder.respondData(data, safe(done));

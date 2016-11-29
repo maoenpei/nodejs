@@ -5,10 +5,17 @@ require("./server/PersistanceManager");
 var http = require("http");
 var readline = require("readline");
 var os = require("os");
+var process = require("process");
+
+var args = process.argv;
 
 var osPlatform = os.platform();
 var isHost = osPlatform == "win32";
 console.log("platform:", osPlatform, "isHost:", isHost);
+
+var urlRoot = args[2];
+urlRoot = (urlRoot ? urlRoot : "");
+console.log("argv root: '" + urlRoot + "'");
 
 var ip;
 if (isHost) {
@@ -22,7 +29,7 @@ console.log("Working at:" + __dirname, rkey());
 $FileManager.RootDirectory = __dirname;
 
 $PersistanceManager.initFiles(() => {
-    var host = new Httphost(isHost);
+    var host = new Httphost(urlRoot, isHost);
 
     var reading = readline.createInterface({
         input:process.stdin,

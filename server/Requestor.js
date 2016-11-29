@@ -5,7 +5,7 @@ var path = require("path");
 var querystring = require("querystring");
 
 var pathMapping = {};
-pathMapping["/"] = "/index.html";
+pathMapping["/"] = "/index.essp";
 
 var lineDivider = stringToAscii("\r\n");
 var doubleLineDivider = stringToAscii("\r\n\r\n");

@@ -1,8 +1,8 @@
 
-require("./Base");
+require("./StateSwitcher");
 require("./FileManager");
 
-Base.extends("$FileCacher", {
+StateSwitcher.extends("$FileCacher", {
     _constructor:function() {
         this.cachedFiles = {};
     },
@@ -12,7 +12,9 @@ Base.extends("$FileCacher", {
             later(() => {safe(done)(data);});
         } else {
             $FileManager.visitFile(path, (data) => {
-                //this.cachedFiles[path] = data;
+                if (this.enabled) {
+                    this.cachedFiles[path] = data;
+                }
                 safe(done)(data);
             });
         }
