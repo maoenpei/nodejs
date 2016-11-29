@@ -11,6 +11,7 @@ Base.extends("$FileManager", {
         var filepath = this.RootDirectory + path;
         console.log("visiting file:", filepath);
         fs.readFile(filepath, (err, data) => {
+            console.log(data ? "success" "failed");
             safe(done)(data);
         });
     },
@@ -55,6 +56,7 @@ Base.extends("$FileManager", {
         var fName = null;
         var result = (has) => {
             if (!has) {
+                console.log("find avaliable name:", fName);
                 return safe(done)(fName);
             }
             fName = rkey() + ext;
