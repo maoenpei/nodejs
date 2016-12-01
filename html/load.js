@@ -32,40 +32,6 @@ var sendAjaxJSON = function(url, postData, callback) {
     });
 }
 
-var next = coroutine(function*() {
-    var cookieSerialString = localStorage.serial_string;
-    var pageUrl = null;
-
-    var exchange = (done) => {
-        sendAjaxJSON(urlRoot + "/exchange", {serial:cookieSerialString}, (json) => {
-            cookieSerialString = json.serial;
-            pageUrl = json.pageUrl;
-            safe(done)();
-        });
-    };
-
-    if (cookieSerialString) {
-        yield exchange(next);
-    }
-
-    while(!cookieSerialString) {
-        $(".input_key_div").show();
-        cookieSerialString = yield $(".input_key_button").click(() => {
-            next($(".input_key_text").val());
-        });
-        $(".input_key_div").hide();
-
-        yield exchange(next);
-    }
-
-    console.log("got cookieSerialString:", cookieSerialString);
-    localStorage.serial_string = cookieSerialString;
-
-    window.location = pageUrl;
-});
-
-verifyAccess = next;
-
 var uploadFile = function(url, callback) {
     var formUploader = $("<form></form>");
     formUploader.attr("enctype", "multipart/form-data");
@@ -90,16 +56,73 @@ var uploadFile = function(url, callback) {
     fileLoader.click();
 }
 
-function choosefile() {
-    uploadFile(urlRoot + "/addfile", (data) => {
-        console.log("result:", data);
-        window.location.reload();
+function verifyAccess() {
+    var next = coroutine(function*() {
+        var cookieSerialString = localStorage.serial_string;
+        var pageUrl = null;
+
+        var exchange = (done) => {
+            sendAjaxJSON(urlRoot + "/exchange", {serial:cookieSerialString}, (json) => {
+                cookieSerialString = json.serial;
+                pageUrl = json.pageUrl;
+                safe(done)();
+            });
+        };
+
+        if (cookieSerialString) {
+            yield exchange(next);
+        }
+
+        $(".input_key_button").click(() => {
+            next($(".input_key_text").val());
+        });
+        $(".input_key_text").keypress((e) => {
+            if (e.which == 13) {
+                $(".input_key_button").click();
+            }
+        });
+        while(!cookieSerialString) {
+            $(".input_key_div").show();
+            $(".input_key_text").focus();
+            cookieSerialString = yield;
+            $(".input_key_div").hide();
+
+            yield exchange(next);
+        }
+
+        localStorage.serial_string = cookieSerialString;
+
+        if (pageUrl) {
+            window.location = pageUrl;
+        }
     });
+
+    next();
 }
 
-function deletefile(key) {
-    sendAjax(urlRoot + "/delfile", {key:key}, (data) => {
-        console.log("result:", data);
-        window.location.reload();
+function readyList() {
+    $(".div_add_file").click(() => {
+        uploadFile(urlRoot + "/addfile", (data) => {
+            console.log("result:", data);
+            window.location.reload();
+        });
+    });
+    $(".div_log_off").click(() => {
+        var cookieSerialString = localStorage.serial_string;
+        sendAjaxJSON(urlRoot + "/returnback", {serial:cookieSerialString}, (json) => {
+            delete localStorage.serial_string;
+            window.location = json.pageUrl;
+        });
+    });
+    $(".div_file_item").each((index, item) => {
+        $(item).find(".div_view_tag").click(() => {
+            window.location = urlRoot + "/view?key=" + $(item).attr("key");
+        });
+        $(item).find(".div_delete_tag").click(() => {
+            sendAjax(urlRoot + "/delfile", {key:$(item).attr("key")}, (data) => {
+                console.log("result:", data);
+                window.location.reload();
+            });
+        });
     });
 }

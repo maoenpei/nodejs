@@ -87,10 +87,12 @@ Base.extends("Httphost", {
 
 	exchange:function(requestor, responder, done) {
 		var next = coroutine(function*() {
+			yield $PersistanceManager.availableKeys(next);
 			var json = yield requestor.visitBodyJson(next);
 			var serial = $PersistanceManager.Serial(json.serial);
 
 			if (!serial) {
+				console.log("serial:", serial);
 				responder.respondJson({serial:null}, safe(done));
 			} else {
 				yield $PersistanceManager.Commit(next);
@@ -102,6 +104,24 @@ Base.extends("Httphost", {
 					pageUrl:this.InfoBase.urlRoot + "/main"
 				}, safe(done));
 			}
+		}, this);
+		next();
+	},
+	returnback:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			var obj = yield this.tokenValid(requestor, responder, next);
+			if (!obj) {
+				return later(safe(done));
+			}
+
+			var json = yield requestor.visitBodyJson(next);
+			$PersistanceManager.Dismiss(json.serial);
+			yield $PersistanceManager.Commit(next);
+
+			$LoginManager.logoff(obj.getToken());
+			responder.respondJson({
+				pageUrl:this.InfoBase.urlRoot + "/"
+			}, safe(done));
 		}, this);
 		next();
 	},

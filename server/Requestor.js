@@ -13,7 +13,6 @@ var doubleLineDivider = stringToAscii("\r\n\r\n");
 Base.extends("Requestor", {
     _constructor:function(req) {
         var parsedUrl = url.parse(req.url);
-        console.log("pathname:", parsedUrl.pathname);
         if (parsedUrl.pathname in pathMapping) {
             parsedUrl.pathname = pathMapping[parsedUrl.pathname];
         }
@@ -22,6 +21,7 @@ Base.extends("Requestor", {
         this.parsedUrl = parsedUrl;
         this.parsedPath = parsedPath;
         this.cmd = (parsedPath.dir == "/" && parsedPath.ext == "" ? parsedPath.name : null);
+        console.log("pathname:", parsedUrl.pathname, "cmd:", this.cmd);
 
         this.req = req;
         this.parsedQuery = null;

@@ -42,6 +42,9 @@ Base.extends("$LoginManager", {
         this.loginData[token] = obj;
         return obj;
     },
+    logoff:function(token) {
+        delete this.loginData[token];
+    },
     query:function(token) {
         return this.loginData[token];
     },

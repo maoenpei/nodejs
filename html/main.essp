@@ -5,21 +5,21 @@
     <link rel="stylesheet" type="text/css" href="<%=PageInfo.urlRoot%>/style.css">
     <script type="text/javascript" src="<%=PageInfo.urlRoot%>/jquery.js"></script>
     <script type="text/javascript" src="<%=PageInfo.urlRoot%>/load.js"></script>
-    <script type="text/javascript">setRoot("<%=PageInfo.urlRoot%>");</script>
+    <script type="text/javascript">setRoot("<%=PageInfo.urlRoot%>");$(readyList)</script>
 </head>
 <body>
 <div class="div_title_bar">
-    <a href="javascript:choosefile()" class="a_add_file">添加文件</a>
-    <a href="javascript:logoff()" class="a_log_off">下线</a>
+    <div class="div_add_file visit_label">添加文件</div>
+    <div class="div_log_off visit_label">下线</div>
 </div>
 
 <%es for (var key in PageInfo.files) {%>
-    <div class="div_file_item">
-        <a href="<%=PageInfo.urlRoot%>/view?key=<%=key%>" class="a_view_tag"><%=PageInfo.files[key].dispName%></a>
-        <%es if (PageInfo.isMaster) {%>
-            <a href="javascript:deletefile('<%=key%>')" class="a_delete_tag">删除</a>
-        <%es }%>
-    </div>
+<div class="div_file_item" key="<%=key%>">
+    <div class="div_view_tag visit_label"><%=PageInfo.files[key].dispName%></div>
+    <%es if (PageInfo.isMaster) {%>
+    <div class="div_delete_tag visit_label">删除</div>
+    <%es }%>
+</div>
 <%es }%>
 
 <%es if (PageInfo.isMaster) {%>

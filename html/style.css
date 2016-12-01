@@ -13,13 +13,27 @@
     width:100%;
 }
 
-.a_delete_tag{
+.div_delete_tag{
     position:absolute;
     right:5px;
 }
 
-.a_add_file{
+.div_add_file{
     margin-right: 50px;
+}
+
+.visit_label{
+    display: inline-block;
+    color:blue;
+}
+
+.visit_label:hover{
+    color:red;
+    cursor:hand;
+}
+
+.visit_label:active{
+    color:#bd1551;
 }
 
 /*

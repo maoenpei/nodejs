@@ -36,6 +36,13 @@ Base.extends("$PersistanceManager", {
         }, this);
         next();
     },
+    availableKeys:function(done) {
+        $FileManager.parseFile("/data/keys.in", (line) => {
+            this.states[line] = {};
+        }, () => {
+            $FileManager.saveFile("/data/keys.in", Buffer.alloc(0), safe(done));
+        });
+    },
 
     Files:function() {
         return this.files;
@@ -56,9 +63,13 @@ Base.extends("$PersistanceManager", {
         }
         return null;
     },
+    Dismiss:function(serial) {
+        delete this.states[serial];
+    },
     State:function(serial) {
         return this.states[serial];
     },
+
     Commit:function(done) {
         var next = coroutine(function*(){
             yield $FileManager.saveFile("/data/States.d", JSON.stringify(this.states), next);
