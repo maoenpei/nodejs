@@ -148,7 +148,7 @@ Base.extends("Httphost", {
 
 			//main
 			if (requestor.getPath() == "/") {
-				yield this.main(requestor, responder, next);
+				yield this.mainPage(requestor, responder, next);
 			}
 
 			// execute command
@@ -167,6 +167,32 @@ Base.extends("Httphost", {
 			if (!responder.Ended()) {
 				this.errorPage(requestor, responder, safe(done));
 			}
+		}, this);
+		next();
+	},
+	mainPage:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			var data = null;
+			var obj = yield this.tokenValid(requestor, responder, next);
+
+			if (!obj) {
+				data = yield $TemplateParser.parse(this.InfoBase, "/html/index.essp", next);
+			} else {
+				var userAgent = requestor.getUserAgent();
+				console.log("userAgent:", userAgent);
+				var isMaster = userAgent.match(/Windows/i) != null;
+				var serial = obj.getSerial();
+				var data = yield $TemplateParser.parse({
+					__proto__:this.InfoBase,
+					files:$PersistanceManager.Files(),
+					isMaster:isMaster,
+					state:$PersistanceManager.State(serial),
+					serial:serial,
+				}, "/html/main.essp", next);
+			}
+
+			responder.setType(".html");
+			responder.respondData(data, safe(done));
 		}, this);
 		next();
 	},
@@ -205,33 +231,6 @@ Base.extends("Httphost", {
 
 			console.log("urlRoot:", this.InfoBase.urlRoot);
 			responder.redirect(this.InfoBase.urlRoot + "/", 1);
-			responder.setType(".html");
-			responder.respondData(data, safe(done));
-		}, this);
-		next();
-	},
-
-	main:function(requestor, responder, done) {
-		var next = coroutine(function*() {
-			var data = null;
-			var obj = yield this.tokenValid(requestor, responder, next);
-
-			if (!obj) {
-				data = yield $TemplateParser.parse(this.InfoBase, "/html/index.essp", next);
-			} else {
-				var userAgent = requestor.getUserAgent();
-				console.log("userAgent:", userAgent);
-				var isMaster = userAgent.match(/Windows/i) != null;
-				var serial = obj.getSerial();
-				var data = yield $TemplateParser.parse({
-					__proto__:this.InfoBase,
-					files:$PersistanceManager.Files(),
-					isMaster:isMaster,
-					state:$PersistanceManager.State(serial),
-					serial:serial,
-				}, "/html/main.essp", next);
-			}
-
 			responder.setType(".html");
 			responder.respondData(data, safe(done));
 		}, this);
