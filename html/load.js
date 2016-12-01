@@ -61,17 +61,12 @@ function verifyAccess() {
         var cookieSerialString = localStorage.serial_string;
         var pageUrl = null;
 
-        var exchange = (done) => {
-            sendAjaxJSON(urlRoot + "/exchange", {serial:cookieSerialString}, (json) => {
-                cookieSerialString = json.serial;
+        var exchange = (serial, done) => {
+            sendAjaxJSON(urlRoot + "/exchange", {serial:serial}, (json) => {
                 pageUrl = json.pageUrl;
-                safe(done)();
+                safe(done)(json.serial);
             });
         };
-
-        if (cookieSerialString) {
-            yield exchange(next);
-        }
 
         $(".input_key_button").click(() => {
             next($(".input_key_text").val());
@@ -81,13 +76,18 @@ function verifyAccess() {
                 $(".input_key_button").click();
             }
         });
+
+        if (cookieSerialString) {
+            cookieSerialString = yield exchange(cookieSerialString, next);
+        }
+
         while(!cookieSerialString) {
             $(".input_key_div").show();
             $(".input_key_text").focus();
             cookieSerialString = yield;
             $(".input_key_div").hide();
 
-            yield exchange(next);
+            cookieSerialString = yield exchange(cookieSerialString, next);
         }
 
         localStorage.serial_string = cookieSerialString;
