@@ -8,83 +8,7 @@ require("./PersistanceManager");
 require("./LoginManager");
 require("./TemplateParser");
 
-Base.extends("Httphost", {
-	_constructor:function(urlRoot, isHost) {
-		this.InfoBase = {
-			urlRoot:urlRoot,
-			isHost:isHost,
-		};
-		$FileCacher.setEnabled(!isHost);
-		$TemplateParser.setEnabled(!isHost);
-	},
-	onVisit:function(req, res) {
-		var requestor = new Requestor(req);
-		var responder = new Responder(res);
-
-		this.visitPage(requestor, responder);
-	},
-	visitPage:function(requestor, responder, done) {
-		var next = coroutine(function*() {
-			// execute command
-			if (!responder.Ended()) {
-				var cmd = requestor.getCommand();
-				if (typeof(this[cmd]) == "function") {
-					yield this[cmd](requestor, responder, next);
-				}
-			}
-
-			// visit raw file
-			if (!responder.Ended()) {
-				yield this.commonPage(requestor, responder, next);
-			}
-
-			if (!responder.Ended()) {
-				this.errorPage(requestor, responder, safe(done));
-			}
-		}, this);
-		next();
-	},
-	commonPage:function(requestor, responder, done) {
-		var next = coroutine(function*(){
-			var data = null;
-			var ext = requestor.getExtension();
-
-			// If visit essp file
-			if (ext == ".essp") {
-				if (!data){
-					ext = ".html"
-					data = yield $TemplateParser.parse(this.InfoBase, "/html" + requestor.getPath(), next);
-				}
-			} else {
-				// visit file in 'html' folder
-				if (!data){
-					data = yield $FileCacher.visitFile("/html" + requestor.getPath(), next);
-				}
-			}
-
-			if (!data) {
-				return later(safe(done));
-			}
-
-			// respond
-			responder.setType(ext);
-			responder.respondData(data, safe(done));
-		}, this);
-		next();
-	},
-	errorPage:function(requestor, responder, done) {
-		var next = coroutine(function*() {
-			console.log("Error loading '" + requestor.getPath() + "'!");
-			var data = yield $FileCacher.visitFile("/html/error.html", next);
-
-			console.log("urlRoot:", this.InfoBase.urlRoot);
-			responder.redirect(this.InfoBase.urlRoot + "/", 1);
-			responder.setType(".html");
-			responder.respondData(data, safe(done));
-		}, this);
-		next();
-	},
-
+var hostCommand = {
 	exchange:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			yield $PersistanceManager.availableKeys(next);
@@ -101,7 +25,7 @@ Base.extends("Httphost", {
 				responder.setCookies({token:obj.getToken()});
 				responder.respondJson({
 					serial:serial,
-					pageUrl:this.InfoBase.urlRoot + "/main"
+					pageUrl:this.InfoBase.urlRoot + "/"
 				}, safe(done));
 			}
 		}, this);
@@ -122,42 +46,6 @@ Base.extends("Httphost", {
 			responder.respondJson({
 				pageUrl:this.InfoBase.urlRoot + "/"
 			}, safe(done));
-		}, this);
-		next();
-	},
-	tokenValid:function(requestor, responder, done) {
-		var next = coroutine(function*() {
-			var cookies = requestor.getCookies();
-			var token = (cookies ? cookies.token : null);
-			var obj = $LoginManager.query(token);
-			if (!obj || obj.checkExpired()) {
-				$LoginManager.cancel(token);
-				return later(safe(done), null);
-			}
-			return later(safe(done), obj);
-		}, this);
-		next();
-	},
-	main:function(requestor, responder, done) {
-		var next = coroutine(function*() {
-			var obj = yield this.tokenValid(requestor, responder, next);
-			if (!obj) {
-				return later(safe(done));
-			}
-
-			var userAgent = requestor.getUserAgent();
-			console.log("userAgent:", userAgent);
-			var isMaster = userAgent.match(/Windows/i) != null;
-			var serial = obj.getSerial();
-			var data = yield $TemplateParser.parse({
-				__proto__:this.InfoBase,
-				files:$PersistanceManager.Files(),
-				isMaster:isMaster,
-				state:$PersistanceManager.State(serial),
-				serial:serial,
-			}, "/html/main.essp", next);
-			responder.setType(".html");
-			responder.respondData(data, safe(done));
 		}, this);
 		next();
 	},
@@ -235,6 +123,131 @@ Base.extends("Httphost", {
 			yield $FileManager.deleteFile("/files/" + fileName, next);
 			yield $PersistanceManager.Commit(next);
 			responder.respondJson({}, safe(done));
+		}, this);
+		next();
+	},
+};
+
+Base.extends("Httphost", {
+	_constructor:function(urlRoot, isHost) {
+		this.InfoBase = {
+			urlRoot:urlRoot,
+			isHost:isHost,
+		};
+		$FileCacher.setEnabled(!isHost);
+		$TemplateParser.setEnabled(!isHost);
+	},
+	onVisit:function(req, res) {
+		var requestor = new Requestor(req);
+		var responder = new Responder(res);
+
+		this.visitPage(requestor, responder);
+	},
+	visitPage:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+
+			//main
+			if (requestor.getPath() == "/") {
+				yield this.main(requestor, responder, next);
+			}
+
+			// execute command
+			if (!responder.Ended()) {
+				var cmd = requestor.getCommand();
+				if (cmd in hostCommand && typeof(hostCommand[cmd]) == "function") {
+					yield this.run(hostCommand[cmd], requestor, responder, next);
+				}
+			}
+
+			// visit raw file
+			if (!responder.Ended()) {
+				yield this.commonPage(requestor, responder, next);
+			}
+
+			if (!responder.Ended()) {
+				this.errorPage(requestor, responder, safe(done));
+			}
+		}, this);
+		next();
+	},
+	commonPage:function(requestor, responder, done) {
+		var next = coroutine(function*(){
+			var data = null;
+			var ext = requestor.getExtension();
+
+			// If visit essp file
+			if (ext == ".essp") {
+				if (!data){
+					ext = ".html"
+					data = yield $TemplateParser.parse(this.InfoBase, "/html" + requestor.getPath(), next);
+				}
+			} else {
+				// visit file in 'html' folder
+				if (!data){
+					data = yield $FileCacher.visitFile("/html" + requestor.getPath(), next);
+				}
+			}
+
+			if (!data) {
+				return later(safe(done));
+			}
+
+			// respond
+			responder.setType(ext);
+			responder.respondData(data, safe(done));
+		}, this);
+		next();
+	},
+	errorPage:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			console.log("Error loading '" + requestor.getPath() + "'!");
+			var data = yield $FileCacher.visitFile("/html/error.html", next);
+
+			console.log("urlRoot:", this.InfoBase.urlRoot);
+			responder.redirect(this.InfoBase.urlRoot + "/", 1);
+			responder.setType(".html");
+			responder.respondData(data, safe(done));
+		}, this);
+		next();
+	},
+
+	main:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			var data = null;
+			var obj = yield this.tokenValid(requestor, responder, next);
+
+			if (!obj) {
+				data = yield $TemplateParser.parse(this.InfoBase, "/html/index.essp", next);
+			} else {
+				var userAgent = requestor.getUserAgent();
+				console.log("userAgent:", userAgent);
+				var isMaster = userAgent.match(/Windows/i) != null;
+				var serial = obj.getSerial();
+				var data = yield $TemplateParser.parse({
+					__proto__:this.InfoBase,
+					files:$PersistanceManager.Files(),
+					isMaster:isMaster,
+					state:$PersistanceManager.State(serial),
+					serial:serial,
+				}, "/html/main.essp", next);
+			}
+
+			responder.setType(".html");
+			responder.respondData(data, safe(done));
+		}, this);
+		next();
+	},
+
+	tokenValid:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			var cookies = requestor.getCookies();
+			var token = (cookies ? cookies.token : null);
+			var obj = $LoginManager.query(token);
+			if (!obj || obj.checkExpired()) {
+				$LoginManager.cancel(token);
+				return later(safe(done), null);
+			}
+			return later(safe(done), obj);
 		}, this);
 		next();
 	},
