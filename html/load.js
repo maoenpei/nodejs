@@ -5,13 +5,6 @@ function setRoot(url) {
     urlRoot = url;
 }
 
-var coroutine = function(generator, self) {
-    var g = generator.call(self);
-    return function(x) {
-        g.next(x);
-    }
-}
-
 var tmpsafe = function(){};
 var safe = function(callback) {
     return (callback ? callback : tmpsafe);
@@ -27,7 +20,7 @@ var sendAjax = function(url, postData, callback) {
 }
 
 var sendAjaxJSON = function(url, postData, callback) {
-    sendAjax(url, postData, (returnData) => {
+    sendAjax(url, postData, function (returnData) {
         safe(callback)(JSON.parse(returnData));
     });
 }
@@ -57,69 +50,75 @@ var uploadFile = function(url, callback) {
 }
 
 function verifyAccess() {
-    var next = coroutine(function*() {
-        var cookieSerialString = localStorage.serial_string;
-        var pageUrl = null;
+    var cookieSerialString = localStorage.serial_string;
+    var pageUrl = null;
 
-        var exchange = (serial, done) => {
-            sendAjaxJSON(urlRoot + "/exchange", {serial:serial}, (json) => {
-                pageUrl = json.pageUrl;
-                safe(done)(json.serial);
-            });
-        };
-
-        $(".input_key_button").click(() => {
-            next($(".input_key_text").val());
+    var exchange = function (serial, done) {
+        sendAjaxJSON(urlRoot + "/exchange", {serial:serial}, function (json) {
+            console.log(json);
+            pageUrl = json.pageUrl;
+            safe(done)(json.serial);
         });
-        $(".input_key_text").keypress((e) => {
-            if (e.which == 13) {
-                $(".input_key_button").click();
-            }
-        });
+    };
 
-        if (cookieSerialString) {
-            cookieSerialString = yield exchange(cookieSerialString, next);
-        }
-
-        while(!cookieSerialString) {
-            $(".input_key_div").show();
-            $(".input_key_text").focus();
-            cookieSerialString = yield;
-            $(".input_key_div").hide();
-
-            cookieSerialString = yield exchange(cookieSerialString, next);
-        }
-
-        localStorage.serial_string = cookieSerialString;
-
-        if (pageUrl) {
-            window.location = pageUrl;
+    $(".input_key_button").click(function () {
+        inputNext($(".input_key_text").val());
+    });
+    $(".input_key_text").keypress(function (e) {
+        if (e.which == 13) {
+            $(".input_key_button").click();
         }
     });
 
-    next();
+    if (cookieSerialString) {
+        exchange(cookieSerialString, exchangeNext);
+    } else {
+        exchangeNext(null);
+    }
+
+    function exchangeNext(serial) {
+        cookieSerialString = serial;
+
+        if (!cookieSerialString) {
+            $(".input_key_div").show();
+            $(".input_key_text").focus();
+        } else {
+            localStorage.serial_string = cookieSerialString;
+
+            if (pageUrl) {
+                window.location = pageUrl;
+            }
+        }
+    }
+
+    function inputNext(serial) {
+        cookieSerialString = serial;
+        $(".input_key_div").hide();
+
+        exchange(cookieSerialString, exchangeNext);
+    }
 }
 
 function readyList() {
-    $(".div_add_file").click(() => {
-        uploadFile(urlRoot + "/addfile", (data) => {
+    $(".div_add_file").click(function () {
+        uploadFile(urlRoot + "/addfile", function (data) {
             console.log("result:", data);
             window.location.reload();
         });
     });
-    $(".div_log_off").click(() => {
+    $(".div_log_off").click(function () {
         var cookieSerialString = localStorage.serial_string;
-        sendAjaxJSON(urlRoot + "/returnback", {serial:cookieSerialString}, (json) => {
+        sendAjaxJSON(urlRoot + "/returnback", {serial:cookieSerialString}, function (json) {
             delete localStorage.serial_string;
             window.location = json.pageUrl;
         });
     });
-    $(".div_file_item").each((index, item) => {
-        $(item).find(".div_view_tag").click(() => {
+    $(".div_file_item").each(function (index, item) {
+        $(item).find(".div_view_tag").click(function () {
             window.location = urlRoot + "/view?key=" + $(item).attr("key");
         });
-        $(item).find(".div_delete_tag").click(() => {
-            sendAjax(urlRoot + "/delfile", {key:$(item).attr("key")}, (data) => {
+        $(item).find(".div_delete_tag").click(function () {
+            sendAjax(urlRoot + "/delfile", {key:$(item).attr("key")}, function (data) {
                 console.log("result:", data);
                 window.location.reload();
             });
