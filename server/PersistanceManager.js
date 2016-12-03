@@ -48,7 +48,7 @@ Base.extends("$PersistanceManager", {
         return this.files;
     },
     ExtensionType:function(ext) {
-        return this.extMapping[ext];
+        return this.extMapping[ext.toLowerCase()];
     },
     Serial:function(serial) {
         if (this.states[serial]) {
