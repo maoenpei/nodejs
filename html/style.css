@@ -1,29 +1,64 @@
-
-.div_title_bar{
-    width:100%;
-    text-align:center;
+@media screen and (max-width:371px){
+    html{font-size:15px;}
 }
-
+@media screen and (max-width:420px) and (min-width:371px){
+    html{font-size:20px;}
+}
+@media screen and (min-width:421px){
+    html{font-size:30px;}
+}
+*{
+    box-sizing:border-box;
+}
+body{
+    margin:0;
+}
+.div_title_bar{
+    text-align:center;
+    background-color:#ddd;
+    padding:0.5rem 0;
+}
 .div_bottom_bar{
-    width:100%;
     text-align: right;
 }
-
-.div_file_item{
-    width:100%;
+.div_file_panel{
+    font-size:0.8rem;
 }
-
+.div_file_item{
+    padding:0.5rem 1rem;
+    position:relative;
+}
+.div_file_item:nth-child(2n+1){
+    background-color:white;
+}
+.div_file_item:nth-child(2n){
+    background-color:#eee;
+}
 .div_delete_tag{
     position:absolute;
-    right:5px;
+    top:0.5rem;left:1rem;
+    color:red;
+    cursor:pointer;
+    visibility:hidden;
 }
-
-.div_add_file{
-    margin-right: 50px;
+.on_edit .div_file_item{
+    padding-left:3rem;
 }
-
+.on_edit .div_delete_tag{
+    visibility:visible;
+}
+.div_delete_tag:hover{
+    color:#820303;
+}
+.div_view_tag{
+    cursor:pointer;
+}
+.div_view_tag:hover{
+    color:blue;
+}
 .visit_label{
     display: inline-block;
+    margin:0 1rem;
     color:blue;
 }
 
@@ -35,27 +70,3 @@
 .visit_label:active{
     color:#bd1551;
 }
-
-/*
-.frame_content{
-    width:100%;
-    height:calc(100%);
-    border:0px;
-}
-
-body{
-    box-sizing:border-box;
-    margin-top:100px;
-    width:100%;
-    height:100%;
-    margin:0;
-    position:relative;
-}
-
-html{
-    margin:0px;
-    padding:0px;
-    width:100%;
-    height:100%;
-}
-*/

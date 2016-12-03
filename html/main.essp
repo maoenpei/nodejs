@@ -1,6 +1,7 @@
 <html>
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
     <title>List</title>
     <link rel="stylesheet" type="text/css" href="<%=PageInfo.urlRoot%>/style.css">
     <script type="text/javascript" src="<%=PageInfo.urlRoot%>/jquery.js"></script>
@@ -9,19 +10,22 @@
 </head>
 <body>
 <div class="div_title_bar">
+    <%es if (PageInfo.isMaster) {%>
+    <div class="div_delete_file visit_label">删除文件</div>
+    <%es }%>
     <div class="div_add_file visit_label">添加文件</div>
-    <div class="div_log_off visit_label">下线</div>
+    <div class="div_log_off visit_label">退出</div>
 </div>
-
+<div class="div_file_panel">
 <%es for (var key in PageInfo.files) {%>
 <div class="div_file_item" key="<%=key%>">
-    <div class="div_view_tag visit_label"><%=PageInfo.files[key].dispName%></div>
+    <div class="div_view_tag"><%=PageInfo.files[key].dispName%></div>
     <%es if (PageInfo.isMaster) {%>
-    <div class="div_delete_tag visit_label">删除</div>
+    <div class="div_delete_tag">删除</div>
     <%es }%>
 </div>
 <%es }%>
-
+</div>
 <%es if (PageInfo.isMaster) {%>
 <div class="div_bottom_bar">
     <a>序列号: <%=PageInfo.serial%></a>

@@ -106,6 +106,9 @@ function readyList() {
             window.location.reload();
         });
     });
+    $(".div_delete_file").click(function(){
+        $(".div_file_panel").toggleClass("on_edit");
+    })
     $(".div_log_off").click(function () {
         var cookieSerialString = localStorage.serial_string;
         sendAjaxJSON(urlRoot + "/returnback", {serial:cookieSerialString}, function (json) {
