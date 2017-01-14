@@ -72,7 +72,7 @@ var hostCommand = {
 		}, this);
 		next();
 	},
-	main:function(requestor, responder, done) {
+	backmain:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, responder, next);
 			if (!obj) {
@@ -81,6 +81,31 @@ var hostCommand = {
 
 			var state = $PersistanceManager.State(obj.getSerial());
 			delete state.key;
+			yield $PersistanceManager.Commit(next);
+
+			responder.respondJson({}, safe(done));
+		}, this);
+		next();
+	},
+	posupdate:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			var obj = yield this.tokenValid(requestor, responder, next);
+			if (!obj) {
+				return later(safe(done));
+			}
+
+			var json = yield requestor.visitBodyJson(next);
+			if (!json.scrollX && !json.scrollY) {
+				return later(safe(done));
+			}
+
+			var state = $PersistanceManager.State(obj.getSerial());
+			var fileKey = state.key;
+			if (!fileKey) {
+				return later(safe(done));
+			}
+			state.scrolls = (state.scrolls ? state.scrolls : {});
+			state.scrolls[fileKey] = {x:json.scrollX, y:json.scrollY};
 			yield $PersistanceManager.Commit(next);
 
 			responder.respondJson({}, safe(done));
@@ -227,9 +252,12 @@ Base.extends("Httphost", {
 				var state = $PersistanceManager.State(obj.getSerial());
 				var fileKey = state.key;
 				if (fileKey) {
+					var scrolls = state.scrolls ? state.scrolls[fileKey] : null;
 					data = yield $TemplateParser.parse({
 						__proto__:this.InfoBase,
 						key:fileKey,
+						scrollX:(scrolls ? scrolls.x : 0),
+						scrollY:(scrolls ? scrolls.y : 0),
 					}, "/html/content.essp", next);
 				} else {
 					var userAgent = requestor.getUserAgent();
