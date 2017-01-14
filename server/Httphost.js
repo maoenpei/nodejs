@@ -32,6 +32,10 @@ var hostCommand = {
 	},
 	giveup:function(requestor, responder, done) {
 		var next = coroutine(function*() {
+			if (requestor.getMethod() == "GET") {
+				return later(safe(done));
+			}
+
 			var obj = yield this.tokenValid(requestor, responder, next);
 			if (!obj) {
 				return later(safe(done));
@@ -54,7 +58,7 @@ var hostCommand = {
 			}
 
 			var json = yield requestor.visitBodyJson(next);
-			var fileKey = json.key;
+			var fileKey = json.key ? json.key : "";
 			var files = $PersistanceManager.Files();
 			if (!files[fileKey]) {
 				return later(safe(done));
@@ -90,14 +94,17 @@ var hostCommand = {
 				return responder.respondJson({}, safe(done));
 			}
 
-			var data, info;
+			var data = null, info = null;
 			yield requestor.visitBodyUpload((_data, _info) => {
 				data = _data;
 				info = _info;
 				next();
 			});
 
-			console.log(info);
+			console.log("upload:", info);
+			if (!info) {
+				return later(safe(done));
+			}
 			var name = info.filename.match(/(.*)\.\w+?$/)[1]
 			var ext = info.filename.substr(name.length);
 			var fileName = yield $FileManager.availableName("/files", ext, next);
@@ -123,7 +130,7 @@ var hostCommand = {
 			}
 
 			var json = yield requestor.visitBodyJson(next);
-			var fileKey = json.key;
+			var fileKey = json.key ? json.key : "";
 			var files = $PersistanceManager.Files();
 			if (!files[fileKey]) {
 				return later(safe(done));
@@ -183,11 +190,13 @@ Base.extends("Httphost", {
 
 			//main
 			if (requestor.getPath() == "/") {
+				console.log("==>main");
 				yield this.mainPage(requestor, responder, next);
 			}
 
 			// execute command
 			if (!responder.Ended()) {
+				console.log("==>command");
 				var cmd = requestor.getCommand();
 				if (cmd in hostCommand && typeof(hostCommand[cmd]) == "function") {
 					yield this.run(hostCommand[cmd], requestor, responder, next);
@@ -196,10 +205,12 @@ Base.extends("Httphost", {
 
 			// visit raw file
 			if (!responder.Ended()) {
+				console.log("==>file");
 				yield this.commonPage(requestor, responder, next);
 			}
 
 			if (!responder.Ended()) {
+				console.log("==>error");
 				this.errorPage(requestor, responder, safe(done));
 			}
 		}, this);

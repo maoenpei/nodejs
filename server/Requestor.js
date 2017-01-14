@@ -20,6 +20,7 @@ Base.extends("Requestor", {
         this.req = req;
         this.parsedQuery = null;
         this.cookies = null;
+        this.method = req.method.toUpperCase();
     },
     getReq:function() {
         return this.req;
@@ -60,6 +61,9 @@ Base.extends("Requestor", {
     getUserAgent:function() {
         return this.req.headers["user-agent"];
     },
+    getMethod:function() {
+        return this.method;
+    },
 
     visitBody:function(done) {
         var body = [];
@@ -81,7 +85,11 @@ Base.extends("Requestor", {
     },
     visitBodyJson:function(done) {
         this.visitBodyString((body) => {
-            safe(done)(JSON.parse(body));
+            try {
+                safe(done)(JSON.parse(body));
+            } catch (e) {
+                safe(done)({});
+            }
         });
     },
     visitBodyUpload:function(done) {

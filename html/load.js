@@ -130,7 +130,10 @@ function mainEntry() {
 
 function contentEntry() {
     var adjustHeight = function() {
-        $(".iframe_content").css("height", parseInt($("body").css("height")) - parseInt($(".div_title_bar").css("height")));
+        var total = parseInt($("body").css("height"));
+        var title = parseInt($(".div_title_bar").css("height"));
+        console.log(total, title, total-title);
+        $(".iframe_content").css("height", total - title);
     };
     adjustHeight();
     $(window).resize(adjustHeight);
