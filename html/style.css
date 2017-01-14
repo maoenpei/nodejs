@@ -70,3 +70,7 @@ body{
 .visit_label:active{
     color:#bd1551;
 }
+
+.iframe_content{
+    width:100%;
+}

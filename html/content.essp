@@ -2,17 +2,17 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-    <title>Welcome</title>
+    <title>List</title>
     <link rel="stylesheet" type="text/css" href="<%=PageInfo.urlRoot%>/style.css">
     <script type="text/javascript" src="<%=PageInfo.urlRoot%>/jquery.js"></script>
     <script type="text/javascript" src="<%=PageInfo.urlRoot%>/load.js"></script>
-    <script type="text/javascript">setRoot("<%=PageInfo.urlRoot%>", "indexEntry");</script>
+    <script type="text/javascript">setRoot("<%=PageInfo.urlRoot%>", "contentEntry");</script>
 </head>
 <body>
-    <div class="input_key_div" style="display:none">
-        Input key:
-        <input type="text" name="id" class="input_key_text"/>
-        <input type="button" value="join" class="input_key_button"/>
-    </div>
+<div class="div_title_bar">
+    <div class="div_return_back visit_label">返回菜单</div>
+</div>
+<iframe class="iframe_content" src="<%=PageInfo.urlRoot%>/file">
+</iframe>
 </body>
 </html>

@@ -25,13 +25,12 @@ var hostCommand = {
 				responder.setCookies({token:obj.getToken()});
 				responder.respondJson({
 					serial:serial,
-					pageUrl:this.InfoBase.urlRoot + "/"
 				}, safe(done));
 			}
 		}, this);
 		next();
 	},
-	returnback:function(requestor, responder, done) {
+	giveup:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, responder, next);
 			if (!obj) {
@@ -39,13 +38,11 @@ var hostCommand = {
 			}
 
 			var json = yield requestor.visitBodyJson(next);
-			$PersistanceManager.Dismiss(json.serial);
+			$PersistanceManager.Dismiss(obj.getSerial());
 			yield $PersistanceManager.Commit(next);
 
 			$LoginManager.logoff(obj.getToken());
-			responder.respondJson({
-				pageUrl:this.InfoBase.urlRoot + "/"
-			}, safe(done));
+			responder.respondJson({}, safe(done));
 		}, this);
 		next();
 	},
@@ -56,19 +53,33 @@ var hostCommand = {
 				return later(safe(done));
 			}
 
-			var fileKey = requestor.getQuery().key;
+			var json = yield requestor.visitBodyJson(next);
+			var fileKey = json.key;
 			var files = $PersistanceManager.Files();
 			if (!files[fileKey]) {
 				return later(safe(done));
 			}
 
-			console.log("fileKey:", fileKey);
-			var fName = "/" + files[fileKey].fName;
-			var ext = fName.match(/(\.\w+)$/)[1];
-			var data = yield $FileCacher.visitFile("/files" + fName, next);
+			var state = $PersistanceManager.State(obj.getSerial());
+			state.key = fileKey;
+			yield $PersistanceManager.Commit(next);
 
-			responder.setType(ext);
-			responder.respondData(data, safe(done));
+			responder.respondJson({}, safe(done));
+		}, this);
+		next();
+	},
+	main:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			var obj = yield this.tokenValid(requestor, responder, next);
+			if (!obj) {
+				return later(safe(done));
+			}
+
+			var state = $PersistanceManager.State(obj.getSerial());
+			delete state.key;
+			yield $PersistanceManager.Commit(next);
+
+			responder.respondJson({}, safe(done));
 		}, this);
 		next();
 	},
@@ -126,6 +137,30 @@ var hostCommand = {
 		}, this);
 		next();
 	},
+	file:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			var obj = yield this.tokenValid(requestor, responder, next);
+			if (!obj) {
+				return later(safe(done));
+			}
+
+			var state = $PersistanceManager.State(obj.getSerial());
+			var fileKey = state.key;
+			var files = $PersistanceManager.Files();
+			if (!files[fileKey]) {
+				return later(safe(done));
+			}
+
+			console.log("fileKey:", fileKey);
+			var fName = "/" + files[fileKey].fName;
+			var ext = fName.match(/(\.\w+)$/)[1];
+			var data = yield $FileCacher.visitFile("/files" + fName, next);
+
+			responder.setType(ext);
+			responder.respondData(data, safe(done));
+		}, this);
+		next();
+	},
 };
 
 Base.extends("Httphost", {
@@ -178,17 +213,26 @@ Base.extends("Httphost", {
 			if (!obj) {
 				data = yield $TemplateParser.parse(this.InfoBase, "/html/index.essp", next);
 			} else {
-				var userAgent = requestor.getUserAgent();
-				console.log("userAgent:", userAgent);
-				var isMaster = userAgent.match(/Windows/i) != null;
-				var serial = obj.getSerial();
-				var data = yield $TemplateParser.parse({
-					__proto__:this.InfoBase,
-					files:$PersistanceManager.Files(),
-					isMaster:isMaster,
-					state:$PersistanceManager.State(serial),
-					serial:serial,
-				}, "/html/main.essp", next);
+				var state = $PersistanceManager.State(obj.getSerial());
+				var fileKey = state.key;
+				if (fileKey) {
+					data = yield $TemplateParser.parse({
+						__proto__:this.InfoBase,
+						key:fileKey,
+					}, "/html/content.essp", next);
+				} else {
+					var userAgent = requestor.getUserAgent();
+					console.log("userAgent:", userAgent);
+					var isMaster = userAgent.match(/Windows/i) != null;
+					var serial = obj.getSerial();
+					data = yield $TemplateParser.parse({
+						__proto__:this.InfoBase,
+						files:$PersistanceManager.Files(),
+						isMaster:isMaster,
+						state:$PersistanceManager.State(serial),
+						serial:serial,
+					}, "/html/main.essp", next);
+				}
 			}
 
 			responder.setType(".html");
