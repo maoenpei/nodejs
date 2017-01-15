@@ -48,15 +48,19 @@ StateSwitcher.extends("$TemplateParser", {
         } else {
             $FileManager.visitFile(path, (data) => {
                 try {
-                    parser = this.doParse(data);
+                    if (data) {
+                        parser = this.doParse(data);
+                    }
                 } catch (e) {
+                }
+                if (parser) {
+                    if (this.enabled) {
+                        this.parsedTemplates[path] = parser;
+                    }
+                    finish(parser);
+                } else {
                     safe(done)(null);
-                    return console.log(e);
                 }
-                if (this.enabled) {
-                    this.parsedTemplates[path] = parser;
-                }
-                finish(parser);
             });
         }
     },

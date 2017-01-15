@@ -1,9 +1,8 @@
 
-var urlRoot = null;
+var urlRoot = "<%=PageInfo.urlRoot%>";
 var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 function setRoot(url, entryName) {
-    urlRoot = url;
     $(window[entryName]);
 }
 

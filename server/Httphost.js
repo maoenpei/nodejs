@@ -36,7 +36,7 @@ var hostCommand = {
 				return later(safe(done));
 			}
 
-			var obj = yield this.tokenValid(requestor, responder, next);
+			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
 				return later(safe(done));
 			}
@@ -52,7 +52,7 @@ var hostCommand = {
 	},
 	view:function(requestor, responder, done) {
 		var next = coroutine(function*() {
-			var obj = yield this.tokenValid(requestor, responder, next);
+			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
 				return later(safe(done));
 			}
@@ -74,7 +74,7 @@ var hostCommand = {
 	},
 	backmain:function(requestor, responder, done) {
 		var next = coroutine(function*() {
-			var obj = yield this.tokenValid(requestor, responder, next);
+			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
 				return later(safe(done));
 			}
@@ -89,7 +89,7 @@ var hostCommand = {
 	},
 	posupdate:function(requestor, responder, done) {
 		var next = coroutine(function*() {
-			var obj = yield this.tokenValid(requestor, responder, next);
+			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
 				return later(safe(done));
 			}
@@ -114,7 +114,7 @@ var hostCommand = {
 	},
 	addfile:function(requestor, responder, done) {
 		var next = coroutine(function*() {
-			var obj = yield this.tokenValid(requestor, responder, next);
+			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
 				return responder.respondJson({}, safe(done));
 			}
@@ -149,7 +149,7 @@ var hostCommand = {
 	},
 	delfile:function(requestor, responder, done) {
 		var next = coroutine(function*() {
-			var obj = yield this.tokenValid(requestor, responder, next);
+			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
 				return responder.respondJson({}, safe(done));
 			}
@@ -171,7 +171,7 @@ var hostCommand = {
 	},
 	file:function(requestor, responder, done) {
 		var next = coroutine(function*() {
-			var obj = yield this.tokenValid(requestor, responder, next);
+			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
 				return later(safe(done));
 			}
@@ -244,33 +244,33 @@ Base.extends("Httphost", {
 	mainPage:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			var data = null;
-			var obj = yield this.tokenValid(requestor, responder, next);
+			var obj = yield this.tokenValid(requestor, next);
 
 			if (!obj) {
-				data = yield $TemplateParser.parse(this.InfoBase, "/html/index.essp", next);
+				data = yield this.visitData("/index.html", null, next);
 			} else {
 				var state = $PersistanceManager.State(obj.getSerial());
 				var fileKey = state.key;
 				if (fileKey) {
 					var scrolls = state.scrolls ? state.scrolls[fileKey] : null;
-					data = yield $TemplateParser.parse({
+					data = yield this.visitData("/content.html", {
 						__proto__:this.InfoBase,
 						key:fileKey,
 						scrollX:(scrolls ? scrolls.x : 0),
 						scrollY:(scrolls ? scrolls.y : 0),
-					}, "/html/content.essp", next);
+					}, next);
 				} else {
 					var userAgent = requestor.getUserAgent();
 					console.log("userAgent:", userAgent);
 					var isMaster = userAgent.match(/Windows/i) != null;
 					var serial = obj.getSerial();
-					data = yield $TemplateParser.parse({
+					data = yield this.visitData("/main.html", {
 						__proto__:this.InfoBase,
 						files:$PersistanceManager.Files(),
 						isMaster:isMaster,
 						state:$PersistanceManager.State(serial),
 						serial:serial,
-					}, "/html/main.essp", next);
+					}, next);
 				}
 			}
 
@@ -284,18 +284,7 @@ Base.extends("Httphost", {
 			var data = null;
 			var ext = requestor.getExtension();
 
-			// If visit essp file
-			if (ext == ".essp") {
-				if (!data){
-					ext = ".html"
-					data = yield $TemplateParser.parse(this.InfoBase, "/html" + requestor.getPath(), next);
-				}
-			} else {
-				// visit file in 'html' folder
-				if (!data){
-					data = yield $FileCacher.visitFile("/html" + requestor.getPath(), next);
-				}
-			}
+			data = yield this.visitData(requestor.getPath(), null, next);
 
 			if (!data) {
 				return later(safe(done));
@@ -320,7 +309,22 @@ Base.extends("Httphost", {
 		next();
 	},
 
-	tokenValid:function(requestor, responder, done) {
+	visitData:function(path, infoBase, done) {
+		var next = coroutine(function*(){
+			var data = null;
+			path = "/html" + path;
+			if (!data){
+				data = yield $FileCacher.visitFile(path, next);
+			}
+			if (!data) {
+				infoBase = (infoBase ? infoBase : {__proto__:this.InfoBase});
+				data = yield $TemplateParser.parse(infoBase, path + ".essp", next);
+			}
+			safe(done)(data);
+		}, this);
+		next();
+	},
+	tokenValid:function(requestor, done) {
 		var next = coroutine(function*() {
 			var cookies = requestor.getCookies();
 			var token = (cookies ? cookies.token : null);
