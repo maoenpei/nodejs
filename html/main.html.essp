@@ -10,9 +10,7 @@
     </head>
     <body>
     <div class="div_title_bar">
-        <%es if (PageInfo.isMaster) {%>
         <div class="div_delete_file visit_label">编辑</div>
-        <%es }%>
         <div class="div_add_file visit_label">添加文件</div>
         <div class="div_log_off visit_label">退出</div>
     </div>

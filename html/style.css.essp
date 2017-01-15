@@ -36,6 +36,8 @@ body{
 .div_file_item:nth-child(2n){
     background-color:#eee;
 }
+
+<%es if (PageInfo.isMaster) {%>
 .div_delete_tag{
     position:absolute;
     top:0.5rem;left:1rem;
@@ -52,6 +54,8 @@ body{
 .div_delete_tag:hover{
     color:#820303;
 }
+<%es }%>
+
 .div_view_tag{
     cursor:pointer;
 }
@@ -71,6 +75,10 @@ body{
 
 .visit_label:active{
     color:#bd1551;
+}
+
+.visit_label:visited{
+    color:blue;
 }
 
 .div_iframe_container{

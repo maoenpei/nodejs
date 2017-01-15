@@ -247,27 +247,24 @@ Base.extends("Httphost", {
 			var obj = yield this.tokenValid(requestor, next);
 
 			if (!obj) {
-				data = yield this.visitData("/index.html", null, next);
+				data = yield this.visitData(requestor, "/index.html", null, next);
 			} else {
 				var state = $PersistanceManager.State(obj.getSerial());
 				var fileKey = state.key;
 				if (fileKey) {
 					var scrolls = state.scrolls ? state.scrolls[fileKey] : null;
-					data = yield this.visitData("/content.html", {
+					data = yield this.visitData(requestor, "/content.html", {
 						__proto__:this.InfoBase,
 						key:fileKey,
 						scrollX:(scrolls ? scrolls.x : 0),
 						scrollY:(scrolls ? scrolls.y : 0),
 					}, next);
 				} else {
-					var userAgent = requestor.getUserAgent();
-					console.log("userAgent:", userAgent);
-					var isMaster = userAgent.match(/Windows/i) != null;
 					var serial = obj.getSerial();
-					data = yield this.visitData("/main.html", {
+					data = yield this.visitData(requestor, "/main.html", {
 						__proto__:this.InfoBase,
 						files:$PersistanceManager.Files(),
-						isMaster:isMaster,
+						isMaster:(requestor.getUserAgent().match(/Windows/i) != null),
 						state:$PersistanceManager.State(serial),
 						serial:serial,
 					}, next);
@@ -284,7 +281,7 @@ Base.extends("Httphost", {
 			var data = null;
 			var ext = requestor.getExtension();
 
-			data = yield this.visitData(requestor.getPath(), null, next);
+			data = yield this.visitData(requestor, requestor.getPath(), null, next);
 
 			if (!data) {
 				return later(safe(done));
@@ -309,7 +306,7 @@ Base.extends("Httphost", {
 		next();
 	},
 
-	visitData:function(path, infoBase, done) {
+	visitData:function(requestor, path, infoBase, done) {
 		var next = coroutine(function*(){
 			var data = null;
 			path = "/html" + path;
@@ -317,7 +314,10 @@ Base.extends("Httphost", {
 				data = yield $FileCacher.visitFile(path, next);
 			}
 			if (!data) {
-				infoBase = (infoBase ? infoBase : {__proto__:this.InfoBase});
+				infoBase = (infoBase ? infoBase : {
+					__proto__:this.InfoBase,
+					isMaster:(requestor.getUserAgent().match(/Windows/i) != null),
+				});
 				data = yield $TemplateParser.parse(infoBase, path + ".essp", next);
 			}
 			safe(done)(data);
