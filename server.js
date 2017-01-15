@@ -15,6 +15,7 @@ argParser.setCaseSensitive(false);
 var osPlatform = os.platform();
 var isHost = osPlatform == "win32";
 console.log("platform:", osPlatform, "isHost:", isHost);
+console.log("process id:", process.pid);
 
 var urlRoot = argParser.get("root");
 urlRoot = (urlRoot ? urlRoot : "");
