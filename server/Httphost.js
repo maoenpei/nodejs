@@ -169,6 +169,26 @@ var hostCommand = {
 		}, this);
 		next();
 	},
+	renamefile:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			var obj = yield this.tokenValid(requestor, next);
+			if (!obj) {
+				return responder.respondJson({}, safe(done));
+			}
+
+			var json = yield requestor.visitBodyJson(next);
+			var fileKey = json.key ? json.key : "";
+			var files = $PersistanceManager.Files();
+			if (!files[fileKey]) {
+				return later(safe(done));
+			}
+
+			files[fileKey].dispName = json.name
+			yield $PersistanceManager.Commit(next);
+			responder.respondJson({}, safe(done));
+		}, this);
+		next();
+	},
 	file:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);

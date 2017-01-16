@@ -16,11 +16,13 @@
     </div>
     <div class="div_file_panel">
     <%es for (var key in PageInfo.files) {%>
-        <div class="div_file_item" key="<%=key%>">
+        <div class="div_file_item <%=PageInfo.isMaster?"div_file_item_pc":""%>" key="<%=key%>">
             <div class="div_view_tag"><%=PageInfo.files[key].dispName%></div>
+            <input class="input_edit_tag" />
             <%es if (PageInfo.isMaster) {%>
                 <div class="div_delete_tag">删除</div>
             <%es }%>
+            <div class="div_rename_tag">改名</div>
         </div>
     <%es }%>
     </div>
