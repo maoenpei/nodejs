@@ -9,12 +9,12 @@
     <script type="text/javascript">$(contentEntry);</script>
 </head>
 <body>
-<div class="div_title_bar">
-    <div class="div_back_main visit_label">返回菜单</div>
-    <div class="div_back_top visit_label">回到顶部</div>
-</div>
-<div class="div_iframe_container" scrollX="<%=PageInfo.scrollX%>" scrollY="<%=PageInfo.scrollY%>">
-    <iframe class="iframe_content" src="<%=PageInfo.urlRoot%>/file"></iframe>
-</div>
+    <div class="div_title_bar">
+        <div class="div_back_main visit_label">返回菜单</div>
+        <div class="div_back_top visit_label">回到顶部</div>
+    </div>
+    <div class="div_iframe_container" scrollX="<%=PageInfo.scrollX%>" scrollY="<%=PageInfo.scrollY%>">
+        <iframe class="iframe_content" src="<%=PageInfo.urlRoot%>/file"></iframe>
+    </div>
 </body>
 </html>

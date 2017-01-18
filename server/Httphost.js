@@ -271,7 +271,8 @@ Base.extends("Httphost", {
 			} else {
 				var state = $PersistanceManager.State(obj.getSerial());
 				var fileKey = state.key;
-				if (fileKey) {
+				var files = $PersistanceManager.Files();
+				if (fileKey && files[fileKey]) {
 					var scrolls = state.scrolls ? state.scrolls[fileKey] : null;
 					data = yield this.visitData(requestor, "/content.html", {
 						__proto__:this.InfoBase,
