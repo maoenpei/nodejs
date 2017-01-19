@@ -186,9 +186,9 @@ function contentEntry() {
             scrollX = scrollItem.scrollLeft();
             scrollY = scrollItem.scrollTop();
             console.log("saving position", scrollX, scrollY);
-            requestPost("posupdate", {
-                scrollX:scrollX.toString(),
-                scrollY:scrollY.toString(),
+            requestPost("pageupdate", {
+                scrollX:String(scrollX),
+                scrollY:String(scrollY),
             });
         }, 1000);
     });

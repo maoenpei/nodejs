@@ -87,7 +87,7 @@ var hostCommand = {
 		}, this);
 		next();
 	},
-	posupdate:function(requestor, responder, done) {
+	pageupdate:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
@@ -95,7 +95,7 @@ var hostCommand = {
 			}
 
 			var json = yield requestor.visitBodyJson(next);
-			if (!json.scrollX && !json.scrollY) {
+			if (!json) {
 				return later(safe(done));
 			}
 
@@ -104,8 +104,11 @@ var hostCommand = {
 			if (!fileKey) {
 				return later(safe(done));
 			}
-			state.scrolls = (state.scrolls ? state.scrolls : {});
-			state.scrolls[fileKey] = {x:json.scrollX, y:json.scrollY};
+			state.fileDatas = (state.fileDatas ? state.fileDatas : {});
+			state.fileDatas[fileKey] = (state.fileDatas[fileKey] ? state.fileDatas[fileKey] : {});
+			for (var k in json) {
+				state.fileDatas[fileKey][k] = json[k];
+			}
 			yield $PersistanceManager.Commit(next);
 
 			responder.respondJson({}, safe(done));
@@ -273,12 +276,11 @@ Base.extends("Httphost", {
 				var fileKey = state.key;
 				var files = $PersistanceManager.Files();
 				if (fileKey && files[fileKey]) {
-					var scrolls = state.scrolls ? state.scrolls[fileKey] : null;
+					var saveData = state.fileDatas ? state.fileDatas[fileKey] : null;
 					data = yield this.visitData(requestor, "/content.html", {
 						__proto__:this.InfoBase,
 						key:fileKey,
-						scrollX:(scrolls ? scrolls.x : 0),
-						scrollY:(scrolls ? scrolls.y : 0),
+						data:(saveData ? saveData : {}),
 					}, next);
 				} else {
 					var serial = obj.getSerial();

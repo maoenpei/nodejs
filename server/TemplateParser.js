@@ -20,7 +20,7 @@ Base.extends("TemplateOutput", {
         this.outBlocks.push(this.data.slice(start, end));
     },
     addVal:function(val) {
-        this.outBlocks.push(Buffer.from(val.toString()));
+        this.outBlocks.push(Buffer.from(String(val)));
     },
     unifyBlocks:function() {
         return Buffer.concat(this.outBlocks);
