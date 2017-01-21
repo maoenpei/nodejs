@@ -158,6 +158,7 @@ Global.silent = function(fun) {
 	try {
 		return fun.apply(this, args);
 	} catch(e) {
+		console.log("Silent - ");
 		console.log(e);
 	}
 }

@@ -1,0 +1,13 @@
+<html>
+<head>
+    <%^head.html%>
+    <title>Error</title>
+</head>
+<body>
+    <div class="div_file_item">Error Happen:</div>
+    <%es for (var i = 0; i < PageInfo.errors.length; ++i) {%>
+    <div class="div_file_item">    <%=PageInfo.errors[i]%></div>
+    <%es }%>
+    <a href="/">如果浏览器长时间没有跳转，点击这里</a>
+</body>
+</html>

@@ -6,6 +6,7 @@ Base.extends("Responder", {
 	_constructor:function(res) {
 		this.res = res;
 		this.finished = false;
+		this.errorInfo = [];
 	},
 	getRes:function() {
 		return this.res;
@@ -38,6 +39,13 @@ Base.extends("Responder", {
 	redirect:function(url, delay) {
 		delay = (delay ? delay : 3);
 		this.res.setHeader("refresh", delay + ";url="+url);
+	},
+
+	addError:function(err) {
+		this.errorInfo.push(err);
+	},
+	getErrors:function() {
+		return this.errorInfo;
 	},
 
 	Ended:function() {

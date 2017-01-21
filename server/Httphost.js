@@ -33,11 +33,13 @@ var hostCommand = {
 	giveup:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			if (requestor.getMethod() == "GET") {
+				responder.addError("Not valid for 'GET' method.");
 				return later(safe(done));
 			}
 
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
+				responder.addError("Not valid token for logout.");
 				return later(safe(done));
 			}
 
@@ -54,6 +56,7 @@ var hostCommand = {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
+				responder.addError("Not valid token for file view.");
 				return later(safe(done));
 			}
 
@@ -61,6 +64,7 @@ var hostCommand = {
 			var fileKey = json.key ? json.key : "";
 			var files = $PersistanceManager.Files();
 			if (!files[fileKey]) {
+				responder.addError("Not valid file key.");
 				return later(safe(done));
 			}
 
@@ -76,6 +80,7 @@ var hostCommand = {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
+				responder.addError("Not valid token for main.");
 				return later(safe(done));
 			}
 
@@ -91,17 +96,20 @@ var hostCommand = {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
+				responder.addError("Not valid token for update.");
 				return later(safe(done));
 			}
 
 			var json = yield requestor.visitBodyJson(next);
 			if (!json) {
+				responder.addError("Not valid updating information.");
 				return later(safe(done));
 			}
 
 			var state = $PersistanceManager.State(obj.getSerial());
 			var fileKey = state.key;
 			if (!fileKey) {
+				responder.addError("Not valid file key.");
 				return later(safe(done));
 			}
 			state.fileDatas = (state.fileDatas ? state.fileDatas : {});
@@ -119,6 +127,7 @@ var hostCommand = {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
+				responder.addError("Not valid token for file add.");
 				return responder.respondJson({}, safe(done));
 			}
 
@@ -131,6 +140,7 @@ var hostCommand = {
 
 			console.log("upload:", info);
 			if (!info) {
+				responder.addError("Not valid file information.");
 				return later(safe(done));
 			}
 			var name = info.filename.match(/(.*)\.\w+?$/)[1]
@@ -154,6 +164,7 @@ var hostCommand = {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
+				responder.addError("Not valid token for file delete.");
 				return responder.respondJson({}, safe(done));
 			}
 
@@ -161,6 +172,7 @@ var hostCommand = {
 			var fileKey = json.key ? json.key : "";
 			var files = $PersistanceManager.Files();
 			if (!files[fileKey]) {
+				responder.addError("Not valid file key.");
 				return later(safe(done));
 			}
 
@@ -176,6 +188,7 @@ var hostCommand = {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
+				responder.addError("Not valid token for file rename.");
 				return responder.respondJson({}, safe(done));
 			}
 
@@ -183,6 +196,7 @@ var hostCommand = {
 			var fileKey = json.key ? json.key : "";
 			var files = $PersistanceManager.Files();
 			if (!files[fileKey]) {
+				responder.addError("Not valid file key.");
 				return later(safe(done));
 			}
 
@@ -196,6 +210,7 @@ var hostCommand = {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
+				responder.addError("Not valid token for file.");
 				return later(safe(done));
 			}
 
@@ -203,6 +218,7 @@ var hostCommand = {
 			var fileKey = state.key;
 			var files = $PersistanceManager.Files();
 			if (!files[fileKey]) {
+				responder.addError("Not valid file key.");
 				return later(safe(done));
 			}
 
@@ -307,6 +323,7 @@ Base.extends("Httphost", {
 			data = yield this.visitData(requestor, requestor.getPath(), null, next);
 
 			if (!data) {
+				responder.addError("Cannot find file.");
 				return later(safe(done));
 			}
 
@@ -319,10 +336,13 @@ Base.extends("Httphost", {
 	errorPage:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			console.log("Error loading '" + requestor.getPath() + "'!");
-			var data = yield $FileCacher.visitFile("/html/error.html", next);
+			var data = yield this.visitData(requestor, "/error.html", {
+				__proto__:this.InfoBase,
+				errors:responder.getErrors(),
+			}, next);
 
 			console.log("urlRoot:", this.InfoBase.urlRoot);
-			responder.redirect(this.InfoBase.urlRoot + "/", 1);
+			responder.redirect(this.InfoBase.urlRoot + "/", 3000);
 			responder.setType(".html");
 			responder.respondData(data, safe(done));
 		}, this);
