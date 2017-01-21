@@ -35,7 +35,7 @@ Base.extends("TemplateOutput", {
             safe(done)();
         });
     },
-    unifyBlocks:function() {
+    finish:function() {
         safe(this.done)(Buffer.concat(this.outBlocks));
     },
 });
@@ -44,27 +44,27 @@ StateSwitcher.extends("$TemplateParser", {
     _constructor:function() {
         this.parsedTemplates = {};
     },
-    parse:function(PageInfo, path, filegetter, done) {
+    parse:function(path, PageInfo, filegetter, done) {
         var parser = this.parsedTemplates[path];
         if (parser) {
-            later(silent, parser, PageInfo, safe(done));
+            later(silent, parser, PageInfo, filegetter, done);
         } else {
             $FileManager.visitFile(path, (data) => {
                 silent(() => {
-                    parser = this.doParse(data, filegetter);
+                    parser = this.doParse(data);
                 });
                 if (parser) {
                     if (this.enabled) {
                         this.parsedTemplates[path] = parser;
                     }
-                    silent(parser, PageInfo, done);
+                    silent(parser, PageInfo, filegetter, done);
                 } else {
                     safe(done)(null);
                 }
             });
         }
     },
-    doParse:function(data, filegetter) {
+    doParse:function(data) {
         var jsCode = "";
         var state = STATE_HTML;
         var begin = 0;
@@ -129,13 +129,13 @@ StateSwitcher.extends("$TemplateParser", {
             }
         }
 
-        jsCode += "__out__.unifyBlocks();\n";
+        jsCode += "__out__.finish();\n";
         jsCode += "});\n__next();\n";
 
         // get 'parser' closure
         //console.log("jsCode:\n", jsCode);
         var executor = new Function("PageInfo", "__out__", jsCode);
-        var parser = (PageInfo, done) => {
+        var parser = (PageInfo, filegetter, done) => {
             var __out__ = new TemplateOutput(data, filegetter, done);
             executor(PageInfo, __out__);
         };

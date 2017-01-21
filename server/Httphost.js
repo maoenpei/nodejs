@@ -343,7 +343,10 @@ Base.extends("Httphost", {
 						data = yield $FileCacher.visitFile(path, next);
 					}
 					if (!data) {
-						data = yield $TemplateParser.parse(infoBase, path + ".essp", filegetter, next);
+						console.log("path:", path);
+						path = path.replace(/\.(\w+)$/, ".essp.$1");
+						console.log("path:", path);
+						data = yield $TemplateParser.parse(path, infoBase, filegetter, next);
 						//console.log(path, "=>", data.toString());
 					}
 					safe(done)(data);

@@ -149,14 +149,14 @@ Global.coroutine = function(generator, self) {
 Global.later = function(fun) {
 	var args = Array.prototype.slice.call(arguments, 1);
 	setTimeout(() => {
-		fun.apply(null, args);
+		fun.apply(this, args);
 	}, 0);
 };
 
 Global.silent = function(fun) {
 	var args = Array.prototype.slice.call(arguments, 1);
 	try {
-		return fun.apply(null, args);
+		return fun.apply(this, args);
 	} catch(e) {
 		console.log(e);
 	}
