@@ -331,18 +331,26 @@ Base.extends("Httphost", {
 
 	visitData:function(requestor, path, infoBase, done) {
 		var next = coroutine(function*(){
-			var data = null;
-			path = "/html" + path;
-			if (!data){
-				data = yield $FileCacher.visitFile(path, next);
-			}
-			if (!data) {
-				infoBase = (infoBase ? infoBase : {
-					__proto__:this.InfoBase,
-					isMaster:(requestor.getUserAgent().match(/Windows/i) != null),
+			infoBase = (infoBase ? infoBase : {
+				__proto__:this.InfoBase,
+				isMaster:(requestor.getUserAgent().match(/Windows/i) != null),
+			});
+			var filegetter = (path, done) => {
+				var next = coroutine(function*() {
+					var data = null;
+					path = "/html" + path;
+					if (!data){
+						data = yield $FileCacher.visitFile(path, next);
+					}
+					if (!data) {
+						data = yield $TemplateParser.parse(infoBase, path + ".essp", filegetter, next);
+						//console.log(path, "=>", data.toString());
+					}
+					safe(done)(data);
 				});
-				data = yield $TemplateParser.parse(infoBase, path + ".essp", next);
+				next();
 			}
+			var data = yield filegetter(path, next);
 			safe(done)(data);
 		}, this);
 		next();

@@ -3,17 +3,22 @@ require("./Base");
 require("./StateSwitcher");
 require("./FileManager");
 
+var esspStart = stringToAscii("<")[0];
 var esspBegin = stringToAscii("<%es");
 var esspValue = stringToAscii("<%=");
+var esspInclude = stringToAscii("<%^");
 var esspEnd = stringToAscii("%>");
 
 var STATE_HTML = 0;
 var STATE_JS = 1;
 var STATE_VAL = 2;
+var STATE_INCLUDE = 3;
 
 Base.extends("TemplateOutput", {
-    _constructor:function(data) {
+    _constructor:function(data, filegetter, done) {
         this.data = data;
+        this.filegetter = filegetter;
+        this.done = done;
         this.outBlocks = [];
     },
     addSlice:function(start, end) {
@@ -22,8 +27,16 @@ Base.extends("TemplateOutput", {
     addVal:function(val) {
         this.outBlocks.push(Buffer.from(String(val)));
     },
+    include:function(path, done) {
+        safe(this.filegetter)("/" + path, (data) => {
+            if (data) {
+                this.outBlocks.push(data);
+            }
+            safe(done)();
+        });
+    },
     unifyBlocks:function() {
-        return Buffer.concat(this.outBlocks);
+        safe(this.done)(Buffer.concat(this.outBlocks));
     },
 });
 
@@ -31,58 +44,53 @@ StateSwitcher.extends("$TemplateParser", {
     _constructor:function() {
         this.parsedTemplates = {};
     },
-    parse:function(PageInfo, path, done) {
-        var finish = (parser) => {
-            var data = null;
-            try {
-                data = parser(PageInfo);
-            } catch (e) {
-                console.log(e);
-            }
-            safe(done)(data);
-        };
-
+    parse:function(PageInfo, path, filegetter, done) {
         var parser = this.parsedTemplates[path];
         if (parser) {
-            later(() => {finish(parser);});
+            later(silent, parser, PageInfo, safe(done));
         } else {
             $FileManager.visitFile(path, (data) => {
-                try {
-                    if (data) {
-                        parser = this.doParse(data);
-                    }
-                } catch (e) {
-                }
+                silent(() => {
+                    parser = this.doParse(data, filegetter);
+                });
                 if (parser) {
                     if (this.enabled) {
                         this.parsedTemplates[path] = parser;
                     }
-                    finish(parser);
+                    silent(parser, PageInfo, done);
                 } else {
                     safe(done)(null);
                 }
             });
         }
     },
-    doParse:function(data) {
+    doParse:function(data, filegetter) {
         var jsCode = "";
         var state = STATE_HTML;
         var begin = 0;
 
+        jsCode += "var __next = coroutine(function*(){\n";
         // Parse content
         for (var i = 0; i < data.length; ++i) {
             switch (state) {
                 case STATE_HTML:
-                    if (data[i] == esspBegin[0] && codeEqual(esspBegin, data, i)) {
-                        jsCode += "__out__.addSlice(" + begin + "," + i + ");\n";
-                        begin = i + esspBegin.length;
-                        i += esspBegin.length - 1;
-                        state = STATE_JS;
-                    } else if (data[i] == esspValue[0] && codeEqual(esspValue, data, i)) {
-                        jsCode += "__out__.addSlice(" + begin + "," + i + ");\n";
-                        begin = i + esspValue.length;
-                        i += esspValue.length - 1;
-                        state = STATE_VAL;
+                    if (data[i] == esspStart) {
+                        if (codeEqual(esspBegin, data, i)) {
+                            jsCode += "__out__.addSlice(" + begin + "," + i + ");\n";
+                            begin = i + esspBegin.length;
+                            i += esspBegin.length - 1;
+                            state = STATE_JS;
+                        } else if (codeEqual(esspValue, data, i)) {
+                            jsCode += "__out__.addSlice(" + begin + "," + i + ");\n";
+                            begin = i + esspValue.length;
+                            i += esspValue.length - 1;
+                            state = STATE_VAL;
+                        } else if (codeEqual(esspInclude, data, i)) {
+                            jsCode += "__out__.addSlice(" + begin + "," + i + ");\n";
+                            begin = i + esspInclude.length;
+                            i += esspInclude.length - 1;
+                            state = STATE_INCLUDE;
+                        }
                     }
                 break;
                 case STATE_JS:
@@ -101,6 +109,14 @@ StateSwitcher.extends("$TemplateParser", {
                         state = STATE_HTML;
                     }
                 break;
+                case STATE_INCLUDE:
+                    if (data[i] == esspEnd[0] && codeEqual(esspEnd, data, i)) {
+                        jsCode += "yield __out__.include('" + data.slice(begin, i).toString() + "', __next);\n";
+                        begin = i + esspEnd.length;
+                        i += esspEnd.length - 1;
+                        state = STATE_HTML;
+                    }
+                break;
             }
         }
 
@@ -113,13 +129,15 @@ StateSwitcher.extends("$TemplateParser", {
             }
         }
 
+        jsCode += "__out__.unifyBlocks();\n";
+        jsCode += "});\n__next();\n";
+
         // get 'parser' closure
-        console.log("jsCode:", jsCode);
+        //console.log("jsCode:\n", jsCode);
         var executor = new Function("PageInfo", "__out__", jsCode);
-        var parser = (PageInfo) => {
-            var __out__ = new TemplateOutput(data);
+        var parser = (PageInfo, done) => {
+            var __out__ = new TemplateOutput(data, filegetter, done);
             executor(PageInfo, __out__);
-            return __out__.unifyBlocks();
         };
         return parser;
     },

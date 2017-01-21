@@ -141,7 +141,7 @@ Base.extends("EventConnection", {
 
 Global.coroutine = function(generator, self) {
 	var g = generator.call(self);
-	return function(x) {
+	return (x) => {
 		g.next(x);
 	}
 };
@@ -152,6 +152,15 @@ Global.later = function(fun) {
 		fun.apply(null, args);
 	}, 0);
 };
+
+Global.silent = function(fun) {
+	var args = Array.prototype.slice.call(arguments, 1);
+	try {
+		return fun.apply(null, args);
+	} catch(e) {
+		console.log(e);
+	}
+}
 
 var tmpsafe = function(){};
 Global.safe = function(callback) {
