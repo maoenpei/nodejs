@@ -200,7 +200,7 @@ var hostCommand = {
 				return later(safe(done));
 			}
 
-			files[fileKey].dispName = json.name
+			files[fileKey].dispName = json.name;
 			yield $PersistanceManager.Commit(next);
 			responder.respondJson({}, safe(done));
 		}, this);
@@ -293,16 +293,12 @@ Base.extends("Httphost", {
 				var files = $PersistanceManager.Files();
 				if (fileKey && files[fileKey]) {
 					var saveData = state.fileDatas ? state.fileDatas[fileKey] : null;
-					data = yield this.visitData(requestor, "/content.html", {
-						__proto__:this.InfoBase,
-						key:fileKey,
-						data:(saveData ? saveData : {}),
-					}, next);
+					data = yield this.visitFile(requestor, fileKey, files[fileKey], saveData, next);
 				} else {
 					var serial = obj.getSerial();
 					data = yield this.visitData(requestor, "/main.html", {
 						__proto__:this.InfoBase,
-						files:$PersistanceManager.Files(),
+						files:files,
 						isMaster:(requestor.getUserAgent().match(/Windows/i) != null),
 						state:$PersistanceManager.State(serial),
 						serial:serial,
@@ -349,6 +345,26 @@ Base.extends("Httphost", {
 		next();
 	},
 
+	visitFile:function(requestor, fileKey, fileEntry, saveData, done) {
+		var next = coroutine(function*() {
+			var fName = "/" + fileEntry.fName;
+			var ext = fName.match(/(\.\w+)$/)[1];
+
+			var fileData = yield $FileCacher.visitFile("/files" + fName, next);
+			var PageInfo = {
+				__proto__:this.InfoBase,
+				key:fileKey,
+				ext:ext,
+				dispName:fileEntry.dispName,
+				saveData:(saveData ? saveData : {}),
+				fileData:fileData,
+			};
+
+			var data = yield this.visitData(requestor, "/content.html", PageInfo, next);
+			safe(done)(data);
+		}, this);
+		next();
+	},
 	visitData:function(requestor, path, infoBase, done) {
 		var next = coroutine(function*(){
 			infoBase = (infoBase ? infoBase : {

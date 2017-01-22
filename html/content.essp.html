@@ -1,16 +1,29 @@
 <html>
 <head>
     <%^head.html%>
-    <title>Content</title>
+    <title><%=PageInfo.dispName%> - Content</title>
     <script type="text/javascript" src="<%=PageInfo.urlRoot%>/content.js"></script>
 </head>
 <body>
     <div class="div_title_bar">
         <div class="div_back_main visit_label">返回菜单</div>
         <div class="div_back_top visit_label">回到顶部</div>
+        <div class="div_auto_scroll visit_label">滚动</div>
     </div>
-    <div class="div_iframe_container" scrollX="<%=PageInfo.data.scrollX%>" scrollY="<%=PageInfo.data.scrollY%>">
-        <iframe class="iframe_content" src="<%=PageInfo.urlRoot%>/file"></iframe>
+    <div class="div_iframe_container" v_scrollX="<%=PageInfo.saveData.scrollX%>" v_scrollY="<%=PageInfo.saveData.scrollY%>" v_Type="<%=PageInfo.ext%>">
+        <%es if (PageInfo.ext == '.txt') {%>
+            <div class="text_content">
+            <%es
+                var article = PageInfo.fileData.toString();
+                var lines = article.split("\n");
+                for (var i = 0; i < lines.length; ++i) {
+            %>
+                <%=lines[i]%><br/>
+            <%es }%>
+            </div>
+        <%es } else {%>
+            <iframe class="iframe_content" src="<%=PageInfo.urlRoot%>/file"></iframe>
+        <%es }%>
     </div>
 </body>
 </html>

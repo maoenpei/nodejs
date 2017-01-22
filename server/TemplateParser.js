@@ -44,10 +44,10 @@ StateSwitcher.extends("$TemplateParser", {
     _constructor:function() {
         this.parsedTemplates = {};
     },
-    parse:function(path, PageInfo, filegetter, done) {
+    ready:function(path, done) {
         var parser = this.parsedTemplates[path];
         if (parser) {
-            later(silent, parser, PageInfo, filegetter, done);
+            later(safe(done), parser);
         } else {
             $FileManager.visitFile(path, (data) => {
                 silent(() => {
@@ -57,12 +57,19 @@ StateSwitcher.extends("$TemplateParser", {
                     if (this.enabled) {
                         this.parsedTemplates[path] = parser;
                     }
-                    silent(parser, PageInfo, filegetter, done);
-                } else {
-                    safe(done)(null);
                 }
+                safe(done)(parser);
             });
         }
+    },
+    parse:function(path, PageInfo, filegetter, done) {
+        this.ready(path, (parser) => {
+            if (parser) {
+                silent(parser, PageInfo, filegetter, done);
+            } else {
+                safe(done)(null);
+            }
+        });
     },
     doParse:function(data) {
         var jsCode = "";

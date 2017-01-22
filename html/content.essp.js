@@ -21,16 +21,40 @@ $(function() {
         });
     });
 
-    var iwindow = $(".iframe_content")[0].contentWindow;
-    var scrollItem = isMobile ? $(".div_iframe_container") : $(iwindow);
+    var scrollItem = null;
+    var type = $(".div_iframe_container").attr("v_Type");
+    console.log("type:", type);
+    if (type == '.txt') {
+        scrollItem = $(".text_content");
+        scrollItem.ready(readyFunc);
+    } else {
+        var iwindow = $(".iframe_content")[0].contentWindow;
+        scrollItem = isMobile ? $(".div_iframe_container") : $(iwindow);
+        $(iwindow).load(readyFunc);
+    }
+
+    var speeds = [1];
+    var speedLevel = speeds.length;
+    var timer = null;
+    $(".div_auto_scroll").click(function() {
+        if (timer) {
+            clearInterval(timer);
+        }
+        speedLevel = (speedLevel + 1) % (speeds.length + 1);
+        if (speedLevel < speeds.length) {
+            timer = setInterval(function() {
+                var yPos = scrollItem.scrollTop();
+                scrollItem.scrollTop(yPos + speeds[speedLevel]);
+            }, 25);
+        }
+    });
     $(".div_back_top").click(function() {
         scrollItem.scrollLeft(0);
         scrollItem.scrollTop(0);
     });
-
-    var scrollX = parseInt($(".div_iframe_container").attr("scrollX"));
-    var scrollY = parseInt($(".div_iframe_container").attr("scrollY"));
-    $(iwindow).load(function() {
+    var scrollX = parseInt($(".div_iframe_container").attr("v_scrollX"));
+    var scrollY = parseInt($(".div_iframe_container").attr("v_scrollY"));
+    function readyFunc() {
         scrollItem.scrollLeft(scrollX);
         scrollItem.scrollTop(scrollY);
         setInterval(function() {
@@ -45,6 +69,6 @@ $(function() {
                 scrollY:String(scrollY),
             });
         }, 1000);
-    });
+    };
 });
 
