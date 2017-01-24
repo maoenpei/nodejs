@@ -11,7 +11,10 @@
         <div class="div_auto_scroll visit_label">滚动</div>
     </div>
     <div class="div_iframe_container" v_scrollX="<%=PageInfo.saveData.scrollX%>" v_scrollY="<%=PageInfo.saveData.scrollY%>" v_Type="<%=PageInfo.ext%>">
-        <%es if (PageInfo.ext == '.txt') {%>
+        <%es
+        switch (PageInfo.ext) {
+            case '.txt':
+        %>
             <div class="text_content">
             <%es
                 var article = PageInfo.fileData.toString();
@@ -21,9 +24,15 @@
                 <%=lines[i]%><br/>
             <%es }%>
             </div>
-        <%es } else {%>
+        <%es
+            break;
+            default:
+        %>
             <iframe class="iframe_content" src="<%=PageInfo.urlRoot%>/file"></iframe>
-        <%es }%>
+        <%es
+            break;
+        }
+        %>
     </div>
 </body>
 </html>
