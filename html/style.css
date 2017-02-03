@@ -117,6 +117,7 @@ body{
 
 .text_content{
     overflow:scroll;
+    white-space: pre-line;
     width:100%;
     height:100%;
     border:0px;

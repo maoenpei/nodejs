@@ -331,7 +331,7 @@ Base.extends("Httphost", {
 	},
 	errorPage:function(requestor, responder, done) {
 		var next = coroutine(function*() {
-			console.log("Error loading '" + requestor.getPath() + "'!");
+			console.log("Error loading '" + requestor.getPath() + "':\n" + responder.getErrors());
 			var data = yield this.visitData(requestor, "/error.html", {
 				__proto__:this.InfoBase,
 				errors:responder.getErrors(),

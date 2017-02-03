@@ -15,15 +15,7 @@
         switch (PageInfo.ext) {
             case '.txt':
         %>
-            <div class="text_content">
-            <%es
-                var article = PageInfo.fileData.toString();
-                var lines = article.split("\n");
-                for (var i = 0; i < lines.length; ++i) {
-            %>
-                <%=lines[i]%><br/>
-            <%es }%>
-            </div>
+            <div class="text_content"><%=PageInfo.fileData.toString()%></div>
         <%es
             break;
             default:
