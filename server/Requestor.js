@@ -15,11 +15,12 @@ Base.extends("Requestor", {
         this.parsedUrl = parsedUrl;
         this.parsedPath = parsedPath;
         this.cmd = (parsedPath.dir == "/" && parsedPath.ext == "" ? parsedPath.name : null);
-        console.log("pathname:", parsedUrl.pathname, "cmd:", this.cmd);
+        console.log("\npathname:", parsedUrl.pathname, "cmd:", this.cmd);
 
         this.req = req;
         this.parsedQuery = null;
         this.cookies = null;
+        this.range = null;
         this.method = req.method.toUpperCase();
     },
     getReq:function() {
@@ -63,6 +64,21 @@ Base.extends("Requestor", {
     },
     getMethod:function() {
         return this.method;
+    },
+    getRange:function() {
+        if (!this.range && this.req.headers.range) {
+            var rangeStr = this.req.headers.range;
+            var divide = rangeStr.match(/^bytes=([0-9]+)\-([0-9]*)$/);
+            if (divide) {
+                this.range = {start:parseInt(divide[1]),};
+                if (divide[2] == "") {
+                    this.range.end = -1;
+                } else {
+                    this.range.end = parseInt(divide[2]);
+                }
+            }
+        }
+        return this.range;
     },
 
     visitBody:function(done) {

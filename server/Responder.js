@@ -13,7 +13,14 @@ Base.extends("Responder", {
 	},
 
 	respondData:function(data, done) {
-		this.res.end(data, safe(done));
+		if (this.range) {
+			var start = this.range.start;
+			var end = this.range.end == -1 ? data.length - 1 : this.range.end;
+			this.res.setHeader("Content-Range", "bytes " + start + "-" + end + "/" + data.length);
+			this.res.end(data.slice(start, end + 1), safe(done));
+		} else {
+			this.res.end(data, safe(done));
+		}
 		this.finished = true;
 	},
 	respondJson:function(json, done) {
@@ -24,6 +31,9 @@ Base.extends("Responder", {
 		var responderType = $PersistanceManager.ExtensionType(ext);
 		responderType = (responderType ? responderType : "text/plain");
 		this.res.setHeader("Content-Type", responderType + "; charset=utf-8");
+	},
+	setRange:function(range) {
+		this.range = range;
 	},
 	setCookies:function(cookies) {
 		var cookieData = [];

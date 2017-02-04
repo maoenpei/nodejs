@@ -15,12 +15,12 @@
         switch (PageInfo.ext) {
             case '.txt':
         %>
-            <div class="text_content"><%=PageInfo.fileData.toString()%></div>
+            <div class="text_content"><%=PageInfo.fileData.toString().replace(/\</g, '&lt;')%></div>
         <%es
             break;
             default:
         %>
-            <iframe class="iframe_content" src="<%=PageInfo.urlRoot%>/file"></iframe>
+            <iframe class="iframe_content" src="<%=PageInfo.urlRoot%>/file?key=<%=PageInfo.key%>"></iframe>
         <%es
             break;
         }

@@ -17,12 +17,24 @@ var sendAjax = function(url, postData, callback) {
         url:url,
         data:JSON.stringify(postData),
         success:safe(callback),
+        error:function() {
+            window.location.reload();
+        }
     });
 }
 
 var sendAjaxJSON = function(url, postData, callback) {
     sendAjax(url, postData, function (returnData) {
-        safe(callback)(JSON.parse(returnData));
+        var json = null;
+        try {
+            json = JSON.parse(returnData);
+        } catch(e) {
+        }
+        if (json) {
+            safe(callback)(json);
+        } else {
+            window.location.reload();
+        }
     });
 }
 

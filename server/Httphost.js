@@ -216,6 +216,12 @@ var hostCommand = {
 
 			var state = $PersistanceManager.State(obj.getSerial());
 			var fileKey = state.key;
+			var targetKey = requestor.getQuery().key;
+			if (targetKey != fileKey) {
+				responder.addError("Target key not in the correct state.");
+				return later(safe(done));
+			}
+
 			var files = $PersistanceManager.Files();
 			if (!files[fileKey]) {
 				responder.addError("Not valid file key.");
@@ -251,6 +257,12 @@ Base.extends("Httphost", {
 	},
 	visitPage:function(requestor, responder, done) {
 		var next = coroutine(function*() {
+
+			// range setting
+			var range = requestor.getRange();
+			if (range) {
+				responder.setRange(range);
+			}
 
 			//main
 			if (requestor.getPath() == "/") {
@@ -354,7 +366,8 @@ Base.extends("Httphost", {
 			var PageInfo = {
 				__proto__:this.InfoBase,
 				key:fileKey,
-				ext:ext,
+				ext:ext.toLowerCase(),
+				responderType:$PersistanceManager.ExtensionType(ext),
 				dispName:fileEntry.dispName,
 				saveData:(saveData ? saveData : {}),
 				fileData:fileData,

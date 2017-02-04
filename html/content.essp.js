@@ -22,16 +22,22 @@ $(function() {
     });
 
     var scrollItem = null;
-    var type = $(".div_iframe_container").attr("v_Type");
-    console.log("type:", type);
-    if (type == '.txt') {
+    // try different types
+    do {
         scrollItem = $(".text_content");
-        scrollItem.ready(readyFunc);
-    } else {
-        var iwindow = $(".iframe_content")[0].contentWindow;
-        scrollItem = isMobile ? $(".div_iframe_container") : $(iwindow);
-        $(iwindow).load(readyFunc);
-    }
+        if (scrollItem.length > 0) {
+            scrollItem.ready(readyFunc);
+            break;
+        }
+        var iFrame = $(".iframe_content");
+        if (iFrame.length > 0) {
+            var iwindow = iFrame[0].contentWindow;
+            scrollItem = isMobile ? $(".div_iframe_container") : $(iwindow);
+            $(iwindow).load(readyFunc);
+            break;
+        }
+        return;
+    } while(0);
 
     var speeds = [1];
     var speedLevel = speeds.length;
