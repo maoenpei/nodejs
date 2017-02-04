@@ -10,9 +10,9 @@ $(function() {
     });
     $(".div_edit_file").click(function(){
         $(".div_file_panel").toggleClass("on_edit");
-        localStorage.editing = $(".div_file_panel").hasClass("on_edit");
+        localStorage.editing = String($(".div_file_panel").hasClass("on_edit"));
     })
-    if (localStorage.editing) {
+    if (localStorage.editing == "true") {
         $(".div_file_panel").addClass("on_edit");
     }
     $(".div_log_off").click(function () {
