@@ -8,9 +8,13 @@ $(function() {
             window.location.reload();
         });
     });
-    $(".div_delete_file").click(function(){
+    $(".div_edit_file").click(function(){
         $(".div_file_panel").toggleClass("on_edit");
+        localStorage.editing = $(".div_file_panel").hasClass("on_edit");
     })
+    if (localStorage.editing) {
+        $(".div_file_panel").addClass("on_edit");
+    }
     $(".div_log_off").click(function () {
         requestPost("giveup", {}, function (json) {
             delete localStorage.serial_string;
