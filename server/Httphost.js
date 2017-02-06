@@ -305,7 +305,7 @@ Base.extends("Httphost", {
 				var files = $PersistanceManager.Files();
 				if (fileKey && files[fileKey]) {
 					var saveData = state.fileDatas ? state.fileDatas[fileKey] : null;
-					data = yield this.visitFile(requestor, fileKey, files[fileKey], saveData, next);
+					data = yield this.visitFile(requestor, obj, fileKey, files[fileKey], saveData, next);
 				} else {
 					var serial = obj.getSerial();
 					data = yield this.visitData(requestor, "/main.html", {
@@ -357,7 +357,7 @@ Base.extends("Httphost", {
 		next();
 	},
 
-	visitFile:function(requestor, fileKey, fileEntry, saveData, done) {
+	visitFile:function(requestor, obj, fileKey, fileEntry, saveData, done) {
 		var next = coroutine(function*() {
 			var fName = "/" + fileEntry.fName;
 			var ext = fName.match(/(\.\w+)$/)[1];
@@ -367,6 +367,7 @@ Base.extends("Httphost", {
 				__proto__:this.InfoBase,
 				key:fileKey,
 				ext:ext.toLowerCase(),
+				token:obj.getToken(),
 				responderType:$PersistanceManager.ExtensionType(ext),
 				dispName:fileEntry.dispName,
 				saveData:(saveData ? saveData : {}),
@@ -409,16 +410,18 @@ Base.extends("Httphost", {
 	},
 	tokenValid:function(requestor, done) {
 		var next = coroutine(function*() {
+			var query = requestor.getQuery();
 			var cookies = requestor.getCookies();
 			var token = (cookies ? cookies.token : null);
+			token = (token ? token : query.token);
 			var obj = $LoginManager.query(token);
 			if (!obj || obj.checkExpired()) {
 				$LoginManager.cancel(token);
-				return later(safe(done), null);
+				return safe(done)(null);
 			}
-			return later(safe(done), obj);
+			return safe(done)(obj);
 		}, this);
-		next();
+		later(next);
 	},
 
 	onCommand:function(cmd) {
