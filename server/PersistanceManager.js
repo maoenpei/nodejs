@@ -32,9 +32,8 @@ Base.extends("$PersistanceManager", {
             }
 
             console.log("loading PersistanceManager:", this.states, this.files);
-            later(safe(done));
+            safe(done)();
         }, this);
-        next();
     },
     availableKeys:function(done) {
         $FileManager.parseFile("/data/keys.in", (line) => {
@@ -74,8 +73,7 @@ Base.extends("$PersistanceManager", {
         var next = coroutine(function*(){
             yield $FileManager.saveFile("/data/States.d", JSON.stringify(this.states), next);
             yield $FileManager.saveFile("/data/Files.d", JSON.stringify(this.files), next);
-            later(safe(done));
+            safe(done)();
         }, this);
-        next();
     },
 });

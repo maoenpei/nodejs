@@ -141,9 +141,11 @@ Base.extends("EventConnection", {
 
 Global.coroutine = function(generator, self) {
 	var g = generator.call(self);
-	return (x) => {
+	var next = (x) => {
 		g.next(x);
 	}
+	later(next)
+	return next;
 };
 
 Global.later = function(fun) {

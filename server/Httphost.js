@@ -28,19 +28,18 @@ var hostCommand = {
 				}, safe(done));
 			}
 		}, this);
-		next();
 	},
 	giveup:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			if (requestor.getMethod() == "GET") {
 				responder.addError("Not valid for 'GET' method.");
-				return later(safe(done));
+				return safe(done)();
 			}
 
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
 				responder.addError("Not valid token for logout.");
-				return later(safe(done));
+				return safe(done)();
 			}
 
 			var json = yield requestor.visitBodyJson(next);
@@ -50,14 +49,13 @@ var hostCommand = {
 			$LoginManager.logoff(obj.getToken());
 			responder.respondJson({}, safe(done));
 		}, this);
-		next();
 	},
 	view:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
 				responder.addError("Not valid token for file view.");
-				return later(safe(done));
+				return safe(done)();
 			}
 
 			var json = yield requestor.visitBodyJson(next);
@@ -65,7 +63,7 @@ var hostCommand = {
 			var files = $PersistanceManager.Files();
 			if (!files[fileKey]) {
 				responder.addError("Not valid file key.");
-				return later(safe(done));
+				return safe(done)();
 			}
 
 			var state = $PersistanceManager.State(obj.getSerial());
@@ -74,14 +72,13 @@ var hostCommand = {
 
 			responder.respondJson({}, safe(done));
 		}, this);
-		next();
 	},
 	backmain:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
 				responder.addError("Not valid token for main.");
-				return later(safe(done));
+				return safe(done)();
 			}
 
 			var state = $PersistanceManager.State(obj.getSerial());
@@ -90,27 +87,26 @@ var hostCommand = {
 
 			responder.respondJson({}, safe(done));
 		}, this);
-		next();
 	},
 	pageupdate:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
 				responder.addError("Not valid token for update.");
-				return later(safe(done));
+				return safe(done)();
 			}
 
 			var json = yield requestor.visitBodyJson(next);
 			if (!json) {
 				responder.addError("Not valid updating information.");
-				return later(safe(done));
+				return safe(done)();
 			}
 
 			var state = $PersistanceManager.State(obj.getSerial());
 			var fileKey = state.key;
 			if (!fileKey) {
 				responder.addError("Not valid file key.");
-				return later(safe(done));
+				return safe(done)();
 			}
 			state.fileDatas = (state.fileDatas ? state.fileDatas : {});
 			state.fileDatas[fileKey] = (state.fileDatas[fileKey] ? state.fileDatas[fileKey] : {});
@@ -121,7 +117,6 @@ var hostCommand = {
 
 			responder.respondJson({}, safe(done));
 		}, this);
-		next();
 	},
 	addfile:function(requestor, responder, done) {
 		var next = coroutine(function*() {
@@ -141,7 +136,7 @@ var hostCommand = {
 			console.log("upload:", info);
 			if (!info) {
 				responder.addError("Not valid file information.");
-				return later(safe(done));
+				return safe(done)();
 			}
 			var name = info.filename.match(/(.*)\.\w+?$/)[1]
 			var ext = info.filename.substr(name.length);
@@ -158,7 +153,6 @@ var hostCommand = {
 			yield $PersistanceManager.Commit(next);
 			responder.respondJson({key:key, name:name, ext:ext}, safe(done));
 		}, this);
-		next();
 	},
 	delfile:function(requestor, responder, done) {
 		var next = coroutine(function*() {
@@ -173,7 +167,7 @@ var hostCommand = {
 			var files = $PersistanceManager.Files();
 			if (!files[fileKey]) {
 				responder.addError("Not valid file key.");
-				return later(safe(done));
+				return safe(done)();
 			}
 
 			var fileName = files[fileKey].fName;
@@ -182,7 +176,6 @@ var hostCommand = {
 			yield $PersistanceManager.Commit(next);
 			responder.respondJson({}, safe(done));
 		}, this);
-		next();
 	},
 	renamefile:function(requestor, responder, done) {
 		var next = coroutine(function*() {
@@ -197,21 +190,20 @@ var hostCommand = {
 			var files = $PersistanceManager.Files();
 			if (!files[fileKey]) {
 				responder.addError("Not valid file key.");
-				return later(safe(done));
+				return safe(done)();
 			}
 
 			files[fileKey].dispName = json.name;
 			yield $PersistanceManager.Commit(next);
 			responder.respondJson({}, safe(done));
 		}, this);
-		next();
 	},
 	file:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
 				responder.addError("Not valid token for file.");
-				return later(safe(done));
+				return safe(done)();
 			}
 
 			var state = $PersistanceManager.State(obj.getSerial());
@@ -219,13 +211,13 @@ var hostCommand = {
 			var targetKey = requestor.getQuery().key;
 			if (targetKey != fileKey) {
 				responder.addError("Target key not in the correct state.");
-				return later(safe(done));
+				return safe(done)();
 			}
 
 			var files = $PersistanceManager.Files();
 			if (!files[fileKey]) {
 				responder.addError("Not valid file key.");
-				return later(safe(done));
+				return safe(done)();
 			}
 
 			console.log("fileKey:", fileKey);
@@ -236,7 +228,6 @@ var hostCommand = {
 			responder.setType(ext);
 			responder.respondData(data, safe(done));
 		}, this);
-		next();
 	},
 };
 
@@ -290,7 +281,6 @@ Base.extends("Httphost", {
 				this.errorPage(requestor, responder, safe(done));
 			}
 		}, this);
-		next();
 	},
 	mainPage:function(requestor, responder, done) {
 		var next = coroutine(function*() {
@@ -321,7 +311,6 @@ Base.extends("Httphost", {
 			responder.setType(".html");
 			responder.respondData(data, safe(done));
 		}, this);
-		next();
 	},
 	commonPage:function(requestor, responder, done) {
 		var next = coroutine(function*(){
@@ -332,14 +321,13 @@ Base.extends("Httphost", {
 
 			if (!data) {
 				responder.addError("Cannot find file.");
-				return later(safe(done));
+				return safe(done);
 			}
 
 			// respond
 			responder.setType(ext);
 			responder.respondData(data, safe(done));
 		}, this);
-		next();
 	},
 	errorPage:function(requestor, responder, done) {
 		var next = coroutine(function*() {
@@ -354,7 +342,6 @@ Base.extends("Httphost", {
 			responder.setType(".html");
 			responder.respondData(data, safe(done));
 		}, this);
-		next();
 	},
 
 	visitFile:function(requestor, obj, fileKey, fileEntry, saveData, done) {
@@ -377,7 +364,6 @@ Base.extends("Httphost", {
 			var data = yield this.visitData(requestor, "/content.html", PageInfo, next);
 			safe(done)(data);
 		}, this);
-		next();
 	},
 	visitData:function(requestor, path, infoBase, done) {
 		var next = coroutine(function*(){
@@ -401,12 +387,10 @@ Base.extends("Httphost", {
 					}
 					safe(done)(data);
 				});
-				next();
 			}
 			var data = yield filegetter(path, next);
 			safe(done)(data);
 		}, this);
-		next();
 	},
 	tokenValid:function(requestor, done) {
 		var next = coroutine(function*() {
@@ -421,7 +405,6 @@ Base.extends("Httphost", {
 			}
 			return safe(done)(obj);
 		}, this);
-		later(next);
 	},
 
 	onCommand:function(cmd) {

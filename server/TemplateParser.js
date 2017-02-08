@@ -29,6 +29,7 @@ Base.extends("TemplateOutput", {
     },
     include:function(path, done) {
         safe(this.filegetter)("/" + path, (data) => {
+            //console.log("data:", data.toString());
             if (data) {
                 this.outBlocks.push(data);
             }
@@ -137,7 +138,7 @@ StateSwitcher.extends("$TemplateParser", {
         }
 
         jsCode += "__out__.finish();\n";
-        jsCode += "});\n__next();\n";
+        jsCode += "});\n";
 
         // get 'parser' closure
         //console.log("jsCode:\n", jsCode);
