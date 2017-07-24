@@ -2,5 +2,6 @@ files
 data/States.d
 data/Files.d
 data/keys.in
+data/pwd.in
 nohup.out
 run.sh

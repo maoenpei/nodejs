@@ -6,6 +6,7 @@ Base.extends("$PersistanceManager", {
     _constructor:function() {
         this.extMapping = {};
         this.states = {};
+        this.passwords = {};
         this.files = {};
     },
     initFiles:function(done) {
@@ -21,10 +22,11 @@ Base.extends("$PersistanceManager", {
                 this.states = JSON.parse(jsonStates);
             }
 
-            yield $FileManager.parseFile("/data/keys.in", (line) => {
-                this.states[line] = {};
+            yield $PersistanceManager.availableKeys(next);
+
+            yield $FileManager.parseFile("/data/pwd.in", (line) => {
+                this.passwords[line] = true;
             }, next);
-            yield $FileManager.saveFile("/data/keys.in", Buffer.alloc(0), next);
 
             var jsonFiles = yield $FileManager.visitFile("/data/Files.d", next);
             if (jsonFiles) {
@@ -50,8 +52,8 @@ Base.extends("$PersistanceManager", {
         return this.extMapping[ext.toLowerCase()];
     },
     Serial:function(serial) {
-        if (this.states[serial]) {
-            var saveData = this.states[serial];
+        if (this.states[serial] || this.passwords[serial]) {
+            var saveData = (this.passwords[serial] ? {} : this.states[serial]);
             delete this.states[serial];
             var newSerial = "";
             for (var i = 0; i < 4 || this.states[newSerial]; ++i) {

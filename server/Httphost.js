@@ -29,6 +29,32 @@ var hostCommand = {
 			}
 		}, this);
 	},
+	gopage:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			if (requestor.getMethod() == "GET") {
+				responder.addError("Not valid for 'GET' method.");
+				return safe(done)();
+			}
+
+			var obj = yield this.tokenValid(requestor, next);
+			if (!obj) {
+				responder.addError("Not valid token for logout.");
+				return safe(done)();
+			}
+
+			var json = yield requestor.visitBodyJson(next);
+			if (!json) {
+				responder.addError("Not valid updating information.");
+				return safe(done)();
+			}
+
+			var state = $PersistanceManager.State(obj.getSerial());
+			state.pageto = json.pageto;
+			yield $PersistanceManager.Commit(next);
+
+			responder.respondJson({}, safe(done));
+		}, this);
+	},
 	giveup:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			if (requestor.getMethod() == "GET") {
@@ -43,6 +69,11 @@ var hostCommand = {
 			}
 
 			var json = yield requestor.visitBodyJson(next);
+			if (!json) {
+				responder.addError("Not valid updating information.");
+				return safe(done)();
+			}
+
 			$PersistanceManager.Dismiss(obj.getSerial());
 			yield $PersistanceManager.Commit(next);
 
@@ -59,6 +90,11 @@ var hostCommand = {
 			}
 
 			var json = yield requestor.visitBodyJson(next);
+			if (!json) {
+				responder.addError("Not valid updating information.");
+				return safe(done)();
+			}
+
 			var fileKey = json.key ? json.key : "";
 			var files = $PersistanceManager.Files();
 			if (!files[fileKey]) {
@@ -163,6 +199,11 @@ var hostCommand = {
 			}
 
 			var json = yield requestor.visitBodyJson(next);
+			if (!json) {
+				responder.addError("Not valid updating information.");
+				return safe(done)();
+			}
+
 			var fileKey = json.key ? json.key : "";
 			var files = $PersistanceManager.Files();
 			if (!files[fileKey]) {
@@ -186,6 +227,11 @@ var hostCommand = {
 			}
 
 			var json = yield requestor.visitBodyJson(next);
+			if (!json) {
+				responder.addError("Not valid updating information.");
+				return safe(done)();
+			}
+
 			var fileKey = json.key ? json.key : "";
 			var files = $PersistanceManager.Files();
 			if (!files[fileKey]) {
@@ -298,14 +344,21 @@ Base.extends("Httphost", {
 					data = yield this.visitFile(requestor, obj, fileKey, files[fileKey], saveData, next);
 				} else {
 					var serial = obj.getSerial();
-					data = yield this.visitData(requestor, "/main.html", {
+					data = yield this.visitData(requestor, "/" + state.pageto + ".html", {
 						__proto__:this.InfoBase,
 						files:files,
 						isMaster:(requestor.getUserAgent().match(/Windows/i) != null),
 						state:$PersistanceManager.State(serial),
 						serial:serial,
 					}, next);
+					if (!data) {
+						responder.addError("Cannot find file:'" + state.pageto + "'");
+					}
 				}
+			}
+
+			if (!data) {
+				return safe(done)();
 			}
 
 			responder.setType(".html");
@@ -321,7 +374,7 @@ Base.extends("Httphost", {
 
 			if (!data) {
 				responder.addError("Cannot find file.");
-				return safe(done);
+				return safe(done)();
 			}
 
 			// respond

@@ -6,9 +6,12 @@ $(function() {
         requestPost("exchange", {serial:serial}, function(json) {
             if (json.serial) {
                 localStorage.serial_string = json.serial;
-                return true;
+                requestPost("gopage", {pageto:"main"}, function(json) {
+                    return true;
+                });
+            } else {
+                safe(failed)();
             }
-            safe(failed)();
         });
     }
 

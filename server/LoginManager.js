@@ -25,7 +25,7 @@ Base.extends("Login", {
         return false;
     },
     updateTime:function() {
-        
+        this.expire = new Date().getTime() + expirePeriod;
     },
 });
 
