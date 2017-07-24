@@ -51,7 +51,7 @@ $(function() {
             timer = setInterval(function() {
                 var yPos = scrollItem.scrollTop();
                 scrollItem.scrollTop(yPos + speeds[speedLevel]);
-            }, 25);
+            }, 50);
         }
     });
     $(".div_back_top").click(function() {

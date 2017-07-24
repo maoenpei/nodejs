@@ -22,6 +22,8 @@ body{
 }
 .div_bottom_bar{
     text-align: right;
+    padding-left: 66%;
+    word-break: break-all;
 }
 .div_file_panel,.input_edit_tag{
     font-size:0.8rem;
