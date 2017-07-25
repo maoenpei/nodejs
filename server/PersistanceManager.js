@@ -24,10 +24,6 @@ Base.extends("$PersistanceManager", {
 
             yield $PersistanceManager.availableKeys(next);
 
-            yield $FileManager.parseFile("/data/pwd.in", (line) => {
-                this.passwords[line] = true;
-            }, next);
-
             var jsonFiles = yield $FileManager.visitFile("/data/Files.d", next);
             if (jsonFiles) {
                 this.files = JSON.parse(jsonFiles);
@@ -41,7 +37,12 @@ Base.extends("$PersistanceManager", {
         $FileManager.parseFile("/data/keys.in", (line) => {
             this.states[line] = {};
         }, () => {
-            $FileManager.saveFile("/data/keys.in", Buffer.alloc(0), safe(done));
+            $FileManager.saveFile("/data/keys.in", Buffer.alloc(0), () => {
+                this.passwords = {};
+                $FileManager.parseFile("/data/pwd.in", (line) => {
+                    this.passwords[line] = true;
+                }, safe(done));
+            });
         });
     },
 
