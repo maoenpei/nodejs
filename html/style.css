@@ -28,14 +28,14 @@ body{
 .div_file_panel,.input_edit_tag{
     font-size:0.8rem;
 }
-.div_file_item{
+.div_race_item{
     padding:0.5rem 1rem;
     position:relative;
 }
-.div_file_item:nth-child(2n+1){
+.div_race_item:nth-child(2n+1){
     background-color:#e0e0e0;
 }
-.div_file_item:nth-child(2n){
+.div_race_item:nth-child(2n){
     background-color:#eee;
 }
 
@@ -52,11 +52,8 @@ body{
 .div_rename_tag{
     right:1rem;
 }
-.on_edit .div_file_item{
+.on_edit .div_race_item{
     padding-right:3rem;
-}
-.on_edit .div_file_item_pc{
-    padding-left:3rem;
 }
 .on_edit .div_delete_tag,.on_edit .div_rename_tag{
     visibility:visible;
@@ -130,4 +127,27 @@ body{
 .video_content{
     width:100%;
     height:100%;
+}
+
+.star_row_div{
+    background-color:#888;
+    padding:5px;
+}
+
+.star_row_title{
+    color: #ee0;
+}
+
+.player_item{
+    padding:3px;
+}
+
+.player_image{
+    max-width:30%;
+    vertical-align: bottom;
+}
+
+.player_text_div{
+    display:inline-block;
+    vertical-align: bottom;
 }

@@ -64,7 +64,10 @@ var uploadFile = function(url, callback) {
             data:formData,
             processData:false,
             contentType:false,
-            success:callback,
+            success:function(result) {
+                var json = JSON.parse(result);
+                callback(json);
+            },
         });
     });
     fileLoader.click();

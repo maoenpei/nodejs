@@ -8,6 +8,7 @@ Base.extends("$PersistanceManager", {
         this.states = {};
         this.passwords = {};
         this.files = {};
+        this.logicdb = {};
     },
     initFiles:function(done) {
         var next = coroutine(function*() {
@@ -29,6 +30,11 @@ Base.extends("$PersistanceManager", {
                 this.files = JSON.parse(jsonFiles);
             }
 
+            var jsonLogic = yield $FileManager.visitFile("/data/Logic.d", next);
+            if (jsonLogic) {
+                this.logicdb = JSON.parse(jsonLogic);
+            }
+
             console.log("loading PersistanceManager:", this.states, this.files);
             safe(done)();
         }, this);
@@ -48,6 +54,9 @@ Base.extends("$PersistanceManager", {
 
     Files:function() {
         return this.files;
+    },
+    Logic:function() {
+        return this.logicdb;
     },
     ExtensionType:function(ext) {
         return this.extMapping[ext.toLowerCase()];
@@ -76,6 +85,7 @@ Base.extends("$PersistanceManager", {
         var next = coroutine(function*(){
             yield $FileManager.saveFile("/data/States.d", JSON.stringify(this.states), next);
             yield $FileManager.saveFile("/data/Files.d", JSON.stringify(this.files), next);
+            yield $FileManager.saveFile("/data/Logic.d", JSON.stringify(this.logicdb), next);
             safe(done)();
         }, this);
     },

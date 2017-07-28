@@ -1,0 +1,29 @@
+<html>
+<head>
+    <%^head.html%>
+    <title>Main</title>
+    <script type="text/javascript" src="<%=PageInfo.urlRoot%>/newplayer.js"></script>
+</head>
+<body>
+    <div class="div_title_bar">
+        <div class="div_go_back visit_label">返回</div>
+        <div class="div_go_submit visit_label">确认</div>
+    </div>
+    <%es
+    var race = PageInfo.pagearg.race;
+    var star = PageInfo.pagearg.star;
+    var player = PageInfo.getPlayer();
+    %>
+    <script type="text/javascript">
+        g_race = <%=race%>;
+        g_star = <%=star%>;
+        g_imageKey = <%=(player ? "'" + player.imageKey + "'" : null)%>;
+    </script>
+    输入名字：<input type="text" class="input_name_text" value="<%=(player ? player.name : '')%>"/><br/>
+    输入战力：<input type="text" class="input_power_text" value="<%=(player ? player.power : '')%>"/><br/>
+    <div class="div_add_image visit_label">上传图片</div>
+    <image class="image_container" style="width:100%" src="<%=(player ? PageInfo.urlRoot + '/file?key=' + player.imageKey : '')%>" />
+    <%es
+    %>
+</body>
+</html>

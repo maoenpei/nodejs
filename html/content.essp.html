@@ -11,11 +11,7 @@
     var isPlayer = isVideo || isAudio;
 %>
     <div class="div_title_bar">
-        <div class="div_back_main visit_label">返回菜单</div>
-        <%es if (!isPlayer) {%>
-            <div class="div_back_top visit_label">回到顶部</div>
-            <div class="div_auto_scroll visit_label">滚动</div>
-        <%es }%>
+        <div class="div_back_main visit_label">返回</div>
     </div>
     <div class="div_iframe_container" v_scrollX="<%=PageInfo.saveData.scrollX%>" v_scrollY="<%=PageInfo.saveData.scrollY%>" v_Type="<%=PageInfo.ext%>">
         <%es if (isVideo) { %>

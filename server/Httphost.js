@@ -50,6 +50,7 @@ var hostCommand = {
 
 			var state = $PersistanceManager.State(obj.getSerial());
 			state.pageto = json.pageto;
+			state.pagearg = (json.pagearg ? json.pagearg : null);
 			yield $PersistanceManager.Commit(next);
 
 			responder.respondJson({}, safe(done));
@@ -185,8 +186,8 @@ var hostCommand = {
 				key = rkey();
 			}
 			files[key] = {dispName:name, fName:fileName};
-
 			yield $PersistanceManager.Commit(next);
+
 			responder.respondJson({key:key, name:name, ext:ext}, safe(done));
 		}, this);
 	},
@@ -215,6 +216,7 @@ var hostCommand = {
 			delete files[fileKey];
 			yield $FileManager.deleteFile("/files/" + fileName, next);
 			yield $PersistanceManager.Commit(next);
+
 			responder.respondJson({}, safe(done));
 		}, this);
 	},
@@ -241,6 +243,7 @@ var hostCommand = {
 
 			files[fileKey].dispName = json.name;
 			yield $PersistanceManager.Commit(next);
+
 			responder.respondJson({}, safe(done));
 		}, this);
 	},
@@ -252,27 +255,50 @@ var hostCommand = {
 				return safe(done)();
 			}
 
-			var state = $PersistanceManager.State(obj.getSerial());
-			var fileKey = state.key;
 			var targetKey = requestor.getQuery().key;
+			/*var state = $PersistanceManager.State(obj.getSerial());
+			var fileKey = state.key;
 			if (targetKey != fileKey) {
 				responder.addError("Target key not in the correct state.");
 				return safe(done)();
-			}
+			}*/
 
 			var files = $PersistanceManager.Files();
-			if (!files[fileKey]) {
+			if (!files[targetKey]) {
 				responder.addError("Not valid file key.");
 				return safe(done)();
 			}
 
-			console.log("fileKey:", fileKey);
-			var fName = "/" + files[fileKey].fName;
+			console.log("targetKey:", targetKey);
+			var fName = "/" + files[targetKey].fName;
 			var ext = fName.match(/(\.\w+)$/)[1];
 			var data = yield $FileCacher.visitFile("/files" + fName, next);
 
 			responder.setType(ext);
 			responder.respondData(data, safe(done));
+		}, this);
+	},
+	addplayer:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			var obj = yield this.tokenValid(requestor, next);
+			if (!obj) {
+				responder.addError("Not valid token for file.");
+				return safe(done)();
+			}
+
+			var json = yield requestor.visitBodyJson(next);
+			if (!json) {
+				responder.addError("Not valid updating information.");
+				return safe(done)();
+			}
+
+			console.log("addplayer0");
+			this.addPlayer(obj.getSerial(), json);
+			console.log("addplayer1");
+			yield $PersistanceManager.Commit(next);
+			console.log("addplayer2");
+
+			responder.respondJson({}, safe(done));
 		}, this);
 	},
 };
@@ -347,6 +373,9 @@ Base.extends("Httphost", {
 					data = yield this.visitData(requestor, "/" + state.pageto + ".html", {
 						__proto__:this.InfoBase,
 						files:files,
+						pagearg:state.pagearg,
+						getPlayers:() => {return this.reorderPlayers();},
+						getPlayer:() => {return this.getPlayer(obj.getSerial());},
 						isMaster:(requestor.getUserAgent().match(/Windows/i) != null),
 						state:$PersistanceManager.State(serial),
 						serial:serial,
@@ -458,6 +487,64 @@ Base.extends("Httphost", {
 			}
 			return safe(done)(obj);
 		}, this);
+	},
+
+	addPlayer:function(serial, player) {
+		var state = $PersistanceManager.State(serial);
+		var logicdb = $PersistanceManager.Logic();
+
+		var oldUniqueKey = (state.uniqueKey ? state.uniqueKey : null);
+		if (oldUniqueKey && logicdb[oldUniqueKey]) {
+			delete logicdb[oldUniqueKey];
+		}
+		state.uniqueKey = rkey();
+		while (logicdb[state.uniqueKey]) {
+			state.uniqueKey = rkey();
+		}
+		var newUniqueKey = state.uniqueKey;
+		logicdb[newUniqueKey] = player;
+	},
+	getPlayer:function(serial) {
+		var state = $PersistanceManager.State(serial);
+		var uniqueKey = (state.uniqueKey ? state.uniqueKey : null);
+		var logicdb = $PersistanceManager.Logic();
+		return (logicdb[uniqueKey] ? logicdb[uniqueKey] : null);
+	},
+	reorderPlayers:function() {
+		var unorderedPlayers = {};
+		var logicdb = $PersistanceManager.Logic();
+		console.log("logicdb==>", logicdb);
+		for (var uniqueKey in logicdb) {
+			var player = logicdb[uniqueKey];
+			var raceKey = player.raceKey;
+			unorderedPlayers[raceKey] = (unorderedPlayers[raceKey] ? unorderedPlayers[raceKey] : {});
+			unorderedPlayers[raceKey][uniqueKey] = player;
+		}
+		var players = {};
+		for (var raceKey in unorderedPlayers) {
+			var racePlayers = unorderedPlayers[raceKey];
+			var orderedPlayers = [];
+			while(true) {
+				var maxPower = -1;
+				var findSerial = null;
+				for (var serial in racePlayers) {
+					var player = racePlayers[serial];
+					var power = Number(player.power);
+					if (power > maxPower) {
+						maxPower = power;
+						findSerial = serial;
+					}
+				}
+				if (findSerial) {
+					orderedPlayers.push(racePlayers[findSerial]);
+					delete racePlayers[findSerial];
+				} else {
+					break;
+				}
+			}
+			players[raceKey] = orderedPlayers;
+		}
+		return players;
 	},
 
 	onCommand:function(cmd) {
