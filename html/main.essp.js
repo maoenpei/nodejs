@@ -2,6 +2,12 @@
 <%^load.js%>
 
 $(function() {
+
+    adjustHeight(".div_title_bar", ".div_content_panel");
+    $(window).resize(function() {
+        adjustHeight(".div_title_bar", ".div_content_panel");
+    });
+
     $(".div_add_player").click(function() {
         var race = $(this).attr("raceIndex");
         var star = $(this).attr("starIndex");

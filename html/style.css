@@ -25,7 +25,10 @@ body{
     padding-left: 66%;
     word-break: break-all;
 }
-.div_file_panel,.input_edit_tag{
+.div_content_panel{
+    overflow:auto;
+}
+.div_content_panel,.input_edit_tag{
     font-size:0.8rem;
 }
 .div_race_item{

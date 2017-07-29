@@ -2,6 +2,12 @@
 <%^load.js%>
 
 $(function() {
+
+    adjustHeight(".div_title_bar", ".div_content_panel");
+    $(window).resize(function() {
+        adjustHeight(".div_title_bar", ".div_content_panel");
+    });
+
     $(".div_go_back").click(function() {
         requestPost("gopage", {pageto:"main"}, function(json) {
             return true;

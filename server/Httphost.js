@@ -75,6 +75,7 @@ var hostCommand = {
 				return safe(done)();
 			}
 
+			this.delPlayer(obj.getSerial());
 			$PersistanceManager.Dismiss(obj.getSerial());
 			yield $PersistanceManager.Commit(next);
 
@@ -497,11 +498,11 @@ Base.extends("Httphost", {
 		if (oldUniqueKey && logicdb[oldUniqueKey]) {
 			delete logicdb[oldUniqueKey];
 		}
-		state.uniqueKey = rkey();
-		while (logicdb[state.uniqueKey]) {
-			state.uniqueKey = rkey();
+		var newUniqueKey = rkey();
+		while (logicdb[newUniqueKey]) {
+			newUniqueKey = rkey();
 		}
-		var newUniqueKey = state.uniqueKey;
+		state.uniqueKey = newUniqueKey;
 		logicdb[newUniqueKey] = player;
 	},
 	getPlayer:function(serial) {
@@ -509,6 +510,14 @@ Base.extends("Httphost", {
 		var uniqueKey = (state.uniqueKey ? state.uniqueKey : null);
 		var logicdb = $PersistanceManager.Logic();
 		return (logicdb[uniqueKey] ? logicdb[uniqueKey] : null);
+	},
+	delPlayer:function(serial) {
+		var state = $PersistanceManager.State(serial);
+		var logicdb = $PersistanceManager.Logic();
+		var uniqueKey = (state.uniqueKey ? state.uniqueKey : null);
+		if (uniqueKey && logicdb[uniqueKey]) {
+			delete logicdb[uniqueKey];
+		}
 	},
 	reorderPlayers:function() {
 		var unorderedPlayers = {};
@@ -526,18 +535,18 @@ Base.extends("Httphost", {
 			var orderedPlayers = [];
 			while(true) {
 				var maxPower = -1;
-				var findSerial = null;
-				for (var serial in racePlayers) {
-					var player = racePlayers[serial];
+				var findUniqueKey = null;
+				for (var uniqueKey in racePlayers) {
+					var player = racePlayers[uniqueKey];
 					var power = Number(player.power);
 					if (power > maxPower) {
 						maxPower = power;
-						findSerial = serial;
+						findUniqueKey = uniqueKey;
 					}
 				}
-				if (findSerial) {
-					orderedPlayers.push(racePlayers[findSerial]);
-					delete racePlayers[findSerial];
+				if (findUniqueKey) {
+					orderedPlayers.push(racePlayers[findUniqueKey]);
+					delete racePlayers[findUniqueKey];
 				} else {
 					break;
 				}

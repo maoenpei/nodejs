@@ -72,3 +72,9 @@ var uploadFile = function(url, callback) {
     });
     fileLoader.click();
 }
+
+var adjustHeight = function(titleSelector, contentSelector) {
+    var total = parseInt($("body").css("height"));
+    var title = parseInt($(titleSelector).css("height"));
+    $(contentSelector).css("height", total - title);
+};

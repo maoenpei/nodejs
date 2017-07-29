@@ -8,7 +8,7 @@
     <div class="div_title_bar">
         <div class="div_log_off visit_label">退出</div>
     </div>
-    <div class="div_file_panel">
+    <div class="div_content_panel">
     <%es
     var players = PageInfo.getPlayers();
     var races = ["黄鹿", "玫瑰", "咸鱼"];
@@ -17,7 +17,7 @@
     %>
         <div class="div_race_item">
             <%es
-            for (var star = 1; star <= starMax; ++star) {
+            for (var star = starMax; star >= 1; --star) {
             %>
             <div class="div_star_item star_row_div">
                 <div class="star_row_title"><%=races[race] + star + "星"%></div>

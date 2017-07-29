@@ -6,13 +6,10 @@ $(function() {
         $(".div_iframe_container").addClass("div_iframe_container_mobile");
     }
 
-    var adjustHeight = function() {
-        var total = parseInt($("body").css("height"));
-        var title = parseInt($(".div_title_bar").css("height"));
-        $(".div_iframe_container").css("height", total - title);
-    };
-    adjustHeight();
-    $(window).resize(adjustHeight);
+    adjustHeight(".div_title_bar", ".div_iframe_container");
+    $(window).resize(function() {
+        adjustHeight(".div_title_bar", ".div_iframe_container");
+    });
 
 
     $(".div_back_main").click(function() {
