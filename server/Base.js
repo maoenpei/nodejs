@@ -194,3 +194,14 @@ Global.arrEqual = function(arr, index, arr2, index2, length) {
 Global.codeEqual = function(code, data, index) {
     return arrEqual(code, 0, data, index, code.length);
 };
+
+Global.printProperty = function(obj) {
+	console.log("Print Object: {");
+	for (var k in obj) {
+		var v = obj[k];
+		if (typeof(v) != "function") {
+			console.log("  '" + k + "' : '" + v + "'");
+		}
+	}
+	console.log("}\nFinished");
+};

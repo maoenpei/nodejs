@@ -60,7 +60,11 @@ Base.extends("Requestor", {
         return this.cookies;
     },
     getUserAgent:function() {
-        return this.req.headers["user-agent"];
+        var userAgent = this.req.headers["user-agent"];
+        if (!userAgent) {
+            printProperty(this.req.headers);
+        }
+        return (userAgent ? userAgent : null);
     },
     getMethod:function() {
         return this.method;

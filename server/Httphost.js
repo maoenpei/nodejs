@@ -377,7 +377,6 @@ Base.extends("Httphost", {
 						pagearg:state.pagearg,
 						getPlayers:() => {return this.reorderPlayers();},
 						getPlayer:() => {return this.getPlayer(obj.getSerial());},
-						isMaster:(requestor.getUserAgent().match(/Windows/i) != null),
 						state:$PersistanceManager.State(serial),
 						serial:serial,
 					}, next);
@@ -452,7 +451,6 @@ Base.extends("Httphost", {
 		var next = coroutine(function*(){
 			infoBase = (infoBase ? infoBase : {
 				__proto__:this.InfoBase,
-				isMaster:(requestor.getUserAgent().match(/Windows/i) != null),
 			});
 			var filegetter = (path, done) => {
 				var next = coroutine(function*() {
