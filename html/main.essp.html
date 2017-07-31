@@ -20,7 +20,7 @@
             for (var star = starMax; star >= 1; --star) {
             %>
             <div class="div_star_item star_row_div">
-                <div class="star_row_title"><%=races[race] + star + "星"%></div>
+                <div class="<%=(race < 2 ? 'star_row_title_golden' : 'star_row_title_gray')%>"><%=races[race] + star + "星"%></div>
                 <div>
                 <%es
                 var racePlayers = players[race * 1000 + star];
@@ -36,7 +36,7 @@
                     <image class="image_player_info player_image" imageKey="<%=racePlayers[playerIndex].imageKey%>" src="<%=PageInfo.urlRoot + '/file?key=' + racePlayers[playerIndex].imageKey%>"/>
                     <div class="player_text_div">
                         <span>名字：<%=racePlayers[playerIndex].name%></span><br/>
-                        <span>战力：<%=racePlayers[playerIndex].power%></span>
+                        <span>战力：<%=racePlayers[playerIndex].power%>万</span>
                     </div>
                 </div>
                 <%es

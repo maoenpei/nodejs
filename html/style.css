@@ -137,8 +137,12 @@ body{
     padding:5px;
 }
 
-.star_row_title{
-    color: #ee0;
+.star_row_title_golden{
+    color: #fb5;
+}
+
+.star_row_title_gray{
+    color: #ffe;
 }
 
 .player_item{
@@ -153,4 +157,16 @@ body{
 .player_text_div{
     display:inline-block;
     vertical-align: bottom;
+}
+
+.div_entry_info{
+    text-align:center;
+}
+
+.input_info{
+    padding-left: 10px;
+}
+
+.upload_image{
+    width:100%;
 }

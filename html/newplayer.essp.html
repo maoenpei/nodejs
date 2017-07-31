@@ -11,6 +11,7 @@
     </div>
     <div class="div_content_panel">
         <%es
+        var races = ["黄鹿", "玫瑰", "咸鱼"];
         var race = PageInfo.pagearg.race;
         var star = PageInfo.pagearg.star;
         var player = PageInfo.getPlayer();
@@ -20,10 +21,13 @@
             g_star = <%=star%>;
             g_imageKey = <%=(player ? "'" + player.imageKey + "'" : null)%>;
         </script>
+        <div class="div_entry_info star_row_div <%=(race < 2 ? 'star_row_title_golden' : 'star_row_title_gray')%>"><%=races[race] + star + "星"%></div>
+        <div class="input_info">
         输入名字：<input type="text" class="input_name_text" value="<%=(player ? player.name : '')%>"/><br/>
-        输入战力：<input type="text" class="input_power_text" value="<%=(player ? player.power : '')%>"/><br/>
+        输入战力：<input type="text" class="input_power_text" value="<%=(player ? player.power : '')%>"/>万<br/>
+        </div>
         <div class="div_add_image visit_label">上传图片</div>
-        <image class="image_container" style="width:100%" src="<%=(player ? PageInfo.urlRoot + '/file?key=' + player.imageKey : '')%>" />
+        <image class="image_container upload_image" src="<%=(player ? PageInfo.urlRoot + '/file?key=' + player.imageKey : '')%>" />
     </div>
 </body>
 </html>
