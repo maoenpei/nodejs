@@ -14,7 +14,7 @@ var sendAjax = function(url, postData, callback) {
         data:JSON.stringify(postData),
         success:safe(callback),
         error:function() {
-            window.location.reload();
+            safe(callback)(null);
         }
     });
 };
@@ -28,18 +28,12 @@ var sendAjaxJSON = function(url, postData, callback) {
         }
         if (json) {
             safe(callback)(json);
-        } else {
-            window.location.reload();
         }
     });
 };
 
 var requestPost = function (url, postData, callback) {
-    sendAjaxJSON(urlRoot + "/" + url, postData, function (json) {
-        if (safe(callback)(json)) {
-            window.location.reload();
-        }
-    });
+    sendAjaxJSON(urlRoot + "/" + url, postData, safe(callback));
 };
 
 var uploadFile = function(url, callback) {

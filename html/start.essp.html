@@ -3,19 +3,26 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
     <title>Main</title>
-    <link rel="stylesheet" type="text/css" href="<%=PageInfo.urlRoot%>/style.css">
+    <link rel="stylesheet" type="text/css" href="<%=PageInfo.urlRoot%>/standard.css">
     <script type="text/javascript" src="<%=PageInfo.urlRoot%>/jquery.js"></script>
     <script type="text/javascript" src="<%=PageInfo.urlRoot%>/handlebars.js"></script>
     <script type="text/javascript" src="<%=PageInfo.urlRoot%>/start.js"></script>
 </head>
 <body>
     <div class="div_title_bar">
-        <div class="div_edit_file visit_label">编辑</div>
-        <div class="div_add_file visit_label">添加文件</div>
-        <div class="div_log_off visit_label">退出</div>
+        <div class="_display_label">恭喜你发现了一个神奇的网站</div>
     </div>
-    <div class="div_content_panel">
-        恭喜你发现了一个神奇的网站
+    <div class="div_content_panel _display_content_panel">
+        <div class="_display_input_pwd">
+            在此输入密码：
+            <input class="input_type_pwd" type="text" />
+            <input class="input_confirm_pwd" type="button" value="提交"/>
+        </div>
     </div>
+<script type="text/x-handlebars-template" class="hd_title_bar_list">
+        <div class="div_edit_file _visit_label">编辑</div>
+        <div class="div_add_file _visit_label">添加文件</div>
+        <div class="div_log_off _visit_label">退出</div>
+</script>
 </body>
 </html>
