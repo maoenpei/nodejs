@@ -50,74 +50,6 @@ var hostCommand = {
 			responder.respondJson({}, safe(done));
 		}, this);
 	},
-	view:function(requestor, responder, done) {
-		var next = coroutine(function*() {
-			var obj = yield this.tokenValid(requestor, next);
-			if (!obj) {
-				responder.addError("Not valid token for file view.");
-				return safe(done)();
-			}
-
-			var json = yield requestor.visitBodyJson(next);
-			var fileKey = json.key ? json.key : "";
-			var files = $PersistanceManager.Files();
-			if (!files[fileKey]) {
-				responder.addError("Not valid file key.");
-				return safe(done)();
-			}
-
-			var state = $PersistanceManager.State(obj.getSerial());
-			state.key = fileKey;
-			yield $PersistanceManager.Commit(next);
-
-			responder.respondJson({}, safe(done));
-		}, this);
-	},
-	backmain:function(requestor, responder, done) {
-		var next = coroutine(function*() {
-			var obj = yield this.tokenValid(requestor, next);
-			if (!obj) {
-				responder.addError("Not valid token for main.");
-				return safe(done)();
-			}
-
-			var state = $PersistanceManager.State(obj.getSerial());
-			delete state.key;
-			yield $PersistanceManager.Commit(next);
-
-			responder.respondJson({}, safe(done));
-		}, this);
-	},
-	pageupdate:function(requestor, responder, done) {
-		var next = coroutine(function*() {
-			var obj = yield this.tokenValid(requestor, next);
-			if (!obj) {
-				responder.addError("Not valid token for update.");
-				return safe(done)();
-			}
-
-			var json = yield requestor.visitBodyJson(next);
-			if (!json) {
-				responder.addError("Not valid updating information.");
-				return safe(done)();
-			}
-
-			var state = $PersistanceManager.State(obj.getSerial());
-			var fileKey = state.key;
-			if (!fileKey) {
-				responder.addError("Not valid file key.");
-				return safe(done)();
-			}
-			state.fileDatas = (state.fileDatas ? state.fileDatas : {});
-			state.fileDatas[fileKey] = (state.fileDatas[fileKey] ? state.fileDatas[fileKey] : {});
-			for (var k in json) {
-				state.fileDatas[fileKey][k] = json[k];
-			}
-			yield $PersistanceManager.Commit(next);
-
-			responder.respondJson({}, safe(done));
-		}, this);
-	},
 	addfile:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
@@ -282,31 +214,25 @@ Base.extends("Httphost", {
 			}
 		}, this);
 	},
+
 	mainPage:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			var data = null;
 			var obj = yield this.tokenValid(requestor, next);
 
-			if (!obj) {
-				data = yield this.visitData(requestor, "/index.html", null, next);
-			} else {
+			var infoBase = null;
+			if (obj) {
 				var state = $PersistanceManager.State(obj.getSerial());
-				var fileKey = state.key;
 				var files = $PersistanceManager.Files();
-				if (fileKey && files[fileKey]) {
-					var saveData = state.fileDatas ? state.fileDatas[fileKey] : null;
-					data = yield this.visitFile(requestor, obj, fileKey, files[fileKey], saveData, next);
-				} else {
-					var serial = obj.getSerial();
-					data = yield this.visitData(requestor, "/main.html", {
-						__proto__:this.InfoBase,
-						files:files,
-						isMaster:(requestor.getUserAgent().match(/Windows/i) != null),
-						state:$PersistanceManager.State(serial),
-						serial:serial,
-					}, next);
-				}
+				var serial = obj.getSerial();
+				infoBase = {
+					__proto__:this.InfoBase,
+					files:files,
+					state:$PersistanceManager.State(serial),
+					serial:serial,
+				};
 			}
+			data = yield this.visitHTTP(requestor, "/start.html", infoBase, next);
 
 			responder.setType(".html");
 			responder.respondData(data, safe(done));
@@ -317,7 +243,7 @@ Base.extends("Httphost", {
 			var data = null;
 			var ext = requestor.getExtension();
 
-			data = yield this.visitData(requestor, requestor.getPath(), null, next);
+			data = yield this.visitHTTP(requestor, requestor.getPath(), null, next);
 
 			if (!data) {
 				responder.addError("Cannot find file.");
@@ -332,7 +258,7 @@ Base.extends("Httphost", {
 	errorPage:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			console.log("Error loading '" + requestor.getPath() + "':\n" + responder.getErrors());
-			var data = yield this.visitData(requestor, "/error.html", {
+			var data = yield this.visitHTTP(requestor, "/error.html", {
 				__proto__:this.InfoBase,
 				errors:responder.getErrors(),
 			}, next);
@@ -344,32 +270,10 @@ Base.extends("Httphost", {
 		}, this);
 	},
 
-	visitFile:function(requestor, obj, fileKey, fileEntry, saveData, done) {
-		var next = coroutine(function*() {
-			var fName = "/" + fileEntry.fName;
-			var ext = fName.match(/(\.\w+)$/)[1];
-
-			var fileData = yield $FileCacher.visitFile("/files" + fName, next);
-			var PageInfo = {
-				__proto__:this.InfoBase,
-				key:fileKey,
-				ext:ext.toLowerCase(),
-				token:obj.getToken(),
-				responderType:$PersistanceManager.ExtensionType(ext),
-				dispName:fileEntry.dispName,
-				saveData:(saveData ? saveData : {}),
-				fileData:fileData,
-			};
-
-			var data = yield this.visitData(requestor, "/content.html", PageInfo, next);
-			safe(done)(data);
-		}, this);
-	},
-	visitData:function(requestor, path, infoBase, done) {
+	visitHTTP:function(requestor, path, infoBase, done) {
 		var next = coroutine(function*(){
 			infoBase = (infoBase ? infoBase : {
 				__proto__:this.InfoBase,
-				isMaster:(requestor.getUserAgent().match(/Windows/i) != null),
 			});
 			var filegetter = (path, done) => {
 				var next = coroutine(function*() {
