@@ -51,9 +51,11 @@ StateSwitcher.extends("$TemplateParser", {
             later(safe(done), parser);
         } else {
             $FileManager.visitFile(path, (data) => {
-                silent(() => {
-                    parser = this.doParse(data);
-                });
+                if (data) {
+                    silent(() => {
+                        parser = this.doParse(data);
+                    });
+                }
                 if (parser) {
                     if (this.enabled) {
                         this.parsedTemplates[path] = parser;
