@@ -66,8 +66,49 @@ var adjustContentHeight = function(titleCls, contentCls) {
     $(contentCls).css("height", total - title);
 };
 
+function loadContent() {
+    $(".div_content_panel").html("登录成功啦");
+}
+
 $(function() {
     adjustContentHeight(".div_title_bar", ".div_content_panel");
     $(window).resize(function() {adjustContentHeight(".div_title_bar", ".div_content_panel");});
+
+    var exchange = function (serial, success, failed) {
+        requestPost("exchange", {serial:serial}, function(json) {
+            if (json && json.serial) {
+                localStorage.serial_string = json.serial;
+                safe(success)();
+            } else {
+                safe(failed)();
+            }
+        });
+    };
+
+    $(".input_confirm_pwd").click(function () {
+        inputNext($(".input_type_pwd").val());
+    });
+    $(".input_type_pwd").keypress(function (e) {
+        if (e.which == 13) {
+            $(".input_confirm_pwd").click();
+        }
+    });
+
+    var serial = localStorage.serial_string;
+    if (serial) {
+        exchange(serial, loadContent, exchangeNext);
+    } else {
+        exchangeNext();
+    }
+
+    function exchangeNext() {
+        $(".input_confirm_pwd").show();
+        $(".input_type_pwd").focus();
+    }
+
+    function inputNext(serial) {
+        $(".input_confirm_pwd").hide();
+        exchange(serial, loadContent, exchangeNext);
+    }
 });
 
