@@ -66,16 +66,183 @@ var adjustContentHeight = function(titleCls, contentCls) {
     $(contentCls).css("height", total - title);
 };
 
-function loadContent() {
-    $(".div_content_panel").html("登录成功啦");
+var showOnlyChild = function(outerCls, childCls) {
+    $(outerCls).children().hide();
+    $(childCls).show();
+    $(outerCls).show();
+};
+
+var showMode = function(modeName) {
+    console.log("mode", modeName);
+    showOnlyChild(".div_title_bar", ".div_title_bar_" + modeName);
+    showOnlyChild(".div_content_panel", ".div_content_panel_" + modeName);
+};
+
+var clearEvents = function() {
+    $(".input_type_pwd").unbind();
+    $(".div_refresh_data").unbind();
+    $(".input_confirm_pwd").unbind();
+    $(".div_log_off").unbind();
+    $(".div_to_match").unbind();
+    $(".div_log_off").unbind();
+    $(".div_to_playerlist").unbind();
+    $(".div_new_player").unbind();
 }
 
-$(function() {
-    adjustContentHeight(".div_title_bar", ".div_content_panel");
-    $(window).resize(function() {adjustContentHeight(".div_title_bar", ".div_content_panel");});
+    var ldata = {
+        match:{},
+        players:{},
+        groups:{},
+    };
+    ldata.groups[98723489] = {
+        status:0,
+        name:"老司机",
+    };
+    ldata.players[654615] = {
+        group:98723489,
+        name:"M神",
+        power:800,
+    };
+    ldata.match[10] = [654615];
+
+var pageModel = null;
+
+var refreshContent = function(force, callback){
+    requestPost("information", {}, function(json) {
+        if (json) {
+            pageModel = json;
+            console.log(pageModel);
+            safe(callback)(pageModel);
+        }
+    });
+};
+
+var giveup = function(callback) {
+    delete localStorage.serial_string;
+    requestPost("giveup", {}, callback);
+}
+
+var racePlayerTemplate = null;
+function addPlayerToList(data, playerId, divParent) {
+    if (racePlayerTemplate == null) {
+        racePlayerTemplate = Handlebars.compile($(".hd_player_item").html());
+    }
+
+    var playerInfo = data.players[playerId];
+    var groupInfo = data.groups[playerInfo.group];
+    var playerData = {
+        enemy:(groupInfo.status != 0),
+        group:groupInfo.name,
+        name:playerInfo.name,
+        power:playerInfo.power,
+    };
+    var playerBlock = $(racePlayerTemplate(playerData));
+    playerBlock.appendTo(divParent);
+    playerBlock.find(".div_player_group").addClass(playerData.enemy ? "display_player_red" : "display_player_green");
+}
+
+function displayPlayerList() {
+    clearEvents();
+    showMode("list");
+
+    $(".div_to_match").click(displayMatch);
+    $(".div_log_off").click(function() {
+        giveup(displayWelcome);
+    });
+
+    var divAddPlayer = $(".div_add_player_info");
+    divAddPlayer.hide();
+    $(".div_new_player").click(function() {
+        divAddPlayer.show();
+    });
+    $(".add_player_cancel").click(function() {
+        divAddPlayer.hide();
+        $(".input_player_name").val("");
+        $(".input_player_power").val("");
+        $(".select_player_group").val(0);
+    });
+    $(".add_player_confirm").click(function() {
+        
+    });
+
+    var groupOptionTemplate = Handlebars.compile($(".hd_group_option").html());
+
+    var divPlayerList = $(".div_player_list");
+    var divGroupList = $(".select_player_group");
+    var loadPlayers = function(data) {
+        divPlayerList.html("");
+        for (var playerId in data.players) {
+            addPlayerToList(data, playerId, divPlayerList);
+        }
+        divGroupList.html("");
+        for (var groupId in data.groups) {
+            var groupInfo = data.groups[groupId];
+            $(groupOptionTemplate(groupInfo)).appendTo(divGroupList);
+        }
+    }
+
+    //loadPlayers(ldata);
+    $(".div_refresh_data").click(function() {
+        refreshContent(true, loadPlayers);
+    });
+    refreshContent(false, loadPlayers);
+}
+
+function displayMatch() {
+    clearEvents();
+    showMode("match");
+
+    $(".div_to_playerlist").click(displayPlayerList);
+    $(".div_log_off").click(function() {
+        giveup(displayWelcome);
+    });
+
+    var raceBlockTemplate = Handlebars.compile($(".hd_race_block").html());
+
+    var divContentPanel = $(".div_content_panel_match");
+    var loadMatch = function(data) {
+        divContentPanel.html("");
+        var raceTypes = ["黄鹿", "玫瑰", "咸鱼"];
+        for (var raceIndex = 0; raceIndex < raceTypes.length; ++raceIndex) {
+            for (var starIndex = 10; starIndex >= 1; --starIndex) {
+                var uniqueIndex = raceIndex * 1000 + starIndex;
+                var raceBlock = $(raceBlockTemplate({
+                    name:(raceTypes[raceIndex] + starIndex + "星"),
+                }));
+                raceBlock.appendTo(divContentPanel);
+                var isgoden = (raceIndex < 2);
+                raceBlock.find(".div_race_title_text").addClass(isgoden ? "display_race_golden" : "display_race_gray");
+                raceBlock.find(".div_race_title_add").click(function() {
+
+                });
+
+                var matchPlayerIds = data.match[uniqueIndex];
+                var divPlayers = raceBlock.find(".div_race_players");
+                if (matchPlayerIds && matchPlayerIds.length > 0) {
+                    for (var playerIndex = 0; playerIndex < matchPlayerIds.length; ++playerIndex) {
+                        var playerId = matchPlayerIds[playerIndex];
+                        addPlayerToList(data, playerId, divPlayers);
+                    }
+                } else {
+                    divPlayers.html("无人报名");
+                }
+            }
+        }
+    }
+
+    //loadMatch(ldata);
+    $(".div_refresh_data").click(function() {
+        refreshContent(true, loadMatch);
+    });
+    refreshContent(false, loadMatch);
+}
+
+function displayWelcome() {
+    clearEvents();
 
     var exchange = function (serial, success, failed) {
         requestPost("exchange", {serial:serial}, function(json) {
+            console.log(json);
             if (json && json.serial) {
                 localStorage.serial_string = json.serial;
                 safe(success)();
@@ -84,6 +251,8 @@ $(function() {
             }
         });
     };
+
+    var enterPage = displayPlayerList;
 
     $(".input_confirm_pwd").click(function () {
         inputNext($(".input_type_pwd").val());
@@ -96,19 +265,29 @@ $(function() {
 
     var serial = localStorage.serial_string;
     if (serial) {
-        exchange(serial, loadContent, exchangeNext);
+        exchange(serial, enterPage, exchangeNext);
     } else {
         exchangeNext();
     }
 
     function exchangeNext() {
+        showMode("welcome");
+
         $(".input_confirm_pwd").show();
         $(".input_type_pwd").focus();
     }
 
     function inputNext(serial) {
         $(".input_confirm_pwd").hide();
-        exchange(serial, loadContent, exchangeNext);
+        $(".input_type_pwd").val("");
+        exchange(serial, enterPage, exchangeNext);
     }
+}
+
+$(function() {
+    adjustContentHeight(".div_title_bar", ".div_content_panel");
+    $(window).resize(function() {adjustContentHeight(".div_title_bar", ".div_content_panel");});
+
+    displayWelcome();
 });
 

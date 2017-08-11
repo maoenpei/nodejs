@@ -9,6 +9,25 @@ require("./LoginManager");
 require("./TemplateParser");
 
 var hostCommand = {
+	information:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			var obj = yield this.tokenValid(requestor, next);
+			if (!obj) {
+				responder.addError("Not valid token for file add.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			//var state = $PersistanceManager.State(obj.getSerial());
+			var logic = $PersistanceManager.Logic();
+			var json = {
+				match:(logic.match ? logic.match : {}),
+				players:(logic.players ? logic.players : {}),
+				groups:(logic.groups ? logic.groups : {}),
+			};
+			responder.respondJson(json, safe(done));
+
+		}, this);
+	},
 	exchange:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			yield $PersistanceManager.availableKeys(next);
@@ -17,16 +36,19 @@ var hostCommand = {
 
 			if (!serial) {
 				console.log("serial:", serial);
-				responder.respondJson({serial:null}, safe(done));
-			} else {
-				yield $PersistanceManager.Commit(next);
-
-				var obj = $LoginManager.login(serial);
-				responder.setCookies({token:obj.getToken()});
-				responder.respondJson({
-					serial:serial,
-				}, safe(done));
+				return responder.respondJson({serial:null}, safe(done));
 			}
+
+			// initialization
+			var state = $PersistanceManager.State(serial);
+			state.adminLevel = (state.adminLevel ? state.adminLevel : 1);
+			yield $PersistanceManager.Commit(next);
+
+			var obj = $LoginManager.login(serial);
+			responder.setCookies({token:obj.getToken()});
+			responder.respondJson({
+				serial:serial,
+			}, safe(done));
 		}, this);
 	},
 	giveup:function(requestor, responder, done) {
