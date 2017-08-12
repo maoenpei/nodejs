@@ -60,8 +60,9 @@ var uploadFile = function(url, callback) {
     fileLoader.click();
 };
 
-// Model
 //-------------------------------------------------------------------------
+// Model
+
 var pageModel = {};
 pageModel.refresh = function(force, callback) {
     $this = this;
@@ -212,12 +213,27 @@ pageModel.quitmatch = function(matchId, playerId, callback) {
     });
 }
 
-// View
 //-------------------------------------------------------------------------
+// Template
+
+var templates = {};
+templates.data = {};
+templates.read = function(templateCls) {
+    var template = this.data[templateCls];
+    if (!template) {
+        template = Handlebars.compile($(templateCls).html());
+        this.data[templateCls] = template;
+    }
+    return template;
+}
+
+//-------------------------------------------------------------------------
+// View
 
 var adjustContentHeight = function(titleCls, contentCls) {
     var total = parseInt($("body").css("height"));
     var title = parseInt($(titleCls).css("height"));
+    console.log(total, title);
     $(contentCls).css("height", total - title);
 };
 
@@ -251,11 +267,8 @@ var giveup = function(callback) {
     requestPost("giveup", {}, callback);
 }
 
-var racePlayerTemplate = null;
 function addPlayerToList(playerId, divParent, hasDelete, delCallback) {
-    if (racePlayerTemplate == null) {
-        racePlayerTemplate = Handlebars.compile($(".hd_player_item").html());
-    }
+    var racePlayerTemplate = templates.read(".hd_player_item");
 
     var playerInfo = pageModel.player(playerId);
     var playerData = {
@@ -322,7 +335,7 @@ function displayPlayerList() {
         pageModel.refresh(true, loadPlayers);
     });
 
-    var groupOptionTemplate = Handlebars.compile($(".hd_group_option").html());
+    var groupOptionTemplate = templates.read(".hd_group_option");
 
     var divPlayerList = $(".div_player_list");
     var divGroupList = $(".select_player_group");
@@ -332,6 +345,7 @@ function displayPlayerList() {
         for (var i = 0; i < playerIds.length; ++i) {
             (function() {
                 var playerId = playerIds[i];
+                var playerName = pageModel.player(playerId).name;
                 addPlayerToList(playerId, divPlayerList, pageModel.canDeletePlayer(), function() {
                     if (confirm("确定删除'" + playerName + "'？")) {
                         pageModel.delPlayer(playerId, function() {
@@ -366,8 +380,8 @@ function displayMatch() {
         pageModel.refresh(true, loadMatch);
     });
 
-    var raceBlockTemplate = Handlebars.compile($(".hd_race_block").html());
-    var playerOptionTemplate = Handlebars.compile($(".hd_player_option").html());
+    var raceBlockTemplate = templates.read(".hd_race_block");
+    var playerOptionTemplate = templates.read(".hd_player_option");
 
     var divContentPanel = $(".div_content_panel_match");
     function loadMatch() {

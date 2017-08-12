@@ -23,6 +23,7 @@ body{
 .div_content_panel{
     font-size:0.8rem;
     text-align:center;
+    overflow:auto;
 }
 .visit_label, .display_label{
     display: inline-block;
