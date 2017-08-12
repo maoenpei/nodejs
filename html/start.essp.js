@@ -74,6 +74,7 @@ var showOnlyChild = function(outerCls, childCls) {
 
 var showMode = function(modeName) {
     console.log("mode", modeName);
+    localStorage.lastMode = modeName;
     showOnlyChild(".div_title_bar", ".div_title_bar_" + modeName);
     showOnlyChild(".div_content_panel", ".div_content_panel_" + modeName);
 };
@@ -104,7 +105,8 @@ var clearEvents = function() {
         name:"M神",
         power:800,
     };
-    ldata.match[10] = [654615];
+    ldata.match[10] = {};
+    ldata.match[10][654615] = true;
 
 var pageModel = null;
 var refreshContent = function(force, callback){
@@ -123,7 +125,7 @@ var giveup = function(callback) {
 }
 
 var racePlayerTemplate = null;
-function addPlayerToList(data, playerId, divParent, delCallback) {
+function addPlayerToList(data, playerId, divParent, hasDelete, delCallback) {
     if (racePlayerTemplate == null) {
         racePlayerTemplate = Handlebars.compile($(".hd_player_item").html());
     }
@@ -139,7 +141,7 @@ function addPlayerToList(data, playerId, divParent, delCallback) {
     var playerBlock = $(racePlayerTemplate(playerData));
     playerBlock.appendTo(divParent);
     playerBlock.find(".div_player_group").addClass(playerData.enemy ? "display_player_red" : "display_player_green");
-    if (data.delPlayer) {
+    if (hasDelete) {
         playerBlock.find(".div_player_delete_option").show();
         playerBlock.find(".div_player_delete").click(delCallback);
     }
@@ -209,7 +211,7 @@ function displayPlayerList() {
         for (var playerId in data.players) {
             (function() {
                 var bindPlayerId = playerId;
-                addPlayerToList(data, playerId, divPlayerList, function() {
+                addPlayerToList(data, bindPlayerId, divPlayerList, data.delPlayer, function() {
                     var playerName = data.players[bindPlayerId].name;
                     if (confirm("确定删除'" + playerName + "'？")) {
                         console.log("delplayer", bindPlayerId, playerName);
@@ -247,6 +249,7 @@ function displayMatch() {
     });
 
     var raceBlockTemplate = Handlebars.compile($(".hd_race_block").html());
+    var playerOptionTemplate = Handlebars.compile($(".hd_player_option").html());
 
     var divContentPanel = $(".div_content_panel_match");
     function loadMatch() {
@@ -255,31 +258,86 @@ function displayMatch() {
         var raceTypes = ["黄鹿", "玫瑰", "咸鱼"];
         for (var raceIndex = 0; raceIndex < raceTypes.length; ++raceIndex) {
             for (var starIndex = 10; starIndex >= 1; --starIndex) {
-                var uniqueIndex = raceIndex * 1000 + starIndex;
-                var raceBlock = $(raceBlockTemplate({
-                    name:(raceTypes[raceIndex] + starIndex + "星"),
-                }));
-                raceBlock.appendTo(divContentPanel);
-                var isgoden = (raceIndex < 2);
-                raceBlock.find(".div_race_title_text").addClass(isgoden ? "display_race_golden" : "display_race_gray");
-                raceBlock.find(".div_race_title_add").click(function() {
+                (function() {
+                    var currentMatchId = raceIndex * 1000 + starIndex;
+                    var raceBlock = $(raceBlockTemplate({
+                        name:(raceTypes[raceIndex] + starIndex + "星"),
+                    }));
+                    raceBlock.appendTo(divContentPanel);
+                    var isgoden = (raceIndex < 2);
+                    raceBlock.find(".div_race_title_text").addClass(isgoden ? "display_race_golden" : "display_race_gray");
 
-                });
+                    var addButton = raceBlock.find(".div_race_title_add");
+                    var playerSelect = raceBlock.find(".select_match_player");
+                    addButton.click(function() {
+                        playerSelect.html("");
+                        playerSelect.append($("<option value='0'>请选择</option>"));
+                        var playerInMatch = {};
+                        for (var matchId in data.match) {
+                            for (var playerId in data.match[matchId]) {
+                                playerInMatch[playerId] = true;
+                            }
+                        }
+                        for (var playerId in data.players) {
+                            var playerInfo = data.players[playerId];
+                            if (!playerInMatch[playerId]) {
+                                $(playerOptionTemplate({
+                                    playerId:playerId,
+                                    group:data.groups[playerInfo.group].name,
+                                    name:playerInfo.name,
+                                    power:playerInfo.power,
+                                })).appendTo(playerSelect);
+                            }
+                        }
 
-                var matchPlayerIds = data.match[uniqueIndex];
-                var divPlayers = raceBlock.find(".div_race_players");
-                if (matchPlayerIds && matchPlayerIds.length > 0) {
-                    for (var playerIndex = 0; playerIndex < matchPlayerIds.length; ++playerIndex) {
+                        addButton.hide();
+                        playerSelect.show();
+                    });
+                    playerSelect.change(function() {
+                        addButton.show();
+                        playerSelect.hide();
+
+                        var playerId = playerSelect.val();
+                        console.log("select", playerId);
+                        if (playerId == 0) {
+                            return;
+                        }
+                        requestPost("joinmatch", {matchId:currentMatchId, playerId:playerId}, function(json) {
+                            if (json && json.success) {
+                                data.match[currentMatchId] = (data.match[currentMatchId] ? data.match[currentMatchId] : {});
+                                data.match[currentMatchId][playerId] = true;
+                                loadMatch();
+                            }
+                        });
+                    });
+                    playerSelect.blur(function() {
+                        addButton.show();
+                        playerSelect.hide();
+                    });
+
+                    data.match[currentMatchId] = (data.match[currentMatchId] ? data.match[currentMatchId] : {});
+                    var matchPlayerIds = data.match[currentMatchId];
+                    var divPlayers = raceBlock.find(".div_race_players");
+                    var hasPlayer = false;
+                    for (var playerId in matchPlayerIds) {
+                        hasPlayer = true;
                         (function() {
-                            var playerId = matchPlayerIds[playerIndex];
-                            addPlayerToList(data, playerId, divPlayers, function() {
-
+                            var bindPlayerId = playerId;
+                            addPlayerToList(data, bindPlayerId, divPlayers, true, function() {
+                                requestPost("quitmatch", {matchId:currentMatchId, playerId:playerId}, function(json) {
+                                    if (json && json.success) {
+                                        data.match[currentMatchId] = (data.match[currentMatchId] ? data.match[currentMatchId] : {});
+                                        delete data.match[currentMatchId][playerId];
+                                        loadMatch();
+                                    }
+                                });
                             });
                         })();
                     }
-                } else {
-                    divPlayers.html("无人报名");
-                }
+                    if (!hasPlayer) {
+                        divPlayers.html("无人报名");
+                    }
+                })();
             }
         }
     }
@@ -302,6 +360,12 @@ function displayWelcome() {
     };
 
     var enterPage = displayPlayerList;
+    var lastMode = localStorage.lastMode;
+    if (lastMode == "list") {
+        enterPage = displayPlayerList;
+    } else if (lastMode == "match") {
+        enterPage = displayMatch;
+    }
 
     $(".input_confirm_pwd").click(function () {
         inputNext($(".input_type_pwd").val());
