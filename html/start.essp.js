@@ -104,12 +104,37 @@ pageModel.addPlayer = function(name, power, group, callback) {
 }
 pageModel.delPlayer = function(playerId, callback) {
     $this = this;
-    var playerName = $this.players[playerId].name;
+    var playerData = $this.players[playerId];
+    if (!playerData) {
+        return;
+    }
+
+    var playerName = playerData.name;
     console.log("delplayer", playerId, playerName);
 
     requestPost("delplayer", {playerId:playerId}, function(json) {
         if (json && json.playerId && json.playerId == playerId) {
             delete $this.players[playerId];
+            safe(callback)();
+        }
+    });
+}
+pageModel.editPlayerPower = function(playerId, power, callback) {
+    $this = this;
+    var playerData = $this.players[playerId];
+    if (!playerData) {
+        return;
+    }
+    if (power == playerData.power) {
+        return;
+    }
+
+    var playerName = playerData.name;
+    console.log("editpower", playerId, playerName, power);
+
+    requestPost("editpower", {playerId:playerId, power:power}, function(json) {
+        if (json && json.success) {
+            playerData.power = power;
             safe(callback)();
         }
     });
@@ -267,7 +292,7 @@ var giveup = function(callback) {
     requestPost("giveup", {}, callback);
 }
 
-function addPlayerToList(playerId, divParent, hasDelete, delCallback) {
+function addPlayerToList(playerId, divParent, delCallback, editCallback) {
     var racePlayerTemplate = templates.read(".hd_player_item");
 
     var playerInfo = pageModel.player(playerId);
@@ -280,9 +305,31 @@ function addPlayerToList(playerId, divParent, hasDelete, delCallback) {
     var playerBlock = $(racePlayerTemplate(playerData));
     playerBlock.appendTo(divParent);
     playerBlock.find(".div_player_group").addClass(playerData.enemy ? "display_player_red" : "display_player_green");
-    if (hasDelete) {
+    if (delCallback) {
         playerBlock.find(".div_player_delete_option").show();
         playerBlock.find(".div_player_delete").click(delCallback);
+    }
+    if (editCallback) {
+        var divShowPower = playerBlock.find(".div_player_power");
+        var inputEditPower = playerBlock.find(".input_player_power_edit");
+        playerBlock.find(".div_player_display").click(function() {
+            divShowPower.hide();
+            inputEditPower.val(playerInfo.power);
+            inputEditPower.show();
+            inputEditPower.focus();
+        });
+        inputEditPower.blur(function() {
+            var power = inputEditPower.val();
+            var powerNum = Number(power);
+            if (String(powerNum) != power || powerNum < 1 || powerNum > 99999) {
+                // Don't do anything.
+            } else {
+                editCallback(powerNum);
+            }
+
+            inputEditPower.hide();
+            divShowPower.show();
+        });
     }
 }
 
@@ -346,13 +393,21 @@ function displayPlayerList() {
             (function() {
                 var playerId = playerIds[i];
                 var playerName = pageModel.player(playerId).name;
-                addPlayerToList(playerId, divPlayerList, pageModel.canDeletePlayer(), function() {
+                var deleteCallback = (!pageModel.canDeletePlayer() ? null : function() {
                     if (confirm("确定删除'" + playerName + "'？")) {
                         pageModel.delPlayer(playerId, function() {
                             loadPlayers();
                         });
                     }
                 });
+                var editCallback = function(power) {
+                    console.log("edit power", power);
+
+                    pageModel.editPlayerPower(playerId, power, function() {
+                        loadPlayers();
+                    });
+                };
+                addPlayerToList(playerId, divPlayerList, deleteCallback, editCallback);
             })();
         }
 
@@ -442,11 +497,11 @@ function displayMatch() {
                     for (var i = 0; i < matchPlayerIds.length; ++i) {
                         (function() {
                             var playerId = matchPlayerIds[i];
-                            addPlayerToList(playerId, divPlayers, true, function() {
+                            addPlayerToList(playerId, divPlayers, function() {
                                 pageModel.quitmatch(currentMatchId, playerId, function() {
                                     loadMatch();
                                 });
-                            });
+                            }, null);
                         })();
                     }
                     if (matchPlayerIds.length == 0) {

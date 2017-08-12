@@ -106,11 +106,49 @@ var hostCommand = {
 
 			var playerId = json.playerId;
 			var logic = $PersistanceManager.Logic();
+			if (!logic.players[playerId]) {
+				responder.addError("playerId not exist.");
+				return responder.respondJson({}, safe(done));
+			}
+
 			delete logic.players[playerId];
 			yield $PersistanceManager.Commit(next);
 
 			responder.respondJson({playerId:playerId}, safe(done));
+		}, this);
+	},
+	editpower:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			var obj = yield this.tokenValid(requestor, next);
+			if (!obj) {
+				responder.addError("Not valid token for file add.");
+				return responder.respondJson({}, safe(done));
+			}
 
+			var state = $PersistanceManager.State(obj.getSerial());
+			if (state.adminLevel < 1) {
+				responder.addError("Admin level not enough.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var json = yield requestor.visitBodyJson(next);
+			if (!json || !json.playerId || !json.power) {
+				responder.addError("Parameter data not correct.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var playerId = json.playerId;
+			var power = json.power;
+			var logic = $PersistanceManager.Logic();
+			if (!logic.players[playerId]) {
+				responder.addError("playerId not exist.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			logic.players[playerId].power = power;
+			yield $PersistanceManager.Commit(next);
+
+			responder.respondJson({success:true}, safe(done));
 		}, this);
 	},
 	joinmatch:function(requestor, responder, done) {
