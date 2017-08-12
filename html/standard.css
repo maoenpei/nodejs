@@ -72,6 +72,13 @@ body{
     padding:0.2rem;
     color:#df3;
 }
+.div_player_delete_option{
+    display:inline-block;
+}
+.div_player_line{
+    display:inline-block;
+    color:#fff;
+}
 .display_player_red{
     color:#c00;
 }
@@ -117,4 +124,8 @@ body{
 .add_player_control{
     margin-top:0.2rem;
     font-size:1rem;
+}
+.div_player_list{
+    margin:0.2rem;
+    background-color:#aaa;
 }

@@ -17,17 +17,96 @@ var hostCommand = {
 				return responder.respondJson({}, safe(done));
 			}
 
-			//var state = $PersistanceManager.State(obj.getSerial());
+			var state = $PersistanceManager.State(obj.getSerial());
+			var canView = state.adminLevel >= 1;
+			var canAddPlayer = state.adminLevel >= 1;
+			var canDelPlayer = state.adminLevel >= 2;
+			var canAddGroup = state.adminLevel >= 3;
+			var canDelGroup = state.adminLevel >= 3;
+
 			var logic = $PersistanceManager.Logic();
 			var json = {
 				match:(logic.match ? logic.match : {}),
 				players:(logic.players ? logic.players : {}),
 				groups:(logic.groups ? logic.groups : {}),
+				delPlayer:canDelPlayer,
+				addGroup:canAddGroup,
+				delGroup:canDelGroup,
 			};
 			responder.respondJson(json, safe(done));
 
 		}, this);
 	},
+	addplayer:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			var obj = yield this.tokenValid(requestor, next);
+			if (!obj) {
+				responder.addError("Not valid token for file add.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var state = $PersistanceManager.State(obj.getSerial());
+			if (state.adminLevel < 1) {
+				responder.addError("Admin level not enough.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var json = yield requestor.visitBodyJson(next);
+			if (!json || !json.name || !json.power || !json.group) {
+				responder.addError("Parameter data not correct.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var logic = $PersistanceManager.Logic();
+			if (!logic.groups[json.group]) {
+				responder.addError("Not existing group.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var playerId = rkey();
+			while(logic.players[playerId]) {
+				playerId = rkey();
+			}
+			logic.players[playerId] = {
+				group:json.group,
+				name:json.name,
+				power:json.power,
+			};
+			yield $PersistanceManager.Commit(next);
+			responder.respondJson({playerId:playerId}, safe(done));
+
+		}, this);
+	},
+	delplayer:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			var obj = yield this.tokenValid(requestor, next);
+			if (!obj) {
+				responder.addError("Not valid token for file add.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var state = $PersistanceManager.State(obj.getSerial());
+			if (state.adminLevel < 2) {
+				responder.addError("Admin level not enough.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var json = yield requestor.visitBodyJson(next);
+			if (!json || !json.playerId) {
+				responder.addError("Parameter data not correct.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var logic = $PersistanceManager.Logic();
+			var playerId = json.playerId;
+			delete logic.players[playerId];
+			yield $PersistanceManager.Commit(next);
+
+			responder.respondJson({playerId:playerId}, safe(done));
+
+		}, this);
+	},
+
 	exchange:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			yield $PersistanceManager.availableKeys(next);
@@ -220,6 +299,7 @@ Base.extends("Httphost", {
 				console.log("==>command");
 				var cmd = requestor.getCommand();
 				if (cmd in hostCommand && typeof(hostCommand[cmd]) == "function") {
+					console.log("in command");
 					yield this.run(hostCommand[cmd], requestor, responder, next);
 				}
 			}

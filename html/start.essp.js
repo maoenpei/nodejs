@@ -87,6 +87,7 @@ var clearEvents = function() {
     $(".div_log_off").unbind();
     $(".div_to_playerlist").unbind();
     $(".div_new_player").unbind();
+    $(".add_player_confirm").unbind();
 }
 
     var ldata = {
@@ -106,7 +107,6 @@ var clearEvents = function() {
     ldata.match[10] = [654615];
 
 var pageModel = null;
-
 var refreshContent = function(force, callback){
     requestPost("information", {}, function(json) {
         if (json) {
@@ -123,7 +123,7 @@ var giveup = function(callback) {
 }
 
 var racePlayerTemplate = null;
-function addPlayerToList(data, playerId, divParent) {
+function addPlayerToList(data, playerId, divParent, delCallback) {
     if (racePlayerTemplate == null) {
         racePlayerTemplate = Handlebars.compile($(".hd_player_item").html());
     }
@@ -139,6 +139,10 @@ function addPlayerToList(data, playerId, divParent) {
     var playerBlock = $(racePlayerTemplate(playerData));
     playerBlock.appendTo(divParent);
     playerBlock.find(".div_player_group").addClass(playerData.enemy ? "display_player_red" : "display_player_green");
+    if (data.delPlayer) {
+        playerBlock.find(".div_player_delete_option").show();
+        playerBlock.find(".div_player_delete").click(delCallback);
+    }
 }
 
 function displayPlayerList() {
@@ -151,40 +155,81 @@ function displayPlayerList() {
     });
 
     var divAddPlayer = $(".div_add_player_info");
-    divAddPlayer.hide();
-    $(".div_new_player").click(function() {
-        divAddPlayer.show();
-    });
-    $(".add_player_cancel").click(function() {
+    var clearNewPlayerInfo = function() {
         divAddPlayer.hide();
         $(".input_player_name").val("");
         $(".input_player_power").val("");
         $(".select_player_group").val(0);
+    };
+    clearNewPlayerInfo();
+    $(".div_new_player").click(function() {
+        divAddPlayer.show();
     });
+    $(".add_player_cancel").click(clearNewPlayerInfo);
     $(".add_player_confirm").click(function() {
-        
+        var name = $(".input_player_name").val();
+        if (name == '') {
+            alert("不是有效的名字");
+            $(".input_player_name").focus();
+            return;
+        }
+
+        var power = $(".input_player_power").val();
+        var powerNum = Number(power);
+        if (String(powerNum) != power || powerNum < 1 || powerNum > 99999) {
+            alert("不是有效的战力值");
+            $(".input_player_power").focus();
+            return;
+        }
+
+        var groupId = $(".select_player_group").val();
+        console.log("addplayer", name, powerNum, groupId);
+
+        var player = {name:name, power:powerNum, group:groupId};
+        requestPost("addplayer", player, function(json) {
+            clearNewPlayerInfo();
+            if (json && json.playerId) {
+                pageModel.players[json.playerId] = player;
+                loadPlayers();
+            }
+        });
+    });
+
+    $(".div_refresh_data").click(function() {
+        refreshContent(true, loadPlayers);
     });
 
     var groupOptionTemplate = Handlebars.compile($(".hd_group_option").html());
 
     var divPlayerList = $(".div_player_list");
     var divGroupList = $(".select_player_group");
-    var loadPlayers = function(data) {
+    function loadPlayers() {
+        var data = pageModel;
         divPlayerList.html("");
         for (var playerId in data.players) {
-            addPlayerToList(data, playerId, divPlayerList);
+            (function() {
+                var bindPlayerId = playerId;
+                addPlayerToList(data, playerId, divPlayerList, function() {
+                    var playerName = data.players[bindPlayerId].name;
+                    if (confirm("确定删除'" + playerName + "'？")) {
+                        console.log("delplayer", bindPlayerId, playerName);
+
+                        requestPost("delplayer", {playerId:bindPlayerId}, function(json) {
+                            if (json && json.playerId && json.playerId == bindPlayerId) {
+                                delete pageModel.players[bindPlayerId];
+                                loadPlayers();
+                            }
+                        });
+                    }
+                });
+            })();
         }
         divGroupList.html("");
         for (var groupId in data.groups) {
             var groupInfo = data.groups[groupId];
-            $(groupOptionTemplate(groupInfo)).appendTo(divGroupList);
+            $(groupOptionTemplate({groupId:groupId, name:groupInfo.name})).appendTo(divGroupList);
         }
     }
-
-    //loadPlayers(ldata);
-    $(".div_refresh_data").click(function() {
-        refreshContent(true, loadPlayers);
-    });
     refreshContent(false, loadPlayers);
 }
 
@@ -197,10 +242,15 @@ function displayMatch() {
         giveup(displayWelcome);
     });
 
+    $(".div_refresh_data").click(function() {
+        refreshContent(true, loadMatch);
+    });
+
     var raceBlockTemplate = Handlebars.compile($(".hd_race_block").html());
 
     var divContentPanel = $(".div_content_panel_match");
-    var loadMatch = function(data) {
+    function loadMatch() {
+        var data = pageModel;
         divContentPanel.html("");
         var raceTypes = ["黄鹿", "玫瑰", "咸鱼"];
         for (var raceIndex = 0; raceIndex < raceTypes.length; ++raceIndex) {
@@ -220,8 +270,12 @@ function displayMatch() {
                 var divPlayers = raceBlock.find(".div_race_players");
                 if (matchPlayerIds && matchPlayerIds.length > 0) {
                     for (var playerIndex = 0; playerIndex < matchPlayerIds.length; ++playerIndex) {
-                        var playerId = matchPlayerIds[playerIndex];
-                        addPlayerToList(data, playerId, divPlayers);
+                        (function() {
+                            var playerId = matchPlayerIds[playerIndex];
+                            addPlayerToList(data, playerId, divPlayers, function() {
+
+                            });
+                        })();
                     }
                 } else {
                     divPlayers.html("无人报名");
@@ -229,11 +283,6 @@ function displayMatch() {
             }
         }
     }
-
-    //loadMatch(ldata);
-    $(".div_refresh_data").click(function() {
-        refreshContent(true, loadMatch);
-    });
     refreshContent(false, loadMatch);
 }
 
