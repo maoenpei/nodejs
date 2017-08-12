@@ -23,6 +23,8 @@ var hostCommand = {
 			var canDelPlayer = state.adminLevel >= 2;
 			var canAddGroup = state.adminLevel >= 3;
 			var canDelGroup = state.adminLevel >= 3;
+			var canAddUser = state.adminLevel >= 4;
+			var canDelUser = state.adminLevel >= 4;
 
 			var logic = $PersistanceManager.Logic();
 			var json = {
@@ -32,6 +34,8 @@ var hostCommand = {
 				delPlayer:canDelPlayer,
 				addGroup:canAddGroup,
 				delGroup:canDelGroup,
+				addUser:canAddUser,
+				delUser:canDelUser,
 			};
 			responder.respondJson(json, safe(done));
 
