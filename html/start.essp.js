@@ -60,6 +60,161 @@ var uploadFile = function(url, callback) {
     fileLoader.click();
 };
 
+// Model
+//-------------------------------------------------------------------------
+var pageModel = {};
+pageModel.refresh = function(force, callback) {
+    $this = this;
+    requestPost("information", {}, function(json) {
+        if (json) {
+            console.log("information", json);
+            $this.groups = json.groups;
+            $this.players = json.players;
+            $this.match = json.match;
+            $this.options = json;
+            safe(callback)();
+        }
+    });
+}
+pageModel.canDeletePlayer = function() {
+    return this.options.delPlayer;
+}
+pageModel.player = function(playerId) {
+    var player = this.players[playerId];
+    var group = this.groups[player.group];
+    return {
+        status:group.status,
+        group:group.name,
+        name:player.name,
+        power:player.power,
+    };
+}
+pageModel.addPlayer = function(name, power, group, callback) {
+    $this = this;
+    console.log("addplayer", name, power, group);
+
+    var player = {name:name, power:power, group:group};
+    requestPost("addplayer", player, function(json) {
+        if (json && json.playerId) {
+            $this.players[json.playerId] = player;
+            safe(callback)();
+        }
+    });
+}
+pageModel.delPlayer = function(playerId, callback) {
+    $this = this;
+    var playerName = $this.players[playerId].name;
+    console.log("delplayer", playerId, playerName);
+
+    requestPost("delplayer", {playerId:playerId}, function(json) {
+        if (json && json.playerId && json.playerId == playerId) {
+            delete $this.players[playerId];
+            safe(callback)();
+        }
+    });
+}
+pageModel.orderWithPower = function(playerKeys) {
+    var allPlayerIds = {};
+    for (var playerId in playerKeys) {
+        allPlayerIds[playerId] = true;
+    }
+    var playerIds = [];
+    while (true) {
+        var maxPlayerId = null;
+        var maxPower = 0;
+        for (var playerId in allPlayerIds) {
+            var power = this.players[playerId].power;
+            if (power > maxPower) {
+                maxPower = power;
+                maxPlayerId = playerId;
+            }
+        }
+        if (maxPlayerId) {
+            delete allPlayerIds[maxPlayerId];
+            playerIds.push(maxPlayerId);
+        } else {
+            break;
+        }
+    }
+    return playerIds;
+}
+pageModel.orderedPlayerIds = function() {
+    return this.orderWithPower(this.players);
+}
+pageModel.group = function(groupId) {
+    return this.groups[groupId];
+}
+pageModel.groupIds = function() {
+    var allGroupIds = {};
+    for (var groupId in this.groups) {
+        allGroupIds[groupId] = true;
+    }
+    var groupIds = [];
+    var statusLevel = 0;
+    while(true) {
+        var hasGroup = false;
+        for (var groupId in allGroupIds) {
+            hasGroup = true;
+            var groupInfo = this.groups[groupId];
+            if (groupInfo.status == statusLevel) {
+                groupIds.push(groupId);
+                delete allGroupIds[groupId];
+            }
+        }
+        if (!hasGroup) {
+            break;
+        }
+        statusLevel ++;
+    }
+    return groupIds;
+}
+pageModel.selectablePlayerIds = function() {
+    var playerInMatch = {};
+    for (var matchId in this.match) {
+        for (var playerId in this.match[matchId]) {
+            playerInMatch[playerId] = true;
+        }
+    }
+    var playerNotInMatch = {};
+    for (var playerId in this.players) {
+        if (!playerInMatch[playerId]) {
+            playerNotInMatch[playerId] = true;
+        }
+    }
+    return this.orderWithPower(playerNotInMatch);
+}
+pageModel.matchPlayerIds = function(matchId) {
+    var match = this.match[matchId];
+    match = (match ? match : {});
+    return this.orderWithPower(match);
+}
+pageModel.joinmatch = function(matchId, playerId, callback) {
+    $this = this;
+    requestPost("joinmatch", {matchId:matchId, playerId:playerId}, function(json) {
+        if (json && json.success) {
+            var match = $this.match[matchId];
+            match = (match ? match : {});
+            match[playerId] = true;
+            $this.match[matchId] = match;
+            safe(callback)();
+        }
+    });
+}
+pageModel.quitmatch = function(matchId, playerId, callback) {
+    $this = this;
+    requestPost("quitmatch", {matchId:matchId, playerId:playerId}, function(json) {
+        if (json && json.success) {
+            var match = $this.match[matchId];
+            match = (match ? match : {});
+            delete match[playerId];
+            safe(callback)();
+        }
+    });
+}
+
+// View
+//-------------------------------------------------------------------------
+
 var adjustContentHeight = function(titleCls, contentCls) {
     var total = parseInt($("body").css("height"));
     var title = parseInt($(titleCls).css("height"));
@@ -91,50 +246,21 @@ var clearEvents = function() {
     $(".add_player_confirm").unbind();
 }
 
-    var ldata = {
-        match:{},
-        players:{},
-        groups:{},
-    };
-    ldata.groups[98723489] = {
-        status:0,
-        name:"老司机",
-    };
-    ldata.players[654615] = {
-        group:98723489,
-        name:"M神",
-        power:800,
-    };
-    ldata.match[10] = {};
-    ldata.match[10][654615] = true;
-
-var pageModel = null;
-var refreshContent = function(force, callback){
-    requestPost("information", {}, function(json) {
-        if (json) {
-            pageModel = json;
-            console.log(pageModel);
-            safe(callback)(pageModel);
-        }
-    });
-};
-
 var giveup = function(callback) {
     delete localStorage.serial_string;
     requestPost("giveup", {}, callback);
 }
 
 var racePlayerTemplate = null;
-function addPlayerToList(data, playerId, divParent, hasDelete, delCallback) {
+function addPlayerToList(playerId, divParent, hasDelete, delCallback) {
     if (racePlayerTemplate == null) {
         racePlayerTemplate = Handlebars.compile($(".hd_player_item").html());
     }
 
-    var playerInfo = data.players[playerId];
-    var groupInfo = data.groups[playerInfo.group];
+    var playerInfo = pageModel.player(playerId);
     var playerData = {
-        enemy:(groupInfo.status != 0),
-        group:groupInfo.name,
+        enemy:(playerInfo.status != 0),
+        group:playerInfo.group,
         name:playerInfo.name,
         power:playerInfo.power,
     };
@@ -185,20 +311,15 @@ function displayPlayerList() {
         }
 
         var groupId = $(".select_player_group").val();
-        console.log("addplayer", name, powerNum, groupId);
 
-        var player = {name:name, power:powerNum, group:groupId};
-        requestPost("addplayer", player, function(json) {
-            clearNewPlayerInfo();
-            if (json && json.playerId) {
-                pageModel.players[json.playerId] = player;
-                loadPlayers();
-            }
+        clearNewPlayerInfo();
+        pageModel.addPlayer(name, powerNum, groupId, function() {
+            loadPlayers();
         });
     });
 
     $(".div_refresh_data").click(function() {
-        refreshContent(true, loadPlayers);
+        pageModel.refresh(true, loadPlayers);
     });
 
     var groupOptionTemplate = Handlebars.compile($(".hd_group_option").html());
@@ -206,33 +327,30 @@ function displayPlayerList() {
     var divPlayerList = $(".div_player_list");
     var divGroupList = $(".select_player_group");
     function loadPlayers() {
-        var data = pageModel;
         divPlayerList.html("");
-        for (var playerId in data.players) {
+        var playerIds = pageModel.orderedPlayerIds();
+        for (var i = 0; i < playerIds.length; ++i) {
             (function() {
-                var bindPlayerId = playerId;
-                addPlayerToList(data, bindPlayerId, divPlayerList, data.delPlayer, function() {
-                    var playerName = data.players[bindPlayerId].name;
+                var playerId = playerIds[i];
+                addPlayerToList(playerId, divPlayerList, pageModel.canDeletePlayer(), function() {
                     if (confirm("确定删除'" + playerName + "'？")) {
-                        console.log("delplayer", bindPlayerId, playerName);
-
-                        requestPost("delplayer", {playerId:bindPlayerId}, function(json) {
-                            if (json && json.playerId && json.playerId == bindPlayerId) {
-                                delete pageModel.players[bindPlayerId];
-                                loadPlayers();
-                            }
+                        pageModel.delPlayer(playerId, function() {
+                            loadPlayers();
                         });
                     }
                 });
             })();
         }
+
         divGroupList.html("");
-        for (var groupId in data.groups) {
-            var groupInfo = data.groups[groupId];
+        var groupIds = pageModel.groupIds();
+        for (var i = 0; i < groupIds.length; ++i) {
+            var groupId = groupIds[i];
+            var groupInfo = pageModel.group(groupId);
             $(groupOptionTemplate({groupId:groupId, name:groupInfo.name})).appendTo(divGroupList);
         }
     }
-    refreshContent(false, loadPlayers);
+    pageModel.refresh(false, loadPlayers);
 }
 
 function displayMatch() {
@@ -245,7 +363,7 @@ function displayMatch() {
     });
 
     $(".div_refresh_data").click(function() {
-        refreshContent(true, loadMatch);
+        pageModel.refresh(true, loadMatch);
     });
 
     var raceBlockTemplate = Handlebars.compile($(".hd_race_block").html());
@@ -253,7 +371,6 @@ function displayMatch() {
 
     var divContentPanel = $(".div_content_panel_match");
     function loadMatch() {
-        var data = pageModel;
         divContentPanel.html("");
         var raceTypes = ["黄鹿", "玫瑰", "咸鱼"];
         for (var raceIndex = 0; raceIndex < raceTypes.length; ++raceIndex) {
@@ -272,26 +389,21 @@ function displayMatch() {
                     addButton.click(function() {
                         playerSelect.html("");
                         playerSelect.append($("<option value='0'>请选择</option>"));
-                        var playerInMatch = {};
-                        for (var matchId in data.match) {
-                            for (var playerId in data.match[matchId]) {
-                                playerInMatch[playerId] = true;
-                            }
-                        }
-                        for (var playerId in data.players) {
-                            var playerInfo = data.players[playerId];
-                            if (!playerInMatch[playerId]) {
-                                $(playerOptionTemplate({
-                                    playerId:playerId,
-                                    group:data.groups[playerInfo.group].name,
-                                    name:playerInfo.name,
-                                    power:playerInfo.power,
-                                })).appendTo(playerSelect);
-                            }
+                        var selectablePlayerIds = pageModel.selectablePlayerIds();
+                        for (var i = 0; i < selectablePlayerIds.length; ++i) {
+                            var playerId = selectablePlayerIds[i];
+                            var playerInfo = pageModel.player(playerId);
+                            $(playerOptionTemplate({
+                                playerId:playerId,
+                                group:playerInfo.group,
+                                name:playerInfo.name,
+                                power:playerInfo.power,
+                            })).appendTo(playerSelect);
                         }
 
                         addButton.hide();
                         playerSelect.show();
+                        playerSelect.focus();
                     });
                     playerSelect.change(function() {
                         addButton.show();
@@ -302,12 +414,8 @@ function displayMatch() {
                         if (playerId == 0) {
                             return;
                         }
-                        requestPost("joinmatch", {matchId:currentMatchId, playerId:playerId}, function(json) {
-                            if (json && json.success) {
-                                data.match[currentMatchId] = (data.match[currentMatchId] ? data.match[currentMatchId] : {});
-                                data.match[currentMatchId][playerId] = true;
-                                loadMatch();
-                            }
+                        pageModel.joinmatch(currentMatchId, playerId, function() {
+                            loadMatch();
                         });
                     });
                     playerSelect.blur(function() {
@@ -315,33 +423,26 @@ function displayMatch() {
                         playerSelect.hide();
                     });
 
-                    data.match[currentMatchId] = (data.match[currentMatchId] ? data.match[currentMatchId] : {});
-                    var matchPlayerIds = data.match[currentMatchId];
+                    var matchPlayerIds = pageModel.matchPlayerIds(currentMatchId);
                     var divPlayers = raceBlock.find(".div_race_players");
-                    var hasPlayer = false;
-                    for (var playerId in matchPlayerIds) {
-                        hasPlayer = true;
+                    for (var i = 0; i < matchPlayerIds.length; ++i) {
                         (function() {
-                            var bindPlayerId = playerId;
-                            addPlayerToList(data, bindPlayerId, divPlayers, true, function() {
-                                requestPost("quitmatch", {matchId:currentMatchId, playerId:playerId}, function(json) {
-                                    if (json && json.success) {
-                                        data.match[currentMatchId] = (data.match[currentMatchId] ? data.match[currentMatchId] : {});
-                                        delete data.match[currentMatchId][playerId];
-                                        loadMatch();
-                                    }
+                            var playerId = matchPlayerIds[i];
+                            addPlayerToList(playerId, divPlayers, true, function() {
+                                pageModel.quitmatch(currentMatchId, playerId, function() {
+                                    loadMatch();
                                 });
                             });
                         })();
                     }
-                    if (!hasPlayer) {
+                    if (matchPlayerIds.length == 0) {
                         divPlayers.html("无人报名");
                     }
                 })();
             }
         }
     }
-    refreshContent(false, loadMatch);
+    pageModel.refresh(false, loadMatch);
 }
 
 function displayWelcome() {
