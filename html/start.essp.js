@@ -63,22 +63,34 @@ var uploadFile = function(url, callback) {
 //-------------------------------------------------------------------------
 // Model
 
-var pageModel = {};
+var pageModel = {options:{}, lastTime:0,};
 pageModel.refresh = function(force, callback) {
     $this = this;
-    requestPost("information", {}, function(json) {
-        if (json) {
-            console.log("information", json);
-            $this.groups = json.groups;
-            $this.players = json.players;
-            $this.match = json.match;
-            $this.options = json;
-            safe(callback)();
-        }
-    });
+    var currentTime = new Date().getTime();
+    if (force || currentTime - $this.lastTime > 1000 * 10) {
+        $this.lastTime = currentTime;
+        requestPost("information", {}, function(json) {
+            if (json) {
+                console.log("information result", json);
+                $this.groups = json.groups;
+                $this.players = json.players;
+                $this.match = json.match;
+                $this.options = json;
+                safe(callback)();
+            }
+        });
+    } else {
+        safe(callback)();
+    }
 }
 pageModel.canDeletePlayer = function() {
     return this.options.delPlayer;
+}
+pageModel.canEditGroup = function() {
+    return this.options.editGroup;
+}
+pageModel.canEditUser = function() {
+    return this.options.editUser;
 }
 pageModel.player = function(playerId) {
     var player = this.players[playerId];
@@ -258,7 +270,7 @@ templates.read = function(templateCls) {
 var adjustContentHeight = function(titleCls, contentCls) {
     var total = parseInt($("body").css("height"));
     var title = parseInt($(titleCls).css("height"));
-    console.log(total, title);
+    console.log("height", total, title);
     $(contentCls).css("height", total - title);
 };
 
@@ -268,28 +280,86 @@ var showOnlyChild = function(outerCls, childCls) {
     $(outerCls).show();
 };
 
-var showMode = function(modeName) {
-    console.log("mode", modeName);
-    localStorage.lastMode = modeName;
-    showOnlyChild(".div_title_bar", ".div_title_bar_" + modeName);
-    showOnlyChild(".div_content_panel", ".div_content_panel_" + modeName);
-};
-
 var clearEvents = function() {
     $(".input_type_pwd").unbind();
     $(".div_refresh_data").unbind();
     $(".input_confirm_pwd").unbind();
     $(".div_log_off").unbind();
-    $(".div_to_match").unbind();
-    $(".div_log_off").unbind();
-    $(".div_to_playerlist").unbind();
     $(".div_new_player").unbind();
     $(".add_player_confirm").unbind();
 }
 
-var giveup = function(callback) {
-    delete localStorage.serial_string;
-    requestPost("giveup", {}, callback);
+var selectableModes = [
+    {name:"list", desc:"玩家列表", condition:function() {return true;}, switcher:displayPlayerList},
+    {name:"match", desc:"帝国战", condition:function() {return true;}, switcher:displayMatch},
+    {name:"manage", desc:"管理", condition:function() {return pageModel.canEditGroup();}, switcher:displayManage},
+];
+var hashModes = {};
+for (var i = 0; i < selectableModes.length; ++i) {
+    var mode = selectableModes[i];
+    hashModes[mode.name] = mode;
+}
+function switchToMode(modeName) {
+    var mode = hashModes[modeName];
+    if (mode) {
+        mode.switcher();
+    } else {
+        displayPlayerList();
+    }
+}
+
+var showMode = function(modeName) {
+    console.log("mode", modeName);
+    localStorage.lastMode = modeName;
+    var currMode = null;
+    var modes = [];
+    for (var i = 0; i < selectableModes.length; ++i) {
+        var mode = selectableModes[i];
+        if (mode.name == modeName) {
+            currMode = mode;
+        } else if (mode.condition()){
+            modes.push(mode);
+        }
+    }
+    if (currMode) {
+        console.log("modes", modes);
+        var modeSelectTemplate = templates.read(".hd_selectable_modes");
+        var modeSelectorContainer = $(".div_title_bar_" + modeName).find(".div_mode_selector");
+        modeSelectorContainer.html("");
+        var templateParameter = {};
+        templateParameter.singleMode = (modes.length == 1);
+        if (modes.length == 1) {
+            templateParameter.singleDesc = modes[0].desc;
+        } else {
+            templateParameter.modes = [currMode].concat(modes);
+        }
+        var modeSelector = $(modeSelectTemplate(templateParameter));
+        modeSelector.appendTo(modeSelectorContainer);
+        console.log("modes", modes);
+        if (modes.length == 1) {
+            modeSelector.click(function() {
+                modes[0].switcher();
+            });
+        } else {
+            modeSelector.change(function() {
+                var selectedMode = modeSelector.val();
+                switchToMode(selectedMode);
+            });
+        }
+    }
+    showOnlyChild(".div_title_bar", ".div_title_bar_" + modeName);
+    showOnlyChild(".div_content_panel", ".div_content_panel_" + modeName);
+    adjustContentHeight(".div_title_bar", ".div_content_panel");
+
+    $(".div_log_off").click(function() {
+        delete localStorage.serial_string;
+        requestPost("giveup", {}, displayWelcome);
+    });
+};
+
+function displayManage() {
+    clearEvents();
+    showMode("manage");
 }
 
 function addPlayerToList(playerId, divParent, delCallback, editCallback) {
@@ -336,11 +406,6 @@ function addPlayerToList(playerId, divParent, delCallback, editCallback) {
 function displayPlayerList() {
     clearEvents();
     showMode("list");
-
-    $(".div_to_match").click(displayMatch);
-    $(".div_log_off").click(function() {
-        giveup(displayWelcome);
-    });
 
     var divAddPlayer = $(".div_add_player_info");
     var clearNewPlayerInfo = function() {
@@ -425,11 +490,6 @@ function displayPlayerList() {
 function displayMatch() {
     clearEvents();
     showMode("match");
-
-    $(".div_to_playerlist").click(displayPlayerList);
-    $(".div_log_off").click(function() {
-        giveup(displayWelcome);
-    });
 
     $(".div_refresh_data").click(function() {
         pageModel.refresh(true, loadMatch);
@@ -519,7 +579,7 @@ function displayWelcome() {
 
     var exchange = function (serial, success, failed) {
         requestPost("exchange", {serial:serial}, function(json) {
-            console.log(json);
+            console.log("exchange result", json);
             if (json && json.serial) {
                 localStorage.serial_string = json.serial;
                 safe(success)();
@@ -529,12 +589,10 @@ function displayWelcome() {
         });
     };
 
-    var enterPage = displayPlayerList;
-    var lastMode = localStorage.lastMode;
-    if (lastMode == "list") {
-        enterPage = displayPlayerList;
-    } else if (lastMode == "match") {
-        enterPage = displayMatch;
+    var successFunc = function() {
+        pageModel.refresh(true, function() {
+            switchToMode(localStorage.lastMode);
+        });
     }
 
     $(".input_confirm_pwd").click(function () {
@@ -548,7 +606,7 @@ function displayWelcome() {
 
     var serial = localStorage.serial_string;
     if (serial) {
-        exchange(serial, enterPage, exchangeNext);
+        exchange(serial, successFunc, exchangeNext);
     } else {
         exchangeNext();
     }
@@ -563,7 +621,7 @@ function displayWelcome() {
     function inputNext(serial) {
         $(".input_confirm_pwd").hide();
         $(".input_type_pwd").val("");
-        exchange(serial, enterPage, exchangeNext);
+        exchange(serial, successFunc, exchangeNext);
     }
 }
 

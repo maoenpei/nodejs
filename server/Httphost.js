@@ -21,10 +21,8 @@ var hostCommand = {
 			var canView = state.adminLevel >= 1;
 			var canAddPlayer = state.adminLevel >= 1;
 			var canDelPlayer = state.adminLevel >= 2;
-			var canAddGroup = state.adminLevel >= 3;
-			var canDelGroup = state.adminLevel >= 3;
-			var canAddUser = state.adminLevel >= 4;
-			var canDelUser = state.adminLevel >= 4;
+			var canEditGroup = state.adminLevel >= 3;
+			var canEditUser = state.adminLevel >= 4;
 
 			var logic = $PersistanceManager.Logic();
 			var json = {
@@ -32,10 +30,8 @@ var hostCommand = {
 				players:(logic.players ? logic.players : {}),
 				groups:(logic.groups ? logic.groups : {}),
 				delPlayer:canDelPlayer,
-				addGroup:canAddGroup,
-				delGroup:canDelGroup,
-				addUser:canAddUser,
-				delUser:canDelUser,
+				editGroup:canEditGroup,
+				editUser:canEditUser,
 			};
 			responder.respondJson(json, safe(done));
 

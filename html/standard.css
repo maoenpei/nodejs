@@ -20,6 +20,9 @@ body{
     background-color:#999;
     padding:0.5rem 0;
 }
+.div_mode_selector{
+    display:inline-block;
+}
 .div_content_panel{
     font-size:0.8rem;
     text-align:center;
