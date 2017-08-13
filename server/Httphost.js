@@ -8,6 +8,106 @@ require("./PersistanceManager");
 require("./LoginManager");
 require("./TemplateParser");
 
+Base.extends("LogicManager", {
+	_constructor:function() {
+		this.logic = $PersistanceManager.Logic();
+		this.playerInMatch = {};
+		for (var matchId in this.logic.match) {
+			var match = this.logic.match[matchId];
+			for (var playerId in match) {
+				this.playerInMatch[playerId] = matchId;
+			}
+		}
+	},
+	save:function(done) {
+		$PersistanceManager.Commit(done);
+	},
+	match:function() {
+		return this.logic.match;
+	},
+	players:function() {
+		return this.logic.players;
+	},
+	groups:function() {
+		return this.logic.groups;
+	},
+
+	hasGroup:function(groupId) {
+		return !!this.logic.groups[groupId];
+	},
+	hasPlayer:function(playerId) {
+		return !!this.logic.players[playerId];
+	},
+
+	newPlayer:function(player) {
+		var playerId = rkey();
+		while(this.logic.players[playerId]) {
+			playerId = rkey();
+		}
+
+		console.log("adding player", playerId, player);
+		this.logic.players[playerId] = player;
+		return playerId;
+	},
+	delPlayer:function(playerId) {
+		console.log("deleting player", playerId, this.logic.players[playerId].name);
+		var matchId = this.playerInMatch[playerId];
+		if (matchId) {
+			delete this.logic.match[matchId][playerId];
+			delete this.playerInMatch[playerId];
+		}
+		delete this.logic.players[playerId];
+	},
+	playerPower:function(playerId, power) {
+		var player = this.logic.players[playerId];
+		if (player) {
+			player.power = power;
+		}
+	},
+	addGroup:function(group) {
+		var groupId = rkey();
+		while (this.logic.groups[groupId]) {
+			groupId = rkey();
+		}
+
+		console.log("adding group", groupId, group);
+		this.logic.groups[groupId] = group;
+		return groupId;
+	},
+	delGroup:function(groupId) {
+		console.log("deleting group", groupId, this.logic.groups[groupId].name);
+		var playerIds = {};
+		for (var playerId in this.logic.players) {
+			var playerInfo = this.logic.players[playerId];
+			if (playerInfo.group == groupId) {
+				console.log("deleting player in group", playerId, playerInfo.name);
+				playerIds[playerId] = true;
+			}
+		}
+
+		for (var playerId in playerIds) {
+			this.delPlayer(playerId);
+		}
+		delete this.logic.groups[groupId];
+	},
+	playerMatch:function(playerId) {
+		return this.playerInMatch[playerId];
+	},
+	playerToMatch:function(playerId, matchId) {
+		var match = this.logic.match[matchId];
+		match = (match ? match : {});
+		match[playerId] = true;
+		this.logic.match[matchId] = match;
+		this.playerInMatch[playerId] = matchId;
+	},
+	playerQuit:function(playerId) {
+		var matchId = this.playerInMatch[playerId];
+		var match = this.logic.match[matchId];
+		delete match[playerId];
+		delete this.playerInMatch[playerId];
+	},
+});
+
 var hostCommand = {
 	information:function(requestor, responder, done) {
 		var next = coroutine(function*() {
@@ -24,11 +124,11 @@ var hostCommand = {
 			var canEditGroup = state.adminLevel >= 3;
 			var canEditUser = state.adminLevel >= 4;
 
-			var logic = $PersistanceManager.Logic();
+			var logic = this.logicManager;
 			var json = {
-				match:(logic.match ? logic.match : {}),
-				players:(logic.players ? logic.players : {}),
-				groups:(logic.groups ? logic.groups : {}),
+				match:logic.match(),
+				players:logic.players(),
+				groups:logic.groups(),
 				delPlayer:canDelPlayer,
 				editGroup:canEditGroup,
 				editUser:canEditUser,
@@ -60,24 +160,20 @@ var hostCommand = {
 			var groupId = json.group;
 			var name = json.name;
 			var power = json.power;
-			var logic = $PersistanceManager.Logic();
-			if (!logic.groups[groupId]) {
+			var logic = this.logicManager;
+			if (!logic.hasGroup(groupId)) {
 				responder.addError("Not existing group.");
 				return responder.respondJson({}, safe(done));
 			}
 
-			var playerId = rkey();
-			while(logic.players[playerId]) {
-				playerId = rkey();
-			}
-			logic.players[playerId] = {
+			var playerId = logic.newPlayer({
 				group:groupId,
 				name:name,
 				power:power,
-			};
-			yield $PersistanceManager.Commit(next);
-			responder.respondJson({playerId:playerId}, safe(done));
+			});
+			yield logic.save(next);
 
+			responder.respondJson({playerId:playerId}, safe(done));
 		}, this);
 	},
 	delplayer:function(requestor, responder, done) {
@@ -101,14 +197,14 @@ var hostCommand = {
 			}
 
 			var playerId = json.playerId;
-			var logic = $PersistanceManager.Logic();
-			if (!logic.players[playerId]) {
+			var logic = this.logicManager;
+			if (!logic.hasPlayer(playerId)) {
 				responder.addError("playerId not exist.");
 				return responder.respondJson({}, safe(done));
 			}
 
-			delete logic.players[playerId];
-			yield $PersistanceManager.Commit(next);
+			logic.delPlayer(playerId);
+			yield logic.save(next);
 
 			responder.respondJson({playerId:playerId}, safe(done));
 		}, this);
@@ -135,14 +231,14 @@ var hostCommand = {
 
 			var playerId = json.playerId;
 			var power = json.power;
-			var logic = $PersistanceManager.Logic();
-			if (!logic.players[playerId]) {
+			var logic = this.logicManager;
+			if (!logic.hasPlayer(playerId)) {
 				responder.addError("playerId not exist.");
 				return responder.respondJson({}, safe(done));
 			}
 
-			logic.players[playerId].power = power;
-			yield $PersistanceManager.Commit(next);
+			logic.playerPower(playerId, power);
+			yield logic.save(next);
 
 			responder.respondJson({success:true}, safe(done));
 		}, this);
@@ -169,17 +265,12 @@ var hostCommand = {
 
 			var name = json.name;
 			var status = json.status;
-			var logic = $PersistanceManager.Logic();
-
-			var groupId = rkey();
-			while (logic.groups[groupId]) {
-				groupId = rkey();
-			}
-			logic.groups[groupId] = {
+			var logic = this.logicManager;
+			var groupId = logic.addGroup({
 				name:name,
 				status:status,
-			};
-			yield $PersistanceManager.Commit(next);
+			});
+			yield logic.save(next);
 
 			responder.respondJson({groupId:groupId}, safe(done));
 		}, this);
@@ -205,25 +296,14 @@ var hostCommand = {
 			}
 
 			var groupId = json.groupId;
-			var logic = $PersistanceManager.Logic();
-			if (!logic.groups[groupId]) {
+			var logic = this.logicManager;
+			if (!logic.hasGroup(groupId)) {
 				responder.addError("groupId not exist.");
 				return responder.respondJson({}, safe(done));
 			}
 
-			var playerIds = {};
-			for (var playerId in logic.players) {
-				var playerInfo = logic.players[playerId];
-				if (playerInfo.group == groupId) {
-					playerIds[playerId] = true;
-				}
-			}
-
-			for (var playerId in playerIds) {
-				delete logic.players[playerId];
-			}
-			delete logic.groups[groupId];
-			yield $PersistanceManager.Commit(next);
+			logic.delGroup(groupId);
+			yield logic.save(next);
 
 			responder.respondJson({groupId:groupId}, safe(done));
 		}, this);
@@ -250,17 +330,21 @@ var hostCommand = {
 
 			var playerId = json.playerId;
 			var matchId = json.matchId;
-			var logic = $PersistanceManager.Logic();
-			if (!logic.players[playerId]) {
+			var logic = this.logicManager;
+			if (!logic.hasPlayer(playerId)) {
 				responder.addError("playerId not exist.");
 				return responder.respondJson({}, safe(done));
 			}
 
-			var match = logic.match[matchId];
-			match = (match ? match : {});
-			match[playerId] = true;
-			logic.match[matchId] = match;
-			yield $PersistanceManager.Commit(next);
+			var oldMatchId = logic.playerMatch(playerId);
+			if (oldMatchId) {
+				responder.addError("player already in match.", oldMatchId);
+				return responder.respondJson({}, safe(done));
+			}
+
+			console.log("joinmatch", playerId, matchId);
+			logic.playerToMatch(playerId, matchId);
+			yield logic.save(next);
 
 			responder.respondJson({success:true}, safe(done));
 
@@ -288,19 +372,21 @@ var hostCommand = {
 
 			var playerId = json.playerId;
 			var matchId = json.matchId;
-			var logic = $PersistanceManager.Logic();
-			if (!logic.players[playerId]) {
+			var logic = this.logicManager;
+			if (!logic.hasPlayer(playerId)) {
 				responder.addError("playerId not exist.");
 				return responder.respondJson({}, safe(done));
 			}
-			if (!logic.match[matchId]) {
-				responder.addError("matchId not exist.");
+
+			var oldMatchId = logic.playerMatch(playerId);
+			if (!oldMatchId || oldMatchId != matchId) {
+				responder.addError("player not in any match.");
 				return responder.respondJson({}, safe(done));
 			}
 
-			var match = logic.match[matchId];
-			delete match[playerId];
-			yield $PersistanceManager.Commit(next);
+			console.log("quitmatch", playerId, matchId);
+			logic.playerQuit(playerId);
+			yield logic.save(next);
 
 			responder.respondJson({success:true}, safe(done));
 
@@ -472,6 +558,8 @@ Base.extends("Httphost", {
 		};
 		$FileCacher.setEnabled(!isHost);
 		$TemplateParser.setEnabled(!isHost);
+
+		this.logicManager = new LogicManager();
 	},
 	onVisit:function(req, res) {
 		var requestor = new Requestor(req);
