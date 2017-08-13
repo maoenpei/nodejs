@@ -147,6 +147,87 @@ var hostCommand = {
 			responder.respondJson({success:true}, safe(done));
 		}, this);
 	},
+	addgroup:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			var obj = yield this.tokenValid(requestor, next);
+			if (!obj) {
+				responder.addError("Not valid token for file add.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var state = $PersistanceManager.State(obj.getSerial());
+			if (state.adminLevel < 3) {
+				responder.addError("Admin level not enough.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var json = yield requestor.visitBodyJson(next);
+			if (!json || !json.name || !json.status) {
+				responder.addError("Parameter data not correct.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var name = json.name;
+			var status = json.status;
+			var logic = $PersistanceManager.Logic();
+
+			var groupId = rkey();
+			while (logic.groups[groupId]) {
+				groupId = rkey();
+			}
+			logic.groups[groupId] = {
+				name:name,
+				status:status,
+			};
+			yield $PersistanceManager.Commit(next);
+
+			responder.respondJson({groupId:groupId}, safe(done));
+		}, this);
+	},
+	delgroup:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			var obj = yield this.tokenValid(requestor, next);
+			if (!obj) {
+				responder.addError("Not valid token for file add.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var state = $PersistanceManager.State(obj.getSerial());
+			if (state.adminLevel < 3) {
+				responder.addError("Admin level not enough.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var json = yield requestor.visitBodyJson(next);
+			if (!json || !json.groupId) {
+				responder.addError("Parameter data not correct.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var groupId = json.groupId;
+			var logic = $PersistanceManager.Logic();
+			if (!logic.groups[groupId]) {
+				responder.addError("groupId not exist.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var playerIds = {};
+			for (var playerId in logic.players) {
+				var playerInfo = logic.players[playerId];
+				if (playerInfo.group == groupId) {
+					playerIds[playerId] = true;
+				}
+			}
+
+			for (var playerId in playerIds) {
+				delete logic.players[playerId];
+			}
+			delete logic.groups[groupId];
+			yield $PersistanceManager.Commit(next);
+
+			responder.respondJson({groupId:groupId}, safe(done));
+		}, this);
+	},
 	joinmatch:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);

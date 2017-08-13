@@ -183,6 +183,34 @@ pageModel.orderedPlayerIds = function() {
 pageModel.group = function(groupId) {
     return this.groups[groupId];
 }
+pageModel.addGroup = function(name, statusLevel, callback) {
+    $this = this;
+    console.log("addgroup", name, statusLevel);
+
+    var group = {name:name, status:statusLevel};
+    requestPost("addgroup", group, function(json) {
+        if (json && json.groupId) {
+            $this.groups[json.groupId] = group;
+            safe(callback)();
+        }
+    });
+}
+pageModel.delGroup = function(groupId, callback) {
+    $this = this;
+    var groupData = $this.groups[groupId];
+    if (!groupData) {
+        return;
+    }
+
+    var groupName = groupData.name;
+    console.log("delgroup", groupId, groupName);
+
+    requestPost("delgroup", {groupId:groupId}, function(json) {
+        if (json && json.groupId && json.groupId == groupId) {
+            $this.refresh(true, callback);
+        }
+    });
+}
 pageModel.groupIds = function() {
     var allGroupIds = {};
     for (var groupId in this.groups) {
@@ -362,14 +390,44 @@ function displayManage() {
     clearEvents();
     showMode("manage");
 
+    // refresh
     $(".div_refresh_data").click(function() {
         pageModel.refresh(true, loadGroups);
+    });
+
+    // add new group
+    var divAddGroup = $(".div_add_group_info");
+    var clearNewGroupInfo = function() {
+        divAddGroup.hide();
+        $(".input_group_name").val("");
+        $(".select_group_level").val(0);
+    };
+    clearNewGroupInfo();
+    $(".div_new_group").click(function() {
+        divAddGroup.show();
+    });
+    $(".add_group_cancel").click(clearNewGroupInfo);
+    $(".add_group_confirm").click(function() {
+        var name = $(".input_group_name").val();
+        if (name == '') {
+            alert("不是有效的骑士团名字");
+            $(".input_group_name").focus();
+            return;
+        }
+
+        var statusLevel = $(".select_group_level").val();
+        clearNewGroupInfo();
+
+        pageModel.addGroup(name, statusLevel, function() {
+            loadGroups();
+        });
     });
 
     var groupDisplayTemplate = templates.read(".hd_group_item");
 
     var divGroupList = $(".div_group_list");
     function loadGroups() {
+        divGroupList.html("");
         var groupIds = pageModel.groupIds();
         for (var i = 0; i < groupIds.length; ++i) {
             (function() {
@@ -382,6 +440,9 @@ function displayManage() {
                 groupBlock.find(".div_greoup_name").addClass(enemy ? "display_player_red" : "display_player_green");
                 groupBlock.find(".div_group_delete").click(function() {
                     if (confirm("确认删除'" + groupInfo.name + "'？")) {
+                        pageModel.delGroup(groupId, function() {
+                            loadGroups();
+                        });
                     }
                 });
             })();
@@ -435,6 +496,12 @@ function displayPlayerList() {
     clearEvents();
     showMode("list");
 
+    // refresh
+    $(".div_refresh_data").click(function() {
+        pageModel.refresh(true, loadPlayers);
+    });
+
+    // add new player
     var divAddPlayer = $(".div_add_player_info");
     var clearNewPlayerInfo = function() {
         divAddPlayer.hide();
@@ -471,10 +538,7 @@ function displayPlayerList() {
         });
     });
 
-    $(".div_refresh_data").click(function() {
-        pageModel.refresh(true, loadPlayers);
-    });
-
+    // load player list
     var groupOptionTemplate = templates.read(".hd_group_option");
 
     var divPlayerList = $(".div_player_list");
