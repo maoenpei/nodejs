@@ -67,6 +67,7 @@ var pageModel = {options:{}, lastTime:0,};
 pageModel.refresh = function(force, callback) {
     $this = this;
     var currentTime = new Date().getTime();
+    console.log("refresh", currentTime - $this.lastTime);
     if (force || currentTime - $this.lastTime > 1000 * 10) {
         $this.lastTime = currentTime;
         requestPost("information", {}, function(json) {
@@ -287,6 +288,7 @@ var clearEvents = function() {
     $(".div_log_off").unbind();
     $(".div_new_player").unbind();
     $(".add_player_confirm").unbind();
+    $(".add_player_cancel").unbind();
 }
 
 var selectableModes = [
@@ -335,7 +337,6 @@ var showMode = function(modeName) {
         }
         var modeSelector = $(modeSelectTemplate(templateParameter));
         modeSelector.appendTo(modeSelectorContainer);
-        console.log("modes", modes);
         if (modes.length == 1) {
             modeSelector.click(function() {
                 modes[0].switcher();
@@ -360,6 +361,33 @@ var showMode = function(modeName) {
 function displayManage() {
     clearEvents();
     showMode("manage");
+
+    $(".div_refresh_data").click(function() {
+        pageModel.refresh(true, loadGroups);
+    });
+
+    var groupDisplayTemplate = templates.read(".hd_group_item");
+
+    var divGroupList = $(".div_group_list");
+    function loadGroups() {
+        var groupIds = pageModel.groupIds();
+        for (var i = 0; i < groupIds.length; ++i) {
+            (function() {
+                var groupId = groupIds[i];
+                var groupInfo = pageModel.group(groupId);
+                var enemy = (groupInfo.status != 0);
+
+                var groupBlock = $(groupDisplayTemplate(groupInfo));
+                groupBlock.appendTo(divGroupList);
+                groupBlock.find(".div_greoup_name").addClass(enemy ? "display_player_red" : "display_player_green");
+                groupBlock.find(".div_group_delete").click(function() {
+                    if (confirm("确认删除'" + groupInfo.name + "'？")) {
+                    }
+                });
+            })();
+        }
+    }
+    pageModel.refresh(false, loadGroups);
 }
 
 function addPlayerToList(playerId, divParent, delCallback, editCallback) {
@@ -450,7 +478,7 @@ function displayPlayerList() {
     var groupOptionTemplate = templates.read(".hd_group_option");
 
     var divPlayerList = $(".div_player_list");
-    var divGroupList = $(".select_player_group");
+    var selectGroupList = $(".select_player_group");
     function loadPlayers() {
         divPlayerList.html("");
         var playerIds = pageModel.orderedPlayerIds();
@@ -476,12 +504,12 @@ function displayPlayerList() {
             })();
         }
 
-        divGroupList.html("");
+        selectGroupList.html("");
         var groupIds = pageModel.groupIds();
         for (var i = 0; i < groupIds.length; ++i) {
             var groupId = groupIds[i];
             var groupInfo = pageModel.group(groupId);
-            $(groupOptionTemplate({groupId:groupId, name:groupInfo.name})).appendTo(divGroupList);
+            $(groupOptionTemplate({groupId:groupId, name:groupInfo.name})).appendTo(selectGroupList);
         }
     }
     pageModel.refresh(false, loadPlayers);

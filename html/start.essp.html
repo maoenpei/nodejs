@@ -25,6 +25,8 @@
             <div class="div_log_off visit_label">退出</div>
         </div>
         <div class="div_title_bar_manage">
+            <div class="div_refresh_data visit_label">刷新</div>
+            <div class="div_new_group visit_label">新骑士团</div>
             <div class="div_mode_selector"></div>
             <div class="div_log_off visit_label">退出</div>
         </div>
@@ -63,6 +65,22 @@
             </div>
         </div>
         <div class="div_content_panel_manage">
+            <div class="div_add_group_info" style="display:none;">
+                友好级别
+                <select class="select_group_level">
+                    <option value="0">己方</option>
+                    <option value="1">友军</option>
+                    <option value="2">宿敌</option>
+                </select>
+                名字
+                <input type="text" class="input_group_name"/>
+                <div class="add_player_control">
+                    <div class="add_group_cancel visit_label">取消</div>
+                    <div class="add_group_confirm visit_label">确定</div>
+                </div>
+            </div>
+            <div class="div_group_list">
+            </div>
         </div>
     </div>
 <script type="text/x-handlebars-template" class="hd_race_block">
@@ -108,6 +126,13 @@
                 {{/each}}
             </select>
         {{/if}}
+</script>
+<script type="text/x-handlebars-template" class="hd_group_item">
+                    <div class="div_group_item">
+                        <div class="div_greoup_name">【{{name}}】</div>
+                        <div class="div_group_line">--------</div>
+                        <div class="div_group_delete visit_label">删除</div>
+                    </div>
 </script>
 </body>
 </html>

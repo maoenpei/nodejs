@@ -136,3 +136,28 @@ body{
     margin:0.2rem;
     background-color:#aaa;
 }
+
+.div_add_group_info{
+    margin:0.3rem;
+    padding:0.3rem;
+    background-color:#aaa;
+    color:#df3;
+}
+.div_group_list{
+    margin:0.2rem;
+    background-color:#aaa;
+}
+.div_group_item{
+    padding:0.2rem;
+    color:#df3;
+}
+.div_greoup_name{
+    display:inline-block;
+}
+.div_group_line{
+    display:inline-block;
+    color:#fff;
+}
+.div_group_delete{
+    display:inline-block;
+}
