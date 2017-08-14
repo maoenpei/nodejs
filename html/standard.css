@@ -102,9 +102,16 @@ body{
     display:inline-block;
 }
 
-.div_add_player_info{
-    margin:0.3rem;
-    padding:0.3rem;
+.div_add_player_mask, .div_add_group_mask{
+    position:fixed;
+    width:100%;height:100%;
+    top:0;left:0;
+    background:rgba(0,0,0,0.5);
+}
+.div_add_player_info, .div_add_group_info{
+    position:absolute;
+    top:20%;left:0;
+    width:100%;
     background-color:#aaa;
     color:#df3;
 }
@@ -128,7 +135,7 @@ body{
 .input_player_power{
     width:calc(100% - 0.8rem);
 }
-.add_player_control{
+.add_player_control, .add_group_control{
     margin-top:0.2rem;
     font-size:1rem;
 }
@@ -137,12 +144,6 @@ body{
     background-color:#aaa;
 }
 
-.div_add_group_info{
-    margin:0.3rem;
-    padding:0.3rem;
-    background-color:#aaa;
-    color:#df3;
-}
 .div_group_list{
     margin:0.2rem;
     background-color:#aaa;

@@ -296,8 +296,8 @@ templates.read = function(templateCls) {
 //-------------------------------------------------------------------------
 // View
 
-var adjustContentHeight = function(titleCls, contentCls) {
-    var total = parseInt($("body").css("height"));
+var adjustContentHeight = function(entireCls, titleCls, contentCls) {
+    var total = parseInt($(entireCls).css("height"));
     var title = parseInt($(titleCls).css("height"));
     console.log("height", total, title);
     $(contentCls).css("height", total - title);
@@ -381,7 +381,7 @@ var showMode = function(modeName) {
     }
     showOnlyChild(".div_title_bar", ".div_title_bar_" + modeName);
     showOnlyChild(".div_content_panel", ".div_content_panel_" + modeName);
-    adjustContentHeight(".div_title_bar", ".div_content_panel");
+    adjustContentHeight("body", ".div_title_bar", ".div_content_panel");
 
     $(".div_log_off").click(function() {
         delete localStorage.serial_string;
@@ -399,7 +399,7 @@ function displayManage() {
     });
 
     // add new group
-    var divAddGroup = $(".div_add_group_info");
+    var divAddGroup = $(".div_add_group_mask");
     var clearNewGroupInfo = function() {
         divAddGroup.hide();
         $(".input_group_name").val("");
@@ -505,7 +505,7 @@ function displayPlayerList() {
     });
 
     // add new player
-    var divAddPlayer = $(".div_add_player_info");
+    var divAddPlayer = $(".div_add_player_mask");
     var clearNewPlayerInfo = function() {
         divAddPlayer.hide();
         $(".input_player_name").val("");
@@ -721,8 +721,8 @@ function displayWelcome() {
 }
 
 $(function() {
-    adjustContentHeight(".div_title_bar", ".div_content_panel");
-    $(window).resize(function() {adjustContentHeight(".div_title_bar", ".div_content_panel");});
+    adjustContentHeight("body", ".div_title_bar", ".div_content_panel");
+    $(window).resize(function() {adjustContentHeight("body", ".div_title_bar", ".div_content_panel");});
 
     displayWelcome();
 });
