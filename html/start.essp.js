@@ -310,13 +310,16 @@ var showOnlyChild = function(outerCls, childCls) {
 };
 
 var clearEvents = function() {
-    $(".input_type_pwd").unbind();
     $(".div_refresh_data").unbind();
-    $(".input_confirm_pwd").unbind();
     $(".div_log_off").unbind();
     $(".div_new_player").unbind();
+    $(".div_new_group").unbind();
     $(".add_player_confirm").unbind();
     $(".add_player_cancel").unbind();
+    $(".add_group_confirm").unbind();
+    $(".add_group_cancel").unbind();
+    $(".input_type_pwd").unbind();
+    $(".input_confirm_pwd").unbind();
 }
 
 var selectableModes = [
