@@ -332,13 +332,23 @@ for (var i = 0; i < selectableModes.length; ++i) {
     var mode = selectableModes[i];
     hashModes[mode.name] = mode;
 }
-function switchToMode(modeName) {
+var switchToMode = function(modeName) {
     var mode = hashModes[modeName];
     if (mode) {
         mode.switcher();
     } else {
         displayPlayerList();
     }
+}
+
+var statusClass = [
+    "display_player_green",
+    "display_player_blue",
+    "display_player_red",
+    "display_player_orange",
+];
+var groupStatusToClass = function(status) {
+    return statusClass[status];
 }
 
 var showMode = function(modeName) {
@@ -436,11 +446,10 @@ function displayManage() {
             (function() {
                 var groupId = groupIds[i];
                 var groupInfo = pageModel.group(groupId);
-                var enemy = (groupInfo.status != 0);
 
                 var groupBlock = $(groupDisplayTemplate(groupInfo));
                 groupBlock.appendTo(divGroupList);
-                groupBlock.find(".div_greoup_name").addClass(enemy ? "display_player_red" : "display_player_green");
+                groupBlock.find(".div_greoup_name").addClass(groupStatusToClass(groupInfo.status));
                 groupBlock.find(".div_group_delete").click(function() {
                     if (confirm("确认删除'" + groupInfo.name + "'？")) {
                         pageModel.delGroup(groupId, function() {
@@ -459,14 +468,13 @@ function addPlayerToList(playerId, divParent, delCallback, editCallback) {
 
     var playerInfo = pageModel.player(playerId);
     var playerData = {
-        enemy:(playerInfo.status != 0),
         group:playerInfo.group,
         name:playerInfo.name,
         power:playerInfo.power,
     };
     var playerBlock = $(racePlayerTemplate(playerData));
     playerBlock.appendTo(divParent);
-    playerBlock.find(".div_player_group").addClass(playerData.enemy ? "display_player_red" : "display_player_green");
+    playerBlock.find(".div_player_group").addClass(groupStatusToClass(playerInfo.status));
     if (delCallback) {
         playerBlock.find(".div_player_delete_option").show();
         playerBlock.find(".div_player_delete").click(delCallback);

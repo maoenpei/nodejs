@@ -86,11 +86,17 @@ body{
     display:inline-block;
     color:#fff;
 }
+.display_player_green{
+    color:#0f0;
+}
+.display_player_blue{
+    color:#0ff;
+}
 .display_player_red{
     color:#c00;
 }
-.display_player_green{
-    color:#0e3;
+.display_player_orange{
+    color:#fa0;
 }
 .div_player_group{
     display:inline-block;
