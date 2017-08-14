@@ -553,7 +553,7 @@ function displayPlayerList() {
             (function() {
                 var playerId = playerIds[i];
                 var playerName = pageModel.player(playerId).name;
-                var deleteCallback = (!pageModel.canDeletePlayer() ? null : function() {
+                var delCallback = (!pageModel.canDeletePlayer() ? null : function() {
                     if (confirm("确定删除'" + playerName + "'？")) {
                         pageModel.delPlayer(playerId, function() {
                             loadPlayers();
@@ -567,7 +567,7 @@ function displayPlayerList() {
                         loadPlayers();
                     });
                 };
-                addPlayerToList(playerId, divPlayerList, deleteCallback, editCallback);
+                addPlayerToList(playerId, divPlayerList, delCallback, editCallback);
             })();
         }
 
@@ -652,11 +652,19 @@ function displayMatch() {
                     for (var i = 0; i < matchPlayerIds.length; ++i) {
                         (function() {
                             var playerId = matchPlayerIds[i];
-                            addPlayerToList(playerId, divPlayers, function() {
+                            var delCallback = function() {
                                 pageModel.quitmatch(currentMatchId, playerId, function() {
                                     loadMatch();
                                 });
-                            }, null);
+                            };
+                            var editCallback = function(power) {
+                                console.log("edit power", power);
+
+                                pageModel.editPlayerPower(playerId, power, function() {
+                                    loadMatch();
+                                });
+                            };
+                            addPlayerToList(playerId, divPlayers, delCallback, editCallback);
                         })();
                     }
                     if (matchPlayerIds.length == 0) {
