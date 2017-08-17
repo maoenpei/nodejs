@@ -720,6 +720,10 @@ Base.extends("Httphost", {
 				return safe(done);
 			}
 
+			if (requestor.getPath().match(/\/constant\//)) {
+				responder.setCacheTime(31536000);
+			}
+
 			// respond
 			responder.setType(ext);
 			responder.respondData(data, safe(done));

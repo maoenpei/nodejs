@@ -46,6 +46,9 @@ Base.extends("Responder", {
 	setCode:function(code) {
 		this.res.statusCode = code;
 	},
+	setCacheTime:function(seconds) {
+		this.res.setHeader("Cache-Control", "max-age=" + String(seconds));
+	},
 	redirect:function(url, delay) {
 		delay = (delay ? delay : 3);
 		this.res.setHeader("refresh", delay + ";url="+url);
