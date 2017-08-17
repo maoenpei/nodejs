@@ -97,6 +97,7 @@ pageModel.player = function(playerId) {
     var player = this.players[playerId];
     var group = this.groups[player.group];
     return {
+        groupId:player.group,
         status:group.status,
         group:group.name,
         name:player.name,
@@ -128,6 +129,46 @@ pageModel.delPlayer = function(playerId, callback) {
     requestPost("delplayer", {playerId:playerId}, function(json) {
         if (json && json.playerId && json.playerId == playerId) {
             delete $this.players[playerId];
+            safe(callback)();
+        }
+    });
+}
+pageModel.editPlayerGroup = function(playerId, groupId, callback) {
+    $this = this;
+    var playerData = $this.players[playerId];
+    if (!playerData) {
+        return;
+    }
+    if (groupId == playerData.group) {
+        return;
+    }
+
+    var playerName = playerData.name;
+    console.log("editgroup", playerId, playerName, groupId);
+
+    requestPost("editgroup", {playerId:playerId, group:groupId}, function(json) {
+        if (json && json.success) {
+            playerData.group = groupId;
+            safe(callback)();
+        }
+    });
+}
+pageModel.editPlayerName = function(playerId, name, callback) {
+    $this = this;
+    var playerData = $this.players[playerId];
+    if (!playerData) {
+        return;
+    }
+    if (name == playerData.name) {
+        return;
+    }
+
+    var playerName = playerData.name;
+    console.log("editname", playerId, playerName, name);
+
+    requestPost("editname", {playerId:playerId, name:name}, function(json) {
+        if (json && json.success) {
+            playerData.name = name;
             safe(callback)();
         }
     });
@@ -299,7 +340,6 @@ templates.read = function(templateCls) {
 var adjustContentHeight = function(entireCls, titleCls, contentCls) {
     var total = parseInt($(entireCls).css("height"));
     var title = parseInt($(titleCls).css("height"));
-    console.log("height", total, title);
     $(contentCls).css("height", total - title);
 };
 
@@ -351,7 +391,28 @@ var groupStatusToClass = function(status) {
     return statusClass[status];
 }
 
-var showMode = function(modeName) {
+var validPower = function(powerStr) {
+    var powerNum = Number(powerStr);
+    if (String(powerNum) != powerStr || powerNum < 1 || powerNum > 99999) {
+        return 0;
+    }
+    return powerNum;
+}
+
+var initGroupSelection = function(groupList) {
+    // load player list
+    var groupOptionTemplate = templates.read(".hd_group_option");
+
+    groupList.html("");
+    var groupIds = pageModel.groupIds();
+    for (var i = 0; i < groupIds.length; ++i) {
+        var groupId = groupIds[i];
+        var groupInfo = pageModel.group(groupId);
+        $(groupOptionTemplate({groupId:groupId, name:groupInfo.name})).appendTo(groupList);
+    }
+}
+
+function showMode(modeName) {
     console.log("mode", modeName);
     localStorage.lastMode = modeName;
     var currMode = null;
@@ -463,7 +524,7 @@ function displayManage() {
     pageModel.refresh(false, loadGroups);
 }
 
-function addPlayerToList(playerId, divParent, delCallback, editCallback) {
+function addPlayerToList(playerId, divParent, access, callback) {
     var racePlayerTemplate = templates.read(".hd_player_item");
 
     var playerInfo = pageModel.player(playerId);
@@ -475,26 +536,62 @@ function addPlayerToList(playerId, divParent, delCallback, editCallback) {
     var playerBlock = $(racePlayerTemplate(playerData));
     playerBlock.appendTo(divParent);
     playerBlock.find(".div_player_group").addClass(groupStatusToClass(playerInfo.status));
-    if (delCallback) {
+    if (access.del) {
         playerBlock.find(".div_player_delete_option").show();
-        playerBlock.find(".div_player_delete").click(delCallback);
+        playerBlock.find(".div_player_delete").click(function() {
+            safe(callback)("del");
+        });
     }
-    if (editCallback) {
+    if (access.group) {
+        var divShowGroup = playerBlock.find(".div_player_group");
+        var selectEditGroup = playerBlock.find(".select_player_group_edit");
+        initGroupSelection(selectEditGroup);
+        divShowGroup.click(function() {
+            divShowGroup.hide();
+            selectEditGroup.val(playerInfo.groupId);
+            selectEditGroup.show();
+            selectEditGroup.focus();
+        });
+        selectEditGroup.blur(function() {
+            var groupId = selectEditGroup.val();
+            safe(callback)("group", groupId);
+
+            selectEditGroup.hide();
+            divShowGroup.show();
+        });
+    }
+    if (access.name) {
+        var divShowName = playerBlock.find(".div_player_name");
+        var inputEditName = playerBlock.find(".input_player_name_edit");
+        divShowName.click(function() {
+            divShowName.hide();
+            inputEditName.val(playerInfo.name);
+            inputEditName.show();
+            inputEditName.focus();
+        });
+        inputEditName.blur(function() {
+            var name = inputEditName.val();
+            if (name != '') {
+                safe(callback)("name", name);
+            }
+
+            inputEditName.hide();
+            divShowName.show();
+        });
+    }
+    if (access.power) {
         var divShowPower = playerBlock.find(".div_player_power");
         var inputEditPower = playerBlock.find(".input_player_power_edit");
-        playerBlock.find(".div_player_display").click(function() {
+        divShowPower.click(function() {
             divShowPower.hide();
             inputEditPower.val(playerInfo.power);
             inputEditPower.show();
             inputEditPower.focus();
         });
         inputEditPower.blur(function() {
-            var power = inputEditPower.val();
-            var powerNum = Number(power);
-            if (String(powerNum) != power || powerNum < 1 || powerNum > 99999) {
-                // Don't do anything.
-            } else {
-                editCallback(powerNum);
+            var power = validPower(inputEditPower.val());
+            if (power){
+                safe(callback)("power", power);
             }
 
             inputEditPower.hide();
@@ -533,9 +630,8 @@ function displayPlayerList() {
             return;
         }
 
-        var power = $(".input_player_power").val();
-        var powerNum = Number(power);
-        if (String(powerNum) != power || powerNum < 1 || powerNum > 99999) {
+        var power = validPower($(".input_player_power").val());
+        if (!power) {
             alert("不是有效的战力值");
             $(".input_player_power").focus();
             return;
@@ -544,13 +640,10 @@ function displayPlayerList() {
         var groupId = $(".select_player_group").val();
 
         clearNewPlayerInfo();
-        pageModel.addPlayer(name, powerNum, groupId, function() {
+        pageModel.addPlayer(name, power, groupId, function() {
             loadPlayers();
         });
     });
-
-    // load player list
-    var groupOptionTemplate = templates.read(".hd_group_option");
 
     var divPlayerList = $(".div_player_list");
     var selectGroupList = $(".select_player_group");
@@ -561,31 +654,37 @@ function displayPlayerList() {
             (function() {
                 var playerId = playerIds[i];
                 var playerName = pageModel.player(playerId).name;
-                var delCallback = (!pageModel.canDeletePlayer() ? null : function() {
-                    if (confirm("确定删除'" + playerName + "'？")) {
-                        pageModel.delPlayer(playerId, function() {
+                var callback = function(name, val) {
+                    if (name == 'del') {
+                        if (confirm("确定删除'" + playerName + "'？")) {
+                            pageModel.delPlayer(playerId, function() {
+                                loadPlayers();
+                            });
+                        }
+                    } else if (name == 'power') {
+                        pageModel.editPlayerPower(playerId, val, function() {
+                            loadPlayers();
+                        });
+                    } else if (name == 'name') {
+                        pageModel.editPlayerName(playerId, val, function() {
+                            loadPlayers();
+                        });
+                    } else if (name == 'group') {
+                        pageModel.editPlayerGroup(playerId, val, function() {
                             loadPlayers();
                         });
                     }
-                });
-                var editCallback = function(power) {
-                    console.log("edit power", power);
-
-                    pageModel.editPlayerPower(playerId, power, function() {
-                        loadPlayers();
-                    });
                 };
-                addPlayerToList(playerId, divPlayerList, delCallback, editCallback);
+                addPlayerToList(playerId, divPlayerList, {
+                    del:pageModel.canDeletePlayer(),
+                    group:pageModel.canDeletePlayer(),
+                    name:pageModel.canDeletePlayer(),
+                    power:true,
+                }, callback);
             })();
         }
 
-        selectGroupList.html("");
-        var groupIds = pageModel.groupIds();
-        for (var i = 0; i < groupIds.length; ++i) {
-            var groupId = groupIds[i];
-            var groupInfo = pageModel.group(groupId);
-            $(groupOptionTemplate({groupId:groupId, name:groupInfo.name})).appendTo(selectGroupList);
-        }
+        initGroupSelection(selectGroupList);
     }
     pageModel.refresh(false, loadPlayers);
 }
@@ -660,19 +759,21 @@ function displayMatch() {
                     for (var i = 0; i < matchPlayerIds.length; ++i) {
                         (function() {
                             var playerId = matchPlayerIds[i];
-                            var delCallback = function() {
-                                pageModel.quitmatch(currentMatchId, playerId, function() {
-                                    loadMatch();
-                                });
+                            var callback = function(name, val) {
+                                if (name == 'del') {
+                                    pageModel.quitmatch(currentMatchId, playerId, function() {
+                                        loadMatch();
+                                    });
+                                } else if (name == 'power') {
+                                    pageModel.editPlayerPower(playerId, val, function() {
+                                        loadMatch();
+                                    });
+                                }
                             };
-                            var editCallback = function(power) {
-                                console.log("edit power", power);
-
-                                pageModel.editPlayerPower(playerId, power, function() {
-                                    loadMatch();
-                                });
-                            };
-                            addPlayerToList(playerId, divPlayers, delCallback, editCallback);
+                            addPlayerToList(playerId, divPlayers, {
+                                del:true,
+                                power:true
+                            }, callback);
                         })();
                     }
                     if (matchPlayerIds.length == 0) {

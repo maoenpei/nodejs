@@ -58,6 +58,18 @@ Base.extends("LogicManager", {
 		}
 		delete this.logic.players[playerId];
 	},
+	playerGroup:function(playerId, group) {
+		var player = this.logic.players[playerId];
+		if (player) {
+			player.group = group;
+		}
+	},
+	playerName:function(playerId, name) {
+		var player = this.logic.players[playerId];
+		if (player) {
+			player.name = name;
+		}
+	},
 	playerPower:function(playerId, power) {
 		var player = this.logic.players[playerId];
 		if (player) {
@@ -207,6 +219,74 @@ var hostCommand = {
 			yield logic.save(next);
 
 			responder.respondJson({playerId:playerId}, safe(done));
+		}, this);
+	},
+	editgroup:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			var obj = yield this.tokenValid(requestor, next);
+			if (!obj) {
+				responder.addError("Not valid token for file add.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var state = $PersistanceManager.State(obj.getSerial());
+			if (state.adminLevel < 2) {
+				responder.addError("Admin level not enough.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var json = yield requestor.visitBodyJson(next);
+			if (!json || !json.playerId || !json.group) {
+				responder.addError("Parameter data not correct.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var playerId = json.playerId;
+			var group = json.group;
+			var logic = this.logicManager;
+			if (!logic.hasPlayer(playerId)) {
+				responder.addError("playerId not exist.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			logic.playerGroup(playerId, group);
+			yield logic.save(next);
+
+			responder.respondJson({success:true}, safe(done));
+		}, this);
+	},
+	editname:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			var obj = yield this.tokenValid(requestor, next);
+			if (!obj) {
+				responder.addError("Not valid token for file add.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var state = $PersistanceManager.State(obj.getSerial());
+			if (state.adminLevel < 2) {
+				responder.addError("Admin level not enough.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var json = yield requestor.visitBodyJson(next);
+			if (!json || !json.playerId || !json.name) {
+				responder.addError("Parameter data not correct.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var playerId = json.playerId;
+			var name = json.name;
+			var logic = this.logicManager;
+			if (!logic.hasPlayer(playerId)) {
+				responder.addError("playerId not exist.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			logic.playerName(playerId, name);
+			yield logic.save(next);
+
+			responder.respondJson({success:true}, safe(done));
 		}, this);
 	},
 	editpower:function(requestor, responder, done) {
