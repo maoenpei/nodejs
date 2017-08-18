@@ -690,19 +690,11 @@ Base.extends("Httphost", {
 			var data = null;
 			var obj = yield this.tokenValid(requestor, next);
 
-			var infoBase = null;
-			if (obj) {
-				var state = $PersistanceManager.State(obj.getSerial());
-				var files = $PersistanceManager.Files();
-				var serial = obj.getSerial();
-				infoBase = {
-					__proto__:this.InfoBase,
-					files:files,
-					state:$PersistanceManager.State(serial),
-					serial:serial,
-				};
+			data = yield this.visitHTTP(requestor, "/start.html", null, next);
+
+			if (!this.InfoBase.isHost) {
+				responder.setCacheTime(5*60);
 			}
-			data = yield this.visitHTTP(requestor, "/start.html", infoBase, next);
 
 			responder.setType(".html");
 			responder.respondData(data, safe(done));
@@ -721,7 +713,9 @@ Base.extends("Httphost", {
 			}
 
 			if (requestor.getPath().match(/\/constant\//)) {
-				responder.setCacheTime(31536000);
+				responder.setCacheTime(365*24*3600);
+			} else if (!this.InfoBase.isHost) {
+				responder.setCacheTime(5*60);
 			}
 
 			// respond
