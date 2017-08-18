@@ -20,7 +20,7 @@ Base.extends("LogicManager", {
 		}
 	},
 	save:function(done) {
-		$PersistanceManager.Commit(done);
+		$PersistanceManager.CommitLogic(done);
 	},
 	match:function() {
 		return this.logic.match;
@@ -129,6 +129,8 @@ var hostCommand = {
 				return responder.respondJson({}, safe(done));
 			}
 
+			var lastModified = yield $PersistanceManager.LogicModified(next);
+
 			var state = $PersistanceManager.State(obj.getSerial());
 			var canView = state.adminLevel >= 1;
 			var canAddPlayer = state.adminLevel >= 1;
@@ -145,6 +147,7 @@ var hostCommand = {
 				editGroup:canEditGroup,
 				editUser:canEditUser,
 			};
+			responder.setLastModified(lastModified);
 			responder.respondJson(json, safe(done));
 
 		}, this);
@@ -687,27 +690,26 @@ Base.extends("Httphost", {
 
 	mainPage:function(requestor, responder, done) {
 		var next = coroutine(function*() {
-			var data = null;
 			var obj = yield this.tokenValid(requestor, next);
 
-			data = yield this.visitHTTP(requestor, "/start.html", null, next);
+			var fileBlock = yield this.visitHTTP(requestor, "/start.html", null, next);
 
 			if (!this.InfoBase.isHost) {
 				responder.setCacheTime(5*60);
 			}
+			responder.setLastModified(fileBlock.time);
 
 			responder.setType(".html");
-			responder.respondData(data, safe(done));
+			responder.respondData(fileBlock.data, safe(done));
 		}, this);
 	},
 	commonPage:function(requestor, responder, done) {
 		var next = coroutine(function*(){
-			var data = null;
 			var ext = requestor.getExtension();
 
-			data = yield this.visitHTTP(requestor, requestor.getPath(), null, next);
+			var fileBlock = yield this.visitHTTP(requestor, requestor.getPath(), null, next);
 
-			if (!data) {
+			if (!fileBlock.data) {
 				responder.addError("Cannot find file.");
 				return safe(done);
 			}
@@ -717,16 +719,17 @@ Base.extends("Httphost", {
 			} else if (!this.InfoBase.isHost) {
 				responder.setCacheTime(5*60);
 			}
+			responder.setLastModified(fileBlock.time);
 
 			// respond
 			responder.setType(ext);
-			responder.respondData(data, safe(done));
+			responder.respondData(fileBlock.data, safe(done));
 		}, this);
 	},
 	errorPage:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			console.log("Error loading '" + requestor.getPath() + "':\n" + responder.getErrors());
-			var data = yield this.visitHTTP(requestor, "/error.html", {
+			var fileBlock = yield this.visitHTTP(requestor, "/error.html", {
 				__proto__:this.InfoBase,
 				errors:responder.getErrors(),
 			}, next);
@@ -734,7 +737,7 @@ Base.extends("Httphost", {
 			console.log("urlRoot:", this.InfoBase.urlRoot);
 			responder.redirect(this.InfoBase.urlRoot + "/", 3000);
 			responder.setType(".html");
-			responder.respondData(data, safe(done));
+			responder.respondData(fileBlock.data, safe(done));
 		}, this);
 	},
 
@@ -745,23 +748,29 @@ Base.extends("Httphost", {
 			});
 			var filegetter = (path, done) => {
 				var next = coroutine(function*() {
-					var data = null;
+					var fileBlock = {};
 					path = "/html" + path;
-					if (!data){
-						data = yield $FileCacher.visitFile(path, next);
+
+					fileBlock.data = yield $FileCacher.visitFile(path, next);
+					if (fileBlock.data) {
+						fileBlock.time = yield $FileManager.getLastModified(path, next);
 					}
-					if (!data) {
+
+					if (!fileBlock.data) {
 						console.log("path:", path);
 						path = path.replace(/\.(\w+)$/, ".essp.$1");
 						console.log("path:", path);
-						data = yield $TemplateParser.parse(path, infoBase, filegetter, next);
-						//console.log(path, "=>", data.toString());
+						fileBlock.data = yield $TemplateParser.parse(path, infoBase, filegetter, next);
+						if (fileBlock.data) {
+							fileBlock.time = yield $FileManager.getLastModified(path, next);
+						}
 					}
-					safe(done)(data);
+
+					safe(done)(fileBlock);
 				});
 			}
-			var data = yield filegetter(path, next);
-			safe(done)(data);
+			var fileBlock = yield filegetter(path, next);
+			safe(done)(fileBlock);
 		}, this);
 	},
 	tokenValid:function(requestor, done) {
