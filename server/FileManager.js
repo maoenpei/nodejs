@@ -45,6 +45,12 @@ Base.extends("$FileManager", {
         var filepath = this.RootDirectory + path;
         fs.exists(filepath, safe(done));
     },
+    getLastModified:function(path, done) {
+        var filepath = this.RootDirectory + path;
+        fs.stat(filepath, (err, st) => {
+            safe(done)(st.mtime);
+        });
+    },
     visitDir:function(path, done) {
         var filepath = this.RootDirectory + path;
         console.log("reading directory:", filepath);
