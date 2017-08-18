@@ -52,9 +52,6 @@ Base.extends("$PersistanceManager", {
         });
     },
 
-    Logic:function() {
-        return this.logic;
-    },
     Files:function() {
         return this.files;
     },
@@ -84,9 +81,19 @@ Base.extends("$PersistanceManager", {
     Commit:function(done) {
         var next = coroutine(function*(){
             yield $FileManager.saveFile("/data/States.d", JSON.stringify(this.states), next);
-            yield $FileManager.saveFile("/data/Logic.d", JSON.stringify(this.logic), next);
             yield $FileManager.saveFile("/data/Files.d", JSON.stringify(this.files), next);
             safe(done)();
         }, this);
     },
+
+    Logic:function() {
+        return this.logic;
+    },
+    LogicModified:function(done) {
+        $FileManager.getLastModified("/data/Logic.d", safe(done));
+    },
+    CommitLogic:function(done) {
+        $FileManager.saveFile("/data/Logic.d", JSON.stringify(this.logic), safe(done));
+    },
+
 });
