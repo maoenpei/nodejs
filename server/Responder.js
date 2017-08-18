@@ -13,13 +13,17 @@ Base.extends("Responder", {
 	},
 
 	respondData:function(data, done) {
-		if (this.range) {
-			var start = this.range.start;
-			var end = this.range.end == -1 ? data.length - 1 : this.range.end;
-			this.res.setHeader("Content-Range", "bytes " + start + "-" + end + "/" + data.length);
-			this.res.end(data.slice(start, end + 1), safe(done));
+		if (data) {
+			if (this.range) {
+				var start = this.range.start;
+				var end = this.range.end == -1 ? data.length - 1 : this.range.end;
+				this.res.setHeader("Content-Range", "bytes " + start + "-" + end + "/" + data.length);
+				this.res.end(data.slice(start, end + 1), safe(done));
+			} else {
+				this.res.end(data, safe(done));
+			}
 		} else {
-			this.res.end(data, safe(done));
+			this.res.end();
 		}
 		this.finished = true;
 	},
@@ -43,15 +47,18 @@ Base.extends("Responder", {
 		console.log("cookies:", cookieData);
 		this.res.setHeader("Set-Cookie", cookieData);
 	},
-	setCode:function(code) {
-		this.res.statusCode = code;
-	},
 	setCacheTime:function(seconds) {
 		this.res.setHeader("Cache-Control", "max-age=" + String(seconds));
+	},
+	setLastModified:function(mtime) {
+		this.res.setHeader("Last-Modified", mtime.toUTCString());
 	},
 	redirect:function(url, delay) {
 		delay = (delay ? delay : 3);
 		this.res.setHeader("refresh", delay + ";url="+url);
+	},
+	setCode:function(code) {
+		this.res.statusCode = code;
 	},
 
 	addError:function(err) {
