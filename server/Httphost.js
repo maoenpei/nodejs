@@ -148,6 +148,7 @@ var hostCommand = {
 				editUser:canEditUser,
 			};
 			responder.setLastModified(lastModified);
+			responder.setCacheTime(1);
 			responder.respondJson(json, safe(done));
 
 		}, this);
@@ -694,10 +695,10 @@ Base.extends("Httphost", {
 
 			var fileBlock = yield this.visitHTTP(requestor, "/start.html", null, next);
 
+			responder.setLastModified(fileBlock.time);
 			if (!this.InfoBase.isHost) {
 				responder.setCacheTime(5*60);
 			}
-			responder.setLastModified(fileBlock.time);
 
 			responder.setType(".html");
 			responder.respondData(fileBlock.data, safe(done));
@@ -714,12 +715,14 @@ Base.extends("Httphost", {
 				return safe(done);
 			}
 
+			responder.setLastModified(fileBlock.time);
 			if (requestor.getPath().match(/\/constant\//)) {
 				responder.setCacheTime(365*24*3600);
 			} else if (!this.InfoBase.isHost) {
 				responder.setCacheTime(5*60);
+			} else {
+				responder.setCacheTime(1);
 			}
-			responder.setLastModified(fileBlock.time);
 
 			// respond
 			responder.setType(ext);
