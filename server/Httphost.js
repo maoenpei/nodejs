@@ -13,8 +13,8 @@ Base.extends("LogicManager", {
 		this.logic = $PersistanceManager.Logic();
 		this.playerInMatch = {};
 		for (var matchId in this.logic.match) {
-			var match = this.logic.match[matchId];
-			for (var playerId in match) {
+			var players = this.logic.match[matchId].players;
+			for (var playerId in players) {
 				this.playerInMatch[playerId] = matchId;
 			}
 		}
@@ -44,6 +44,7 @@ Base.extends("LogicManager", {
 		while(this.logic.players[playerId]) {
 			playerId = rkey();
 		}
+		player.lastTime = new Date().getTime();
 
 		console.log("adding player", playerId, player);
 		this.logic.players[playerId] = player;
@@ -53,7 +54,7 @@ Base.extends("LogicManager", {
 		console.log("deleting player", playerId, this.logic.players[playerId].name);
 		var matchId = this.playerInMatch[playerId];
 		if (matchId) {
-			delete this.logic.match[matchId][playerId];
+			delete this.logic.match[matchId].players[playerId];
 			delete this.playerInMatch[playerId];
 		}
 		delete this.logic.players[playerId];
@@ -74,6 +75,7 @@ Base.extends("LogicManager", {
 		var player = this.logic.players[playerId];
 		if (player) {
 			player.power = power;
+			player.lastTime = new Date().getTime();
 		}
 	},
 	addGroup:function(group) {
@@ -108,14 +110,16 @@ Base.extends("LogicManager", {
 	playerToMatch:function(playerId, matchId) {
 		var match = this.logic.match[matchId];
 		match = (match ? match : {});
-		match[playerId] = true;
+		match.players = (match.players ? match.players : {});
+		match.players[playerId] = true;
+		match.lastTime = new Date().getTime();
 		this.logic.match[matchId] = match;
 		this.playerInMatch[playerId] = matchId;
 	},
 	playerQuit:function(playerId) {
 		var matchId = this.playerInMatch[playerId];
 		var match = this.logic.match[matchId];
-		delete match[playerId];
+		delete match.players[playerId];
 		delete this.playerInMatch[playerId];
 	},
 });

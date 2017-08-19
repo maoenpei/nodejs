@@ -282,7 +282,7 @@ pageModel.groupIds = function() {
 pageModel.selectablePlayerIds = function(groupId, namePattern) {
     var playerInMatch = {};
     for (var matchId in this.match) {
-        for (var playerId in this.match[matchId]) {
+        for (var playerId in this.match[matchId].players) {
             playerInMatch[playerId] = true;
         }
     }
@@ -300,7 +300,8 @@ pageModel.selectablePlayerIds = function(groupId, namePattern) {
 pageModel.matchPlayerIds = function(matchId) {
     var match = this.match[matchId];
     match = (match ? match : {});
-    return this.orderWithPower(match);
+    match.players = (match.players ? match.players : {});
+    return this.orderWithPower(match.players);
 }
 pageModel.joinmatch = function(matchId, playerId, callback) {
     $this = this;
@@ -308,7 +309,8 @@ pageModel.joinmatch = function(matchId, playerId, callback) {
         if (json && json.success) {
             var match = $this.match[matchId];
             match = (match ? match : {});
-            match[playerId] = true;
+            match.players = (match.players ? match.players : {})
+            match.players[playerId] = true;
             $this.match[matchId] = match;
             safe(callback)();
         }
@@ -320,7 +322,8 @@ pageModel.quitmatch = function(matchId, playerId, callback) {
         if (json && json.success) {
             var match = $this.match[matchId];
             match = (match ? match : {});
-            delete match[playerId];
+            match.players = (match.players ? match.players : {})
+            delete match.players[playerId];
             safe(callback)();
         }
     });
