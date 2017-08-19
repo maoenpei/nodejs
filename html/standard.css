@@ -20,16 +20,12 @@ body{
     background-color:#999;
     padding:0.5rem 0;
 }
-.div_mode_selector{
-    display:inline-block;
-}
 .div_content_panel{
     font-size:0.8rem;
     text-align:center;
     overflow:auto;
 }
 .visit_label, .display_label{
-    display: inline-block;
     margin:0 0.3rem;
     color:blue;
 }
@@ -46,7 +42,6 @@ body{
 }
 
 .display_input_pwd{
-    display:inline-block;
     margin:10 auto;
 }
 
@@ -61,7 +56,6 @@ body{
 }
 .div_race_title_text{
     font-size:1.5rem;
-    display:inline-block;
 }
 .display_race_golden{
     color:#ff1;
@@ -69,21 +63,11 @@ body{
 .display_race_gray{
     color:#ffe;
 }
-.div_race_title_add{
-    display:inline-block;
-}
 .div_player_item{
     padding:0.2rem;
     color:#df3;
 }
-.div_player_display{
-    display:inline-block;
-}
-.div_player_delete_option{
-    display:inline-block;
-}
 .div_player_line{
-    display:inline-block;
     color:#fff;
 }
 .display_player_green{
@@ -98,36 +82,30 @@ body{
 .display_player_orange{
     color:#fa0;
 }
-.div_player_group{
-    display:inline-block;
-}
-.div_player_name{
-    display:inline-block;
-}
-.div_player_power{
-    display:inline-block;
-}
 
-.div_add_player_mask, .div_add_group_mask{
+.div_add_player_mask, .div_add_group_mask, .div_add_match_mask{
     position:fixed;
     width:100%;height:100%;
     top:0;left:0;
     background:rgba(0,0,0,0.5);
 }
-.div_add_player_info, .div_add_group_info{
+.div_add_player_info, .div_add_group_info, .div_add_match_search{
     position:absolute;
     top:20%;left:0;
     width:100%;
     background-color:#aaa;
     color:#df3;
+    padding:0.3rem;
 }
 .display_add_text{
     color:#df3;
     margin:0.1rem;
 }
-.div_add_player_item, .div_add_player_group{
-    display:inline-block;
-    margin:0.1rem;
+.div_add_player_item, .div_add_player_group, .div_add_match_group, .div_add_match_item, .div_add_match_player{
+    margin:0.2rem;
+}
+.div_add_match_player{
+    margin-top:0.4rem;
 }
 .div_add_player_group{
     width:25%;
@@ -141,7 +119,7 @@ body{
 .input_player_power{
     width:calc(100% - 0.8rem);
 }
-.add_player_control, .add_group_control{
+.add_player_control, .add_group_control, .add_match_control{
     margin-top:0.2rem;
     font-size:1rem;
 }
@@ -158,13 +136,13 @@ body{
     padding:0.2rem;
     color:#df3;
 }
-.div_greoup_name{
-    display:inline-block;
-}
 .div_group_line{
-    display:inline-block;
     color:#fff;
 }
-.div_group_delete{
+
+.div_group_delete,.div_group_line,.div_greoup_name,.div_add_player_item,.div_add_player_group,
+.div_player_group,.div_player_name,.div_player_power,.div_mode_selector,.div_race_title_text,
+.visit_label,.display_label,.display_input_pwd,.div_race_title_add,.div_player_line,.div_player_display,
+.div_player_delete_option,.div_add_match_group,.div_add_match_item,.display_search_text{
     display:inline-block;
 }

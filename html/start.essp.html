@@ -40,9 +40,33 @@
             </div>
         </div>
         <div class="div_content_panel_match">
+            <div class="div_add_match_mask" style="display:none;">
+                <div class="div_add_match_search">
+                    <div class="display_search_text">搜索条件：</div>
+                    <div class="div_add_match_group">
+                        <div class="display_add_text">骑士团</div>
+                        <select class="select_add_match_group">
+                        </select>
+                    </div>
+                    <div class="div_add_match_item">
+                        <div class="display_add_text">名字</div>
+                        <input type="text" class="input_add_match_name"/>
+                    </div>
+                    <div class="div_add_match_player">
+                        <div class="display_add_text">选择玩家</div>
+                        <select class="select_add_match_player">
+                        </select>
+                    </div>
+                    <div class="add_match_control">
+                        <div class="add_match_cancel visit_label">取消</div>
+                        <div class="add_match_confirm visit_label">确定</div>
+                    </div>
+                </div>
+            </div>
+            <div class="div_match_detail"></div>
         </div>
         <div class="div_content_panel_list">
-            <div class="div_add_player_mask">
+            <div class="div_add_player_mask" style="display:none;">
                 <div class="div_add_player_info">
                     <div class="div_add_player_group">
                         <div class="display_add_text">骑士团</div>
@@ -93,8 +117,6 @@
                 <div class="div_race_title">
                     <div class="div_race_title_text">{{name}}</div>
                     <div class="div_race_title_add visit_label">添加</div>
-                    <select class="select_match_player" style="display:none;">
-                    </select>
                 </div>
                 <div class="div_race_players">
                 </div>

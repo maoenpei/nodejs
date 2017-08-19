@@ -94,14 +94,17 @@ pageModel.canEditUser = function() {
     return this.options.editUser;
 }
 pageModel.player = function(playerId) {
-    var player = this.players[playerId];
-    var group = this.groups[player.group];
+    var playerData = this.players[playerId];
+    if (!playerData) {
+        return null;
+    }
+    var group = this.groups[playerData.group];
     return {
-        groupId:player.group,
+        groupId:playerData.group,
         status:group.status,
         group:group.name,
-        name:player.name,
-        power:player.power,
+        name:playerData.name,
+        power:playerData.power,
     };
 }
 pageModel.addPlayer = function(name, power, group, callback) {
@@ -276,7 +279,7 @@ pageModel.groupIds = function() {
     }
     return groupIds;
 }
-pageModel.selectablePlayerIds = function() {
+pageModel.selectablePlayerIds = function(groupId, namePattern) {
     var playerInMatch = {};
     for (var matchId in this.match) {
         for (var playerId in this.match[matchId]) {
@@ -285,7 +288,10 @@ pageModel.selectablePlayerIds = function() {
     }
     var playerNotInMatch = {};
     for (var playerId in this.players) {
-        if (!playerInMatch[playerId]) {
+        var playerData = this.players[playerId];
+        var matchGroup = (groupId ? (playerData.group == groupId) : true);
+        var matchName = (namePattern ? (playerData.name.indexOf(namePattern) >= 0) : true);
+        if (matchGroup && matchName && !playerInMatch[playerId]) {
             playerNotInMatch[playerId] = true;
         }
     }
@@ -399,11 +405,14 @@ var validPower = function(powerStr) {
     return powerNum;
 }
 
-var initGroupSelection = function(groupList) {
+var initGroupSelection = function(groupList, hasZeroOption) {
     // load player list
     var groupOptionTemplate = templates.read(".hd_group_option");
 
     groupList.html("");
+    if (hasZeroOption) {
+        $("<option value=''>请选择</option>").appendTo(groupList);
+    }
     var groupIds = pageModel.groupIds();
     for (var i = 0; i < groupIds.length; ++i) {
         var groupId = groupIds[i];
@@ -697,12 +706,55 @@ function displayMatch() {
         pageModel.refresh(true, loadMatch);
     });
 
+    var addPlayerToMatchId = null;
+    var divAddMatchMask = $(".div_add_match_mask");
+    var selectAddMatchGroup = $(".select_add_match_group");
+    var inputAddMatchName = $(".input_add_match_name");
+    var selectMatchPlayer = $(".select_add_match_player");
+    var updateSelectablePlayers = function() {
+        var groupId = selectAddMatchGroup.val();
+        var namePattern = inputAddMatchName.val();
+        var selectablePlayerIds = pageModel.selectablePlayerIds(groupId, namePattern);
+        console.log("update selected players", groupId, namePattern, selectablePlayerIds.length);
+        selectMatchPlayer.html("");
+        for (var i = 0; i < selectablePlayerIds.length; ++i) {
+            var playerId = selectablePlayerIds[i];
+            var playerInfo = pageModel.player(playerId);
+            $(playerOptionTemplate({
+                playerId:playerId,
+                group:playerInfo.group,
+                name:playerInfo.name,
+                power:playerInfo.power,
+            })).appendTo(selectMatchPlayer);
+        }
+    };
+    initGroupSelection(selectAddMatchGroup, true);
+    var clearSearchControl = function() {
+        selectAddMatchGroup.val(0);
+        inputAddMatchName.val("");
+        divAddMatchMask.hide();
+    };
+    $(".add_match_cancel").click(function() {
+        clearSearchControl();
+    });
+    $(".add_match_confirm").click(function() {
+        clearSearchControl();
+        var playerId = selectMatchPlayer.val();
+        if (playerId) {
+            pageModel.joinmatch(addPlayerToMatchId, playerId, function() {
+                loadMatch();
+            });
+        }
+    });
+    selectAddMatchGroup.change(updateSelectablePlayers);
+    inputAddMatchName.change(updateSelectablePlayers);
+
     var raceBlockTemplate = templates.read(".hd_race_block");
     var playerOptionTemplate = templates.read(".hd_player_option");
 
-    var divContentPanel = $(".div_content_panel_match");
+    var divMatchDetail = $(".div_match_detail");
     function loadMatch() {
-        divContentPanel.html("");
+        divMatchDetail.html("");
         var raceTypes = ["黄鹿", "玫瑰", "咸鱼"];
         for (var raceIndex = 0; raceIndex < raceTypes.length; ++raceIndex) {
             for (var starIndex = 10; starIndex >= 1; --starIndex) {
@@ -711,47 +763,15 @@ function displayMatch() {
                     var raceBlock = $(raceBlockTemplate({
                         name:(raceTypes[raceIndex] + starIndex + "星"),
                     }));
-                    raceBlock.appendTo(divContentPanel);
+                    raceBlock.appendTo(divMatchDetail);
                     var isgoden = (raceIndex < 2);
                     raceBlock.find(".div_race_title_text").addClass(isgoden ? "display_race_golden" : "display_race_gray");
 
                     var addButton = raceBlock.find(".div_race_title_add");
-                    var playerSelect = raceBlock.find(".select_match_player");
                     addButton.click(function() {
-                        playerSelect.html("");
-                        playerSelect.append($("<option value='0'>请选择</option>"));
-                        var selectablePlayerIds = pageModel.selectablePlayerIds();
-                        for (var i = 0; i < selectablePlayerIds.length; ++i) {
-                            var playerId = selectablePlayerIds[i];
-                            var playerInfo = pageModel.player(playerId);
-                            $(playerOptionTemplate({
-                                playerId:playerId,
-                                group:playerInfo.group,
-                                name:playerInfo.name,
-                                power:playerInfo.power,
-                            })).appendTo(playerSelect);
-                        }
-
-                        addButton.hide();
-                        playerSelect.show();
-                        playerSelect.focus();
-                    });
-                    playerSelect.change(function() {
-                        addButton.show();
-                        playerSelect.hide();
-
-                        var playerId = playerSelect.val();
-                        console.log("select", playerId);
-                        if (playerId == 0) {
-                            return;
-                        }
-                        pageModel.joinmatch(currentMatchId, playerId, function() {
-                            loadMatch();
-                        });
-                    });
-                    playerSelect.blur(function() {
-                        addButton.show();
-                        playerSelect.hide();
+                        addPlayerToMatchId = currentMatchId;
+                        updateSelectablePlayers();
+                        divAddMatchMask.show();
                     });
 
                     var matchPlayerIds = pageModel.matchPlayerIds(currentMatchId);
