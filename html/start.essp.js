@@ -115,6 +115,7 @@ pageModel.addPlayer = function(name, power, group, callback) {
     var player = {name:name, power:power, group:group};
     requestPost("addplayer", player, function(json) {
         if (json && json.playerId) {
+            player.lastTime = json.editTime;
             $this.players[json.playerId] = player;
             safe(callback)();
         }

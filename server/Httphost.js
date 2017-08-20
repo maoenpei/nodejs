@@ -64,14 +64,12 @@ Base.extends("LogicManager", {
 		if (player) {
 			player.group = group;
 		}
-		return player;
 	},
 	playerName:function(playerId, name) {
 		var player = this.logic.players[playerId];
 		if (player) {
 			player.name = name;
 		}
-		return player;
 	},
 	playerPower:function(playerId, power) {
 		var player = this.logic.players[playerId];
@@ -79,7 +77,11 @@ Base.extends("LogicManager", {
 			player.power = power;
 			player.lastTime = new Date().getTime();
 		}
-		return player;
+	},
+	playerTime:function(playerId) {
+		var player = this.logic.players[playerId];
+		player = (player ? player : {});
+		return (player.lastTime ? player.lastTime : 0);
 	},
 	addGroup:function(group) {
 		var groupId = rkey();
@@ -118,13 +120,17 @@ Base.extends("LogicManager", {
 		match.lastTime = new Date().getTime();
 		this.logic.match[matchId] = match;
 		this.playerInMatch[playerId] = matchId;
-		return match;
 	},
 	playerQuit:function(playerId) {
 		var matchId = this.playerInMatch[playerId];
 		var match = this.logic.match[matchId];
 		delete match.players[playerId];
 		delete this.playerInMatch[playerId];
+	},
+	matchTime:function(matchId) {
+		var match = this.logic.match[matchId];
+		match = (match ? match : {});
+		return (match.lastTime ? match.lastTime : 0);
 	},
 });
 
@@ -197,7 +203,7 @@ var hostCommand = {
 			});
 			yield logic.save(next);
 
-			responder.respondJson({playerId:playerId}, safe(done));
+			responder.respondJson({playerId:playerId, editTime:logic.playerTime(playerId)}, safe(done));
 		}, this);
 	},
 	delplayer:function(requestor, responder, done) {
@@ -329,10 +335,10 @@ var hostCommand = {
 				return responder.respondJson({}, safe(done));
 			}
 
-			var playerData = logic.playerPower(playerId, power);
+			logic.playerPower(playerId, power);
 			yield logic.save(next);
 
-			responder.respondJson({success:true, editTime:playerData.lastTime}, safe(done));
+			responder.respondJson({success:true, editTime:logic.playerTime(playerId)}, safe(done));
 		}, this);
 	},
 	addgroup:function(requestor, responder, done) {
@@ -435,10 +441,10 @@ var hostCommand = {
 			}
 
 			console.log("joinmatch", playerId, matchId);
-			var match = logic.playerToMatch(playerId, matchId);
+			logic.playerToMatch(playerId, matchId);
 			yield logic.save(next);
 
-			responder.respondJson({success:true, editTime:match.lastTime}, safe(done));
+			responder.respondJson({success:true, editTime:logic.matchTime(matchId)}, safe(done));
 
 		}, this);
 	},
