@@ -63,13 +63,13 @@ var uploadFile = function(url, callback) {
 //-------------------------------------------------------------------------
 // Model
 
-var pageModel = {options:{}, lastTime:0,};
+var pageModel = {options:{}, lastRefreshTime:0,};
 pageModel.refresh = function(force, callback) {
     $this = this;
     var currentTime = new Date().getTime();
-    console.log("refresh", currentTime - $this.lastTime);
-    if (force || currentTime - $this.lastTime > 1000 * 10) {
-        $this.lastTime = currentTime;
+    console.log("refresh", currentTime - $this.lastRefreshTime);
+    if (force || currentTime - $this.lastRefreshTime > 1000 * 10) {
+        $this.lastRefreshTime = currentTime;
         requestPost("information", {}, function(json) {
             if (json) {
                 console.log("information result", json);
@@ -105,6 +105,7 @@ pageModel.player = function(playerId) {
         group:group.name,
         name:playerData.name,
         power:playerData.power,
+        lasttime:(playerData.lastTime ? playerData.lastTime : 0),
     };
 }
 pageModel.addPlayer = function(name, power, group, callback) {
@@ -192,6 +193,7 @@ pageModel.editPlayerPower = function(playerId, power, callback) {
     requestPost("editpower", {playerId:playerId, power:power}, function(json) {
         if (json && json.success) {
             playerData.power = power;
+            playerData.lastTime = json.editTime;
             safe(callback)();
         }
     });
@@ -330,7 +332,7 @@ pageModel.quitmatch = function(matchId, playerId, callback) {
 }
 
 //-------------------------------------------------------------------------
-// Template
+// Utils
 
 var templates = {};
 templates.data = {};
@@ -341,6 +343,58 @@ templates.read = function(templateCls) {
         this.data[templateCls] = template;
     }
     return template;
+}
+
+var pamN = Math.log(2) / Math.log(60);
+var pamK = 2;
+var durationFromLasttime = function(lasttime) {
+    var time = new Date().getTime();
+    var seconds = (time - lasttime) / 1000;
+
+    var Y = 1;
+    if (seconds > 0) {
+        Y = 2 / Math.pow(seconds, pamN);
+        Y = (Y > 1 ? 1 : Y);
+    }
+    var T = 1 - Y;
+    var color = "rgb(" + String(Math.floor(T*255)) + "," + String(Math.floor(Y*255)) + ",0)";
+
+    var desc = "> 2天";
+    if (seconds < 60) {
+        desc = "< 1分钟";
+    } else if (seconds < 3600) {
+        desc = String(Math.floor(seconds / 60)) + "分钟";
+    } else if (seconds < 24 * 3600) {
+        desc = String(Math.floor(seconds / 3600)) + "小时";
+    } else if (seconds < 2 * 24 * 3600) {
+        desc = "1天" + String(Math.floor((seconds - 24 * 3600) / 3600)) + "小时";
+    }
+
+    return {color:color, desc:desc};
+}
+
+var localTimer = {funcs:[]};
+localTimer.addFunc = function(func) {
+    $this = this;
+    if (this.funcs.length == 0) {
+        (function() {
+            var funcs = $this.funcs;
+            var callback = function() {
+                if ($this.funcs !== funcs) {
+                    return;
+                }
+                setTimeout(callback, 3000);
+                for (var i = 0; i < funcs.length; ++i) {
+                    safe(funcs[i])();
+                }
+            };
+            setTimeout(callback, 3000);
+        })();
+    }
+    this.funcs.push(func);
+}
+localTimer.clearFuncs = function() {
+    this.funcs = [];
 }
 
 //-------------------------------------------------------------------------
@@ -427,6 +481,8 @@ var initGroupSelection = function(groupList, hasZeroOption) {
 function showMode(modeName) {
     console.log("mode", modeName);
     localStorage.lastMode = modeName;
+    localTimer.clearFuncs();
+
     var currMode = null;
     var modes = [];
     for (var i = 0; i < selectableModes.length; ++i) {
@@ -548,6 +604,16 @@ function addPlayerToList(playerId, divParent, access, callback) {
     var playerBlock = $(racePlayerTemplate(playerData));
     playerBlock.appendTo(divParent);
     playerBlock.find(".div_player_group").addClass(groupStatusToClass(playerInfo.status));
+
+    var divPlayerLasttime = playerBlock.find(".div_player_lasttime");
+    var updateLasttime = function() {
+        var duration = durationFromLasttime(playerInfo.lasttime);
+        divPlayerLasttime.html(duration.desc);
+        divPlayerLasttime.css("color", duration.color);
+    };
+    updateLasttime();
+    localTimer.addFunc(updateLasttime);
+
     if (access.del) {
         playerBlock.find(".div_player_delete_option").show();
         playerBlock.find(".div_player_delete").click(function() {
@@ -660,6 +726,7 @@ function displayPlayerList() {
     var divPlayerList = $(".div_player_list");
     var selectGroupList = $(".select_player_group");
     function loadPlayers() {
+        localTimer.clearFuncs();
         divPlayerList.html("");
         var playerIds = pageModel.orderedPlayerIds();
         for (var i = 0; i < playerIds.length; ++i) {
@@ -757,6 +824,7 @@ function displayMatch() {
 
     var divMatchDetail = $(".div_match_detail");
     function loadMatch() {
+        localTimer.clearFuncs();
         divMatchDetail.html("");
         var raceTypes = ["黄鹿", "玫瑰", "咸鱼"];
         for (var raceIndex = 0; raceIndex < raceTypes.length; ++raceIndex) {

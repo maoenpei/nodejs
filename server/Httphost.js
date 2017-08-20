@@ -64,12 +64,14 @@ Base.extends("LogicManager", {
 		if (player) {
 			player.group = group;
 		}
+		return player;
 	},
 	playerName:function(playerId, name) {
 		var player = this.logic.players[playerId];
 		if (player) {
 			player.name = name;
 		}
+		return player;
 	},
 	playerPower:function(playerId, power) {
 		var player = this.logic.players[playerId];
@@ -77,6 +79,7 @@ Base.extends("LogicManager", {
 			player.power = power;
 			player.lastTime = new Date().getTime();
 		}
+		return player;
 	},
 	addGroup:function(group) {
 		var groupId = rkey();
@@ -325,10 +328,10 @@ var hostCommand = {
 				return responder.respondJson({}, safe(done));
 			}
 
-			logic.playerPower(playerId, power);
+			var playerData = logic.playerPower(playerId, power);
 			yield logic.save(next);
 
-			responder.respondJson({success:true}, safe(done));
+			responder.respondJson({success:true, editTime:playerData.lastTime}, safe(done));
 		}, this);
 	},
 	addgroup:function(requestor, responder, done) {
