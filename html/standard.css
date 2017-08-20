@@ -139,7 +139,7 @@ body{
 .div_group_line{
     color:#fff;
 }
-.div_player_lasttime{
+.div_player_lasttime, .div_race_lasttime{
     padding:0.04rem;
     font-size:0.5rem;
     background-color:rgba(255, 255, 255, 0.8);
@@ -148,6 +148,7 @@ body{
 .div_group_delete,.div_group_line,.div_greoup_name,.div_add_player_item,.div_add_player_group,
 .div_player_group,.div_player_name,.div_player_power,.div_mode_selector,.div_race_title_text,
 .visit_label,.display_label,.display_input_pwd,.div_race_title_add,.div_player_line,.div_player_display,
-.div_player_delete_option,.div_add_match_group,.div_add_match_item,.display_search_text,.div_player_lasttime{
+.div_player_delete_option,.div_add_match_group,.div_add_match_item,.display_search_text,
+.div_player_lasttime,.div_race_lasttime{
     display:inline-block;
 }

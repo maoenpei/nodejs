@@ -299,6 +299,11 @@ pageModel.selectablePlayerIds = function(groupId, namePattern) {
     }
     return this.orderWithPower(playerNotInMatch);
 }
+pageModel.matchLasttime = function(matchId) {
+    var match = this.match[matchId];
+    match = (match ? match : {});
+    return (match.lastTime ? match.lastTime : 0);
+}
 pageModel.matchPlayerIds = function(matchId) {
     var match = this.match[matchId];
     match = (match ? match : {});
@@ -313,6 +318,7 @@ pageModel.joinmatch = function(matchId, playerId, callback) {
             match = (match ? match : {});
             match.players = (match.players ? match.players : {})
             match.players[playerId] = true;
+            match.lastTime = json.editTime;
             $this.match[matchId] = match;
             safe(callback)();
         }
@@ -837,6 +843,16 @@ function displayMatch() {
                     raceBlock.appendTo(divMatchDetail);
                     var isgoden = (raceIndex < 2);
                     raceBlock.find(".div_race_title_text").addClass(isgoden ? "display_race_golden" : "display_race_gray");
+
+                    var divRaceLasttime = raceBlock.find(".div_race_lasttime");
+                    var updateLasttime = function() {
+                        var lasttime = pageModel.matchLasttime(currentMatchId);
+                        var duration = durationFromLasttime(lasttime);
+                        divRaceLasttime.html(duration.desc);
+                        divRaceLasttime.css("color", duration.color);
+                    };
+                    updateLasttime();
+                    localTimer.addFunc(updateLasttime);
 
                     var addButton = raceBlock.find(".div_race_title_add");
                     addButton.click(function() {

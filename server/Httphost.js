@@ -118,6 +118,7 @@ Base.extends("LogicManager", {
 		match.lastTime = new Date().getTime();
 		this.logic.match[matchId] = match;
 		this.playerInMatch[playerId] = matchId;
+		return match;
 	},
 	playerQuit:function(playerId) {
 		var matchId = this.playerInMatch[playerId];
@@ -434,10 +435,10 @@ var hostCommand = {
 			}
 
 			console.log("joinmatch", playerId, matchId);
-			logic.playerToMatch(playerId, matchId);
+			var match = logic.playerToMatch(playerId, matchId);
 			yield logic.save(next);
 
-			responder.respondJson({success:true}, safe(done));
+			responder.respondJson({success:true, editTime:match.lastTime}, safe(done));
 
 		}, this);
 	},
