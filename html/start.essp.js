@@ -669,6 +669,7 @@ function addPlayerToList(playerId, divParent, access, callback) {
         divShowPower.click(function() {
             divShowPower.hide();
             inputEditPower.val(playerInfo.power);
+            inputEditPower.select();
             inputEditPower.show();
             inputEditPower.focus();
         });
