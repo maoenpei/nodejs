@@ -58,15 +58,22 @@ Base.extends("$PersistanceManager", {
     ExtensionType:function(ext) {
         return this.extMapping[ext.toLowerCase()];
     },
+
+    States:function(callback) {
+        for (var serial in this.states) {
+            var state = this.states[serial];
+            safe(callback)(serial, state);
+        }
+    },
     Serial:function(serial) {
         if (this.states[serial] || this.passwords[serial]) {
-            var saveData = (this.passwords[serial] ? {} : this.states[serial]);
+            var state = (this.passwords[serial] ? {} : this.states[serial]);
             delete this.states[serial];
             var newSerial = "";
             for (var i = 0; i < 4 || this.states[newSerial]; ++i) {
                 newSerial += rkey();
             }
-            this.states[newSerial] = saveData;
+            this.states[newSerial] = state;
             return newSerial;
         }
         return null;

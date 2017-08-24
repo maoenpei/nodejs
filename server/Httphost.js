@@ -561,7 +561,15 @@ var hostCommand = {
 
 			// initialization
 			var state = $PersistanceManager.State(serial);
-			state.adminLevel = (state.adminLevel ? state.adminLevel : 1);
+            state.adminLevel = (state.adminLevel ? state.adminLevel : 1);
+            var uniqueKey = state.uniqueKey;
+            if (!uniqueKey) {
+                do {
+                    uniqueKey = rkey();
+                } while(this.uniqueKeys[uniqueKey]);
+                this.uniqueKeys[uniqueKey] = true;
+            }
+            state.uniqueKey = uniqueKey;
 			yield $PersistanceManager.Commit(next);
 
 			var obj = $LoginManager.login(serial);
@@ -714,6 +722,12 @@ Base.extends("Httphost", {
 		$FileCacher.setEnabled(!isHost);
 		$TemplateParser.setEnabled(!isHost);
 
+        this.uniqueKeys = {};
+        $PersistanceManager.States((serial, state) => {
+            if (state.uniqueKey) {
+                this.uniqueKeys[state.uniqueKey] = true;
+            }
+        });
 		this.logicManager = new LogicManager();
 	},
 	onVisit:function(req, res) {

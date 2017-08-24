@@ -549,8 +549,10 @@ function showMode(modeName) {
     adjustContentHeight("body", ".div_title_bar", ".div_content_panel");
 
     $(".div_log_off").click(function() {
-        delete localStorage.serial_string;
-        requestPost("giveup", {}, displayWelcome);
+        if (confirm("确认退出？")) {
+            delete localStorage.serial_string;
+            requestPost("giveup", {}, displayWelcome);
+        }
     });
 };
 
@@ -865,6 +867,7 @@ function displayMatch() {
 
     var divMatchDetail = $(".div_match_detail");
     function loadMatch() {
+        var raceBlocks = {};
         localTimer.clearFuncs();
         divMatchDetail.html("");
         var raceTypes = ["黄鹿", "玫瑰", "咸鱼"];
@@ -876,6 +879,7 @@ function displayMatch() {
                         name:(raceTypes[raceIndex] + starIndex + "星"),
                     }));
                     raceBlock.appendTo(divMatchDetail);
+                    raceBlocks[currentMatchId] = raceBlock;
                     var isgoden = (raceIndex < 2);
                     raceBlock.find(".div_race_title_text").addClass(isgoden ? "display_race_golden" : "display_race_gray");
 
@@ -924,6 +928,8 @@ function displayMatch() {
                 })();
             }
         }
+
+        //$(".div_content_panel").scrollTop(raceBlocks[2001].position().top - $(".div_content_panel_match").position().top);
     }
     pageModel.refresh(false, loadMatch);
 }
