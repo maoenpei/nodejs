@@ -313,6 +313,8 @@ pageModel.matchPlayerIds = function(matchId) {
 }
 pageModel.joinmatch = function(matchId, playerId, callback) {
     $this = this;
+    console.log("joinmatch", matchId, playerId);
+
     requestPost("joinmatch", {matchId:matchId, playerId:playerId}, function(json) {
         if (json && json.success) {
             var match = $this.match[matchId];
@@ -327,6 +329,8 @@ pageModel.joinmatch = function(matchId, playerId, callback) {
 }
 pageModel.quitmatch = function(matchId, playerId, callback) {
     $this = this;
+    console.log("joinmatch", matchId, playerId);
+
     requestPost("quitmatch", {matchId:matchId, playerId:playerId}, function(json) {
         if (json && json.success) {
             var match = $this.match[matchId];
