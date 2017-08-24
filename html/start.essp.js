@@ -84,6 +84,9 @@ pageModel.refresh = function(force, callback) {
         safe(callback)();
     }
 }
+pageModel.canClearMatch = function() {
+    return this.options.clearMatch;
+}
 pageModel.canDeletePlayer = function() {
     return this.options.delPlayer;
 }
@@ -341,6 +344,17 @@ pageModel.quitmatch = function(matchId, playerId, callback) {
         }
     });
 }
+pageModel.clearallmatch = function(callback) {
+    $this = this;
+    console.log("clearallmatch");
+
+    requestPost("clearmatch", {matchId:9999}, function(json) {
+        if (json && json.success) {
+            $this.match = {};
+            safe(callback)();
+        }
+    });
+}
 
 //-------------------------------------------------------------------------
 // Utils
@@ -425,6 +439,7 @@ var showOnlyChild = function(outerCls, childCls) {
 
 var clearEvents = function() {
     $(".div_refresh_data").unbind();
+    $(".div_clear_all_match").unbind();
     $(".div_log_off").unbind();
     $(".div_new_player").unbind();
     $(".div_new_group").unbind();
@@ -787,6 +802,20 @@ function displayMatch() {
     $(".div_refresh_data").click(function() {
         pageModel.refresh(true, loadMatch);
     });
+
+    var divClearAllMatch = $(".div_clear_all_match");
+    if (pageModel.canClearMatch()) {
+        divClearAllMatch.show();
+        divClearAllMatch.click(function() {
+            if (confirm("确认清空整场比赛？")) {
+                pageModel.clearallmatch(function() {
+                    loadMatch();
+                });
+            }
+        });
+    } else {
+        divClearAllMatch.hide();
+    }
 
     var addPlayerToMatchId = null;
     var divAddMatchMask = $(".div_add_match_mask");

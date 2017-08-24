@@ -11,11 +11,11 @@ require("./TemplateParser");
 Base.extends("LogicManager", {
 	_constructor:function() {
 		this.logic = $PersistanceManager.Logic();
-		this.playerInMatch = {};
+		this.playerIdToMatchId = {};
 		for (var matchId in this.logic.match) {
 			var players = this.logic.match[matchId].players;
 			for (var playerId in players) {
-				this.playerInMatch[playerId] = matchId;
+				this.playerIdToMatchId[playerId] = matchId;
 			}
 		}
 	},
@@ -52,10 +52,10 @@ Base.extends("LogicManager", {
 	},
 	delPlayer:function(playerId) {
 		console.log("deleting player", playerId, this.logic.players[playerId].name);
-		var matchId = this.playerInMatch[playerId];
+		var matchId = this.playerIdToMatchId[playerId];
 		if (matchId) {
 			delete this.logic.match[matchId].players[playerId];
-			delete this.playerInMatch[playerId];
+			delete this.playerIdToMatchId[playerId];
 		}
 		delete this.logic.players[playerId];
 	},
@@ -110,7 +110,7 @@ Base.extends("LogicManager", {
 		delete this.logic.groups[groupId];
 	},
 	playerMatch:function(playerId) {
-		return this.playerInMatch[playerId];
+		return this.playerIdToMatchId[playerId];
 	},
 	playerToMatch:function(playerId, matchId) {
 		var match = this.logic.match[matchId];
@@ -119,13 +119,36 @@ Base.extends("LogicManager", {
 		match.players[playerId] = true;
 		match.lastTime = new Date().getTime();
 		this.logic.match[matchId] = match;
-		this.playerInMatch[playerId] = matchId;
+		this.playerIdToMatchId[playerId] = matchId;
 	},
 	playerQuit:function(playerId) {
-		var matchId = this.playerInMatch[playerId];
+		var matchId = this.playerIdToMatchId[playerId];
+		if (matchId) {
+			var match = this.logic.match[matchId];
+			if (match) {
+				delete match.players[playerId];
+				delete this.playerIdToMatchId[playerId];
+			}
+		}
+	},
+	clearMatch:function(matchId) {
 		var match = this.logic.match[matchId];
-		delete match.players[playerId];
-		delete this.playerInMatch[playerId];
+		if (match) {
+			delete this.logic.match[matchId];
+			var playersOfMatch = {};
+			for (var playerId in this.playerIdToMatchId) {
+				if (matchId == this.playerIdToMatchId[playerId]) {
+					playersOfMatch[playerId] = true;
+				}
+			}
+			for (var playerId in playersOfMatch) {
+				delete this.playerIdToMatchId[playerId];
+			}
+		}
+	},
+	clearAllMatch:function() {
+		this.logic.match = {};
+		this.playerIdToMatchId = {};
 	},
 	matchTime:function(matchId) {
 		var match = this.logic.match[matchId];
@@ -149,6 +172,7 @@ var hostCommand = {
 			var canView = state.adminLevel >= 1;
 			var canAddPlayer = state.adminLevel >= 1;
 			var canDelPlayer = state.adminLevel >= 2;
+			var canClearMatch = state.adminLevel >= 3;
 			var canEditGroup = state.adminLevel >= 3;
 			var canEditUser = state.adminLevel >= 4;
 
@@ -158,6 +182,7 @@ var hostCommand = {
 				players:logic.players(),
 				groups:logic.groups(),
 				delPlayer:canDelPlayer,
+				clearMatch:canClearMatch,
 				editGroup:canEditGroup,
 				editUser:canEditUser,
 			};
@@ -487,7 +512,39 @@ var hostCommand = {
 			yield logic.save(next);
 
 			responder.respondJson({success:true}, safe(done));
+		}, this);
+	},
+	clearmatch:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			var obj = yield this.tokenValid(requestor, next);
+			if (!obj) {
+				responder.addError("Not valid token for file add.");
+				return responder.respondJson({}, safe(done));
+			}
 
+			var state = $PersistanceManager.State(obj.getSerial());
+			if (state.adminLevel < 3) {
+				responder.addError("Admin level not enough.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var json = yield requestor.visitBodyJson(next);
+			if (!json || !json.matchId) {
+				responder.addError("Parameter data not correct.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var matchId = json.matchId;
+			var logic = this.logicManager;
+			console.log("clearmatch", matchId);
+			if (matchId == 9999) {
+				logic.clearAllMatch();
+			} else {
+				logic.clearMatch(matchId);
+			}
+			yield logic.save(next);
+
+			responder.respondJson({success:true}, safe(done));
 		}, this);
 	},
 
