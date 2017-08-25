@@ -869,12 +869,16 @@ function displayMatch() {
     function loadMatch() {
         var raceBlocks = {};
         localTimer.clearFuncs();
+
+        var genMatchId = function(raceIndex, starIndex) {
+            return raceIndex * 1000 + starIndex;
+        };
         divMatchDetail.html("");
         var raceTypes = ["黄鹿", "玫瑰", "咸鱼"];
         for (var raceIndex = 0; raceIndex < raceTypes.length; ++raceIndex) {
             for (var starIndex = 10; starIndex >= 1; --starIndex) {
                 (function() {
-                    var currentMatchId = raceIndex * 1000 + starIndex;
+                    var currentMatchId = genMatchId(raceIndex, starIndex);
                     var raceBlock = $(raceBlockTemplate({
                         name:(raceTypes[raceIndex] + starIndex + "星"),
                     }));
@@ -929,7 +933,9 @@ function displayMatch() {
             }
         }
 
-        //$(".div_content_panel").scrollTop(raceBlocks[2001].position().top - $(".div_content_panel_match").position().top);
+        var scrollToMatch = function(matchId) {
+            $(".div_content_panel").scrollTop(raceBlocks[matchId].position().top);
+        };
     }
     pageModel.refresh(false, loadMatch);
 }
