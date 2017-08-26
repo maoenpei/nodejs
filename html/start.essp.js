@@ -957,6 +957,7 @@ function displayWelcome() {
                 localStorage.serial_string = json.serial;
                 safe(success)();
             } else {
+                delete localStorage.serial_string;
                 safe(failed)();
             }
         });
