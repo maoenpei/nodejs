@@ -158,11 +158,12 @@ Base.extends("LogicManager", {
 });
 
 var hostCommand = {
+	// Main logic
 	information:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
-				responder.addError("Not valid token for file add.");
+				responder.addError("Not valid token.");
 				return responder.respondJson({}, safe(done));
 			}
 
@@ -196,7 +197,7 @@ var hostCommand = {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
-				responder.addError("Not valid token for file add.");
+				responder.addError("Not valid token.");
 				return responder.respondJson({}, safe(done));
 			}
 
@@ -235,7 +236,7 @@ var hostCommand = {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
-				responder.addError("Not valid token for file add.");
+				responder.addError("Not valid token.");
 				return responder.respondJson({}, safe(done));
 			}
 
@@ -268,7 +269,7 @@ var hostCommand = {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
-				responder.addError("Not valid token for file add.");
+				responder.addError("Not valid token.");
 				return responder.respondJson({}, safe(done));
 			}
 
@@ -302,7 +303,7 @@ var hostCommand = {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
-				responder.addError("Not valid token for file add.");
+				responder.addError("Not valid token.");
 				return responder.respondJson({}, safe(done));
 			}
 
@@ -336,7 +337,7 @@ var hostCommand = {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
-				responder.addError("Not valid token for file add.");
+				responder.addError("Not valid token.");
 				return responder.respondJson({}, safe(done));
 			}
 
@@ -370,7 +371,7 @@ var hostCommand = {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
-				responder.addError("Not valid token for file add.");
+				responder.addError("Not valid token.");
 				return responder.respondJson({}, safe(done));
 			}
 
@@ -402,7 +403,7 @@ var hostCommand = {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
-				responder.addError("Not valid token for file add.");
+				responder.addError("Not valid token.");
 				return responder.respondJson({}, safe(done));
 			}
 
@@ -435,7 +436,7 @@ var hostCommand = {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
-				responder.addError("Not valid token for file add.");
+				responder.addError("Not valid token.");
 				return responder.respondJson({}, safe(done));
 			}
 
@@ -477,7 +478,7 @@ var hostCommand = {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
-				responder.addError("Not valid token for file add.");
+				responder.addError("Not valid token.");
 				return responder.respondJson({}, safe(done));
 			}
 
@@ -518,7 +519,7 @@ var hostCommand = {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
-				responder.addError("Not valid token for file add.");
+				responder.addError("Not valid token.");
 				return responder.respondJson({}, safe(done));
 			}
 
@@ -548,10 +549,57 @@ var hostCommand = {
 		}, this);
 	},
 
+	// User operation
+	listuser:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			if (requestor.getMethod() == "GET") {
+				responder.addError("Not valid for 'GET' method.");
+				return safe(done)();
+			}
+
+			var obj = yield this.tokenValid(requestor, next);
+			if (!obj) {
+				responder.addError("Not valid token.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var state = $PersistanceManager.State(obj.getSerial());
+			if (state.adminLevel < 4) {
+				responder.addError("Admin level not enough.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var states = [];
+			$PersistanceManager.States(function(serial, state) {
+				states.push({
+					level:state.adminLevel,
+					uniqueKey:state.uniqueKey,
+				});
+			});
+
+			responder.respondJson({states:states}, safe(done));
+		}, this);
+	},
+	promoteuser:function(requestor, responder, done) {
+	},
+	disableuser:function(requestor, responder, done) {
+	},
+
+	// Account operation
 	exchange:function(requestor, responder, done) {
 		var next = coroutine(function*() {
-			yield $PersistanceManager.availableKeys(next);
+			if (requestor.getMethod() == "GET") {
+				responder.addError("Not valid for 'GET' method.");
+				return safe(done)();
+			}
+
 			var json = yield requestor.visitBodyJson(next);
+			if (!json || !json.serial) {
+				responder.addError("Parameter data not correct.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			yield $PersistanceManager.availableKeys(next);
 			var serial = $PersistanceManager.Serial(json.serial);
 
 			if (!serial) {
@@ -593,6 +641,11 @@ var hostCommand = {
 			}
 
 			var json = yield requestor.visitBodyJson(next);
+			if (!json) {
+				responder.addError("Parameter data not correct.");
+				return responder.respondJson({}, safe(done));
+			}
+
 			$PersistanceManager.Dismiss(obj.getSerial());
 			yield $PersistanceManager.Commit(next);
 
@@ -600,11 +653,13 @@ var hostCommand = {
 			responder.respondJson({}, safe(done));
 		}, this);
 	},
+
+	// File operation
 	addfile:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
-				responder.addError("Not valid token for file add.");
+				responder.addError("Not valid token.");
 				return responder.respondJson({}, safe(done));
 			}
 
@@ -640,7 +695,7 @@ var hostCommand = {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
-				responder.addError("Not valid token for file delete.");
+				responder.addError("Not valid token.");
 				return responder.respondJson({}, safe(done));
 			}
 
@@ -663,7 +718,7 @@ var hostCommand = {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
-				responder.addError("Not valid token for file rename.");
+				responder.addError("Not valid token.");
 				return responder.respondJson({}, safe(done));
 			}
 
@@ -684,7 +739,7 @@ var hostCommand = {
 		var next = coroutine(function*() {
 			var obj = yield this.tokenValid(requestor, next);
 			if (!obj) {
-				responder.addError("Not valid token for file.");
+				responder.addError("Not valid token.");
 				return safe(done)();
 			}
 
