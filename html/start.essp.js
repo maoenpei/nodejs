@@ -456,7 +456,7 @@ var selectableModes = [
     {name:"list", desc:"玩家列表", condition:function() {return true;}, switcher:displayPlayerList},
     {name:"match", desc:"帝国战", condition:function() {return true;}, switcher:displayMatch},
     {name:"group", desc:"骑士团", condition:function() {return pageModel.canEditGroup();}, switcher:displayGroup},
-    {name:"user", desc:null, condition:function() {return pageModel.canEditUser();}, switcher:null},
+    {name:"user", desc:null, condition:function() {return true;}, switcher:null},
 ];
 var hashModes = {};
 for (var i = 0; i < selectableModes.length; ++i) {
@@ -522,16 +522,15 @@ function showMode(modeName) {
     var otherModes = [];
     for (var i = 0; i < selectableModes.length; ++i) {
         var mode = selectableModes[i];
-        if (!mode.desc) {
-            continue;
-        }
         if (mode.name == modeName) {
             currMode = mode;
         }
-        if (mode.condition()){
-            allModes.push(mode);
-            if (mode.name != modeName) {
-                otherModes.push(mode);
+        if (mode.desc) {
+            if (mode.condition()){
+                allModes.push(mode);
+                if (mode.name != modeName) {
+                    otherModes.push(mode);
+                }
             }
         }
     }
