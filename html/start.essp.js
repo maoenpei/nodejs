@@ -536,7 +536,6 @@ function showMode(modeName) {
         } else {
             templateParameter.modes = modes;
         }
-        console.log("tt", modes, otherMode, templateParameter);
         var modeSelector = $(modeSelectTemplate(templateParameter));
         modeSelector.appendTo(modeSelectorContainer);
         if (singleMode) {
