@@ -707,6 +707,7 @@ var hostCommand = {
 			var ext = fName.match(/(\.\w+)$/)[1];
 			var data = yield $FileCacher.visitFile("/files" + fName, next);
 
+			responder.setCacheTime(365*24*3600);
 			responder.setType(ext);
 			responder.respondData(data, safe(done));
 		}, this);
