@@ -454,7 +454,7 @@ var clearEvents = function() {
 var selectableModes = [
     {name:"list", desc:"玩家列表", condition:function() {return true;}, switcher:displayPlayerList},
     {name:"match", desc:"帝国战", condition:function() {return true;}, switcher:displayMatch},
-    {name:"manage", desc:"管理", condition:function() {return pageModel.canEditGroup();}, switcher:displayManage},
+    {name:"group", desc:"骑士团", condition:function() {return pageModel.canEditGroup();}, switcher:displayGroup},
 ];
 var hashModes = {};
 for (var i = 0; i < selectableModes.length; ++i) {
@@ -510,12 +510,16 @@ function showMode(modeName) {
     localTimer.clearFuncs();
 
     var currMode = null;
+    var otherMode = null;
     var modes = [];
     for (var i = 0; i < selectableModes.length; ++i) {
         var mode = selectableModes[i];
         if (mode.name == modeName) {
             currMode = mode;
-        } else if (mode.condition()){
+        } else {
+            otherMode = mode;
+        }
+        if (mode.condition()){
             modes.push(mode);
         }
     }
@@ -524,20 +528,23 @@ function showMode(modeName) {
         var modeSelectTemplate = templates.read(".hd_selectable_modes");
         var modeSelectorContainer = $(".div_title_bar_" + modeName).find(".div_mode_selector");
         modeSelectorContainer.html("");
+        var singleMode = (modes.length == 2 && otherMode);
         var templateParameter = {};
-        templateParameter.singleMode = (modes.length == 1);
-        if (modes.length == 1) {
-            templateParameter.singleDesc = modes[0].desc;
+        templateParameter.singleMode = singleMode;
+        if (singleMode) {
+            templateParameter.singleDesc = otherMode.desc;
         } else {
-            templateParameter.modes = [currMode].concat(modes);
+            templateParameter.modes = modes;
         }
+        console.log("tt", modes, otherMode, templateParameter);
         var modeSelector = $(modeSelectTemplate(templateParameter));
         modeSelector.appendTo(modeSelectorContainer);
-        if (modes.length == 1) {
+        if (singleMode) {
             modeSelector.click(function() {
-                modes[0].switcher();
+                otherMode.switcher();
             });
         } else {
+            modeSelector.val(currMode.name);
             modeSelector.change(function() {
                 var selectedMode = modeSelector.val();
                 switchToMode(selectedMode);
@@ -556,9 +563,9 @@ function showMode(modeName) {
     });
 };
 
-function displayManage() {
+function displayGroup() {
     clearEvents();
-    showMode("manage");
+    showMode("group");
 
     // refresh
     $(".div_refresh_data").click(function() {
