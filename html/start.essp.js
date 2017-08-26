@@ -424,10 +424,10 @@ localTimer.clearFuncs = function() {
 //-------------------------------------------------------------------------
 // View
 
-var adjustContentHeight = function(entireCls, titleCls, contentCls) {
-    var total = parseInt($(entireCls).css("height"));
-    var title = parseInt($(titleCls).css("height"));
-    $(contentCls).css("height", total - title);
+var adjustPageLayout = function() {
+    var topHeight = $(".div_title_bar").innerHeight();
+    $(".div_content_panel").css("top", topHeight);
+    $(".div_list_user").css("top", topHeight);
 };
 
 var showOnlyChild = function(outerCls, childCls) {
@@ -439,7 +439,7 @@ var showOnlyChild = function(outerCls, childCls) {
 var clearEvents = function() {
     $(".div_refresh_data").unbind();
     $(".div_clear_all_match").unbind();
-    $(".div_log_off").unbind();
+    $(".div_manage_user").unbind();
     $(".div_new_player").unbind();
     $(".div_new_group").unbind();
     $(".add_player_confirm").unbind();
@@ -448,12 +448,15 @@ var clearEvents = function() {
     $(".add_group_cancel").unbind();
     $(".input_type_pwd").unbind();
     $(".input_confirm_pwd").unbind();
+    $(".div_user_manage").unbind();
+    $(".div_user_logout").unbind();
 }
 
 var selectableModes = [
     {name:"list", desc:"玩家列表", condition:function() {return true;}, switcher:displayPlayerList},
     {name:"match", desc:"帝国战", condition:function() {return true;}, switcher:displayMatch},
     {name:"group", desc:"骑士团", condition:function() {return pageModel.canEditGroup();}, switcher:displayGroup},
+    {name:"user", desc:null, condition:function() {return pageModel.canEditUser();}, switcher:null},
 ];
 var hashModes = {};
 for (var i = 0; i < selectableModes.length; ++i) {
@@ -467,6 +470,10 @@ var switchToMode = function(modeName) {
     } else {
         displayPlayerList();
     }
+}
+var displayableMode = function(modeName) {
+    var mode = hashModes[modeName];
+    return mode && mode.desc;
 }
 
 var statusClass = [
@@ -505,42 +512,47 @@ var initGroupSelection = function(groupList, hasZeroOption) {
 
 function showMode(modeName) {
     console.log("mode", modeName);
-    localStorage.lastMode = modeName;
+    if (displayableMode(modeName)) {
+        localStorage.lastMode = modeName;
+    }
     localTimer.clearFuncs();
 
     var currMode = null;
-    var otherMode = null;
-    var modes = [];
+    var allModes = [];
+    var otherModes = [];
     for (var i = 0; i < selectableModes.length; ++i) {
         var mode = selectableModes[i];
+        if (!mode.desc) {
+            continue;
+        }
         if (mode.name == modeName) {
             currMode = mode;
         }
         if (mode.condition()){
+            allModes.push(mode);
             if (mode.name != modeName) {
-                otherMode = mode;
+                otherModes.push(mode);
             }
-            modes.push(mode);
         }
     }
     if (currMode) {
-        console.log("modes", modes);
+        console.log("modes", allModes);
         var modeSelectTemplate = templates.read(".hd_selectable_modes");
         var modeSelectorContainer = $(".div_title_bar_" + modeName).find(".div_mode_selector");
         modeSelectorContainer.html("");
-        var singleMode = (modes.length == 2 && otherMode);
+        var singleMode = (otherModes.length == 1);
         var templateParameter = {};
         templateParameter.singleMode = singleMode;
         if (singleMode) {
-            templateParameter.singleDesc = otherMode.desc;
+            templateParameter.singleDesc = otherModes[0].desc;
         } else {
-            templateParameter.modes = modes;
+            templateParameter.modes = allModes;
         }
         var modeSelector = $(modeSelectTemplate(templateParameter));
         modeSelector.appendTo(modeSelectorContainer);
         if (singleMode) {
             modeSelector.click(function() {
-                otherMode.switcher();
+                otherModes[0].switcher();
             });
         } else {
             modeSelector.val(currMode.name);
@@ -552,9 +564,22 @@ function showMode(modeName) {
     }
     showOnlyChild(".div_title_bar", ".div_title_bar_" + modeName);
     showOnlyChild(".div_content_panel", ".div_content_panel_" + modeName);
-    adjustContentHeight("body", ".div_title_bar", ".div_content_panel");
+    adjustPageLayout();
 
-    $(".div_log_off").click(function() {
+    var showUserList = false;
+    $(".div_list_user").hide();
+    $(".div_manage_user").click(function() {
+        if (showUserList) {
+            showUserList = false;
+            $(".div_list_user").hide();
+        } else {
+            showUserList = true;
+            $(".div_list_user").show();
+        }
+    });
+    $(".div_user_manage").click(function() {
+    });
+    $(".div_user_logout").click(function() {
         if (confirm("确认退出？")) {
             delete localStorage.serial_string;
             requestPost("giveup", {}, displayWelcome);
@@ -940,7 +965,7 @@ function displayMatch() {
         }
 
         var scrollToMatch = function(matchId) {
-            $(".div_content_panel").scrollTop(raceBlocks[matchId].position().top);
+            $("body").scrollTop(raceBlocks[matchId].position().top);
         };
     }
     pageModel.refresh(false, loadMatch);
@@ -999,8 +1024,8 @@ function displayWelcome() {
 }
 
 $(function() {
-    adjustContentHeight("body", ".div_title_bar", ".div_content_panel");
-    $(window).resize(function() {adjustContentHeight("body", ".div_title_bar", ".div_content_panel");});
+    adjustPageLayout();
+    $(window).resize(adjustPageLayout);
 
     displayWelcome();
 });
