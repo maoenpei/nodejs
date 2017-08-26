@@ -61,7 +61,7 @@ var uploadFile = function(url, callback) {
 };
 
 //-------------------------------------------------------------------------
-// Model
+// Model:page
 
 var pageModel = {options:{}, lastRefreshTime:0,};
 pageModel.refresh = function(force, callback) {
@@ -353,6 +353,21 @@ pageModel.clearallmatch = function(callback) {
             safe(callback)();
         }
     });
+}
+
+//-------------------------------------------------------------------------
+// Model:user
+
+var userModel = {};
+userModel.refresh = function(callback) {
+}
+userModel.users = function() {
+}
+userModel.levels = function() {
+}
+userModel.promote = function(uniqueKey, level) {
+}
+userModel.disable = function(uniqueKey) {
 }
 
 //-------------------------------------------------------------------------
