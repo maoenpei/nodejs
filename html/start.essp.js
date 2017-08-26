@@ -67,7 +67,6 @@ var pageModel = {options:{}, lastRefreshTime:0,};
 pageModel.refresh = function(force, callback) {
     $this = this;
     var currentTime = new Date().getTime();
-    console.log("refresh", currentTime - $this.lastRefreshTime);
     if (force || currentTime - $this.lastRefreshTime > 1000 * 10) {
         $this.lastRefreshTime = currentTime;
         requestPost("information", {}, function(json) {
