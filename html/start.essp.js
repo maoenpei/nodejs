@@ -515,10 +515,11 @@ function showMode(modeName) {
         var mode = selectableModes[i];
         if (mode.name == modeName) {
             currMode = mode;
-        } else {
-            otherMode = mode;
         }
         if (mode.condition()){
+            if (mode.name != modeName) {
+                otherMode = mode;
+            }
             modes.push(mode);
         }
     }
