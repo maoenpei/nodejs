@@ -586,9 +586,11 @@ function showMode(modeName) {
         if (showUserList) {
             showUserList = false;
             $(".div_list_user").hide();
+            $(".div_manage_user").removeClass("div_manage_user_on");
         } else {
             showUserList = true;
             $(".div_list_user").show();
+            $(".div_manage_user").addClass("div_manage_user_on");
         }
     });
     $(".div_user_manage").click(function() {
@@ -651,7 +653,7 @@ function displayGroup() {
 
                 var groupBlock = $(groupDisplayTemplate(groupInfo));
                 groupBlock.appendTo(divGroupList);
-                groupBlock.find(".div_greoup_name").addClass(groupStatusToClass(groupInfo.status));
+                groupBlock.find(".div_group_name").addClass(groupStatusToClass(groupInfo.status));
                 groupBlock.find(".div_group_delete").click(function() {
                     if (confirm("确认删除'" + groupInfo.name + "'？")) {
                         pageModel.delGroup(groupId, function() {
