@@ -776,6 +776,11 @@ function addPlayerToList(playerId, divParent, access, callback) {
             inputEditPower.show();
             inputEditPower.focus();
         });
+        inputEditPower.keypress(function (e) {
+            if (e.which == 13) {
+                inputEditPower.hide();
+            }
+        });
         inputEditPower.blur(function() {
             var power = validPower(inputEditPower.val());
             if (power){
