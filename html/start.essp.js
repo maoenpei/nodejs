@@ -358,10 +358,21 @@ pageModel.clearallmatch = function(callback) {
 //-------------------------------------------------------------------------
 // Model:user
 
-var userModel = {};
+var userModel = {selfKey:"NONE", states:[]};
 userModel.refresh = function(callback) {
+    $this = this;
+    requestPost("listuser", {}, function(json) {
+        console.log("user information", json);
+        $this.key = json.selfKey;
+        $this.states = (json.states ? json.states : []);
+        safe(callback)();
+    });
+}
+userModel.selfKey = function() {
+    return this.key;
 }
 userModel.users = function() {
+    return this.states;
 }
 userModel.levels = function() {
 }
@@ -471,7 +482,7 @@ var selectableModes = [
     {name:"list", desc:"玩家列表", condition:function() {return true;}, switcher:displayPlayerList},
     {name:"match", desc:"帝国战", condition:function() {return true;}, switcher:displayMatch},
     {name:"group", desc:"骑士团", condition:function() {return pageModel.canEditGroup();}, switcher:displayGroup},
-    {name:"user", desc:null, condition:function() {return true;}, switcher:null},
+//    {name:"user", desc:null, condition:function() {return true;}, switcher:displayUser},
 ];
 var hashModes = {};
 for (var i = 0; i < selectableModes.length; ++i) {
@@ -560,6 +571,9 @@ function showMode(modeName) {
         if (singleMode) {
             templateParameter.singleDesc = otherModes[0].desc;
         } else {
+            if (otherModes.length == allModes.length) {
+                allModes = [{name:"nothing", desc:"请选择"}].concat(allModes);
+            }
             templateParameter.modes = allModes;
         }
         var modeSelector = $(modeSelectTemplate(templateParameter));
@@ -582,6 +596,7 @@ function showMode(modeName) {
 
     var showUserList = false;
     $(".div_list_user").hide();
+    $(".div_manage_user").removeClass("div_manage_user_on");
     $(".div_manage_user").click(function() {
         if (showUserList) {
             showUserList = false;
@@ -594,6 +609,7 @@ function showMode(modeName) {
         }
     });
     $(".div_user_manage").click(function() {
+        displayUser();
     });
     $(".div_user_logout").click(function() {
         if (confirm("确认退出？")) {
@@ -602,6 +618,24 @@ function showMode(modeName) {
         }
     });
 };
+
+function displayUser() {
+    clearEvents();
+    showMode("user");
+
+    $(".div_refresh_data").click(function() {
+        userModel.refresh(loadUser);
+    });
+    $(".div_user_back").click(function() {
+        switchToMode(localStorage.lastMode);
+    });
+
+    function loadUser() {
+        console.log("loadUser", userModel.selfKey());
+        $(".div_unique_key_display").html(userModel.selfKey());
+    }
+    userModel.refresh(loadUser);
+}
 
 function displayGroup() {
     clearEvents();

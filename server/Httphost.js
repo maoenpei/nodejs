@@ -565,8 +565,8 @@ var hostCommand = {
 
 			var state = $PersistanceManager.State(obj.getSerial());
 			if (state.adminLevel < 4) {
-				responder.addError("Admin level not enough.");
-				return responder.respondJson({}, safe(done));
+				// Not enough admin level, just show self
+				return responder.respondJson({selfKey:state.uniqueKey}, safe(done));
 			}
 
 			var states = [];
@@ -577,7 +577,7 @@ var hostCommand = {
 				});
 			});
 
-			responder.respondJson({states:states}, safe(done));
+			responder.respondJson({selfKey:state.uniqueKey, states:states}, safe(done));
 		}, this);
 	},
 	promoteuser:function(requestor, responder, done) {
