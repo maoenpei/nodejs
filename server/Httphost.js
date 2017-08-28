@@ -571,10 +571,12 @@ var hostCommand = {
 
 			var states = [];
 			$PersistanceManager.States(function(serial, state) {
-				states.push({
-					level:state.adminLevel,
-					uniqueKey:state.uniqueKey,
-				});
+				if (typeof(state.adminLevel) != "undefined") {
+					states.push({
+						level:state.adminLevel,
+						uniqueKey:state.uniqueKey,
+					});
+				}
 			});
 
 			responder.respondJson({selfKey:state.uniqueKey, states:states}, safe(done));

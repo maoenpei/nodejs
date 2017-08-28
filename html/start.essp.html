@@ -121,8 +121,18 @@
                 <div class="div_unique_key_label">用户唯一标记</div>
                 <div class="div_unique_key_display"></div>
             </div>
-            <div class="div_users_container">
-                其他内容
+            <div class="div_user_list_container" style="display:none;">
+                <table class="table_user_list">
+                    <thead>
+                        <tr>
+                            <th>用户标记</th>
+                            <th>备注</th>
+                            <th>权限</th>
+                            <th>功能</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -130,6 +140,27 @@
         <div class="div_list_user_item"><div class="div_user_manage visit_label">管理</div></div>
         <div class="div_list_user_item"><div class="div_user_logout visit_label">退出</div></div>
     </div>
+<script type="text/x-handlebars-template" class="hd_user_item">
+                    <tr>
+                        <td>{{uniqueKey}}</td>
+                        <td>
+                            <div class="div_user_comment">{{comment}}</div>
+                            <input type="text" class="input_user_comment" style="display:none;"/>
+                        </td>
+                        <td>
+                            <div class="div_user_level">{{levelText}}</div>
+                            <select class="select_user_level" style="display:none;">
+                                {{#each levels}}
+                                <option value="{{value}}">{{name}}</option>
+                                {{/each}}
+                            </select>
+                        </td>
+                        <td>
+                            <input type="button" value="禁用" class="input_user_forbid"/>
+                            <div class="div_user_forbid" style="display:none;">{{unlockKey}}</div>
+                        </td>
+                    </tr>
+</script>
 <script type="text/x-handlebars-template" class="hd_race_block">
             <div class="div_race_block">
                 <div class="div_race_title">

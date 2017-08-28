@@ -374,7 +374,15 @@ userModel.selfKey = function() {
 userModel.users = function() {
     return this.states;
 }
+var userlevels = [
+    {value:0, name:"0 禁用"},
+    {value:1, name:"1 浏览"},
+    {value:2, name:"2 删除修改用户"},
+    {value:3, name:"3 增删骑士团"},
+    {value:4, name:"4 增删用户"},
+];
 userModel.levels = function() {
+    return userlevels;
 }
 userModel.promote = function(uniqueKey, level) {
 }
@@ -633,6 +641,30 @@ function displayUser() {
     function loadUser() {
         console.log("loadUser", userModel.selfKey());
         $(".div_unique_key_display").html(userModel.selfKey());
+
+        var userListTemplate = templates.read(".hd_user_item");
+        var tbodyUserList = $(".table_user_list").find("tbody");
+
+        var users = userModel.users();
+        var levels = userModel.levels();
+        if (users.length > 0) {
+            $(".div_user_list_container").show();
+        } else {
+            $(".div_user_list_container").hide();
+        }
+        tbodyUserList.html("");
+        for (var i = 0; i < users.length; ++i) {
+            var userInfo = users[i];
+            var tableRowUser = $(userListTemplate({
+                uniqueKey:(userInfo.uniqueKey ? userInfo.uniqueKey : "missing"),
+                comment:"无",
+                levelText:levels[userInfo.level].name,
+                levels:levels,
+                unlockKey:"missing",
+            }));
+
+            tableRowUser.appendTo(tbodyUserList);
+        }
     }
     userModel.refresh(loadUser);
 }

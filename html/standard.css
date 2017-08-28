@@ -186,3 +186,15 @@ body{
 .div_unique_key_container{
     margin:0.6rem;
 }
+
+.div_user_list_container{
+    margin-top:0.5rem;
+}
+
+.table_user_list{
+    width:100%;
+}
+
+td{
+    text-align:center;
+}
