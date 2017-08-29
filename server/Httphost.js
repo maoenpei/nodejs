@@ -618,6 +618,48 @@ var hostCommand = {
 		}, this);
 	},
 	promoteuser:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			if (requestor.getMethod() == "GET") {
+				responder.addError("Not valid for 'GET' method.");
+				return safe(done)();
+			}
+
+			var obj = yield this.tokenValid(requestor, next);
+			if (!obj) {
+				responder.addError("Not valid token.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var state = $PersistanceManager.State(obj.getSerial());
+			if (state.adminLevel < 4) {
+				// Not enough admin level, just show self
+				return responder.respondJson({selfKey:state.uniqueKey}, safe(done));
+			}
+
+			var json = yield requestor.visitBodyJson(next);
+			if (!json || !json.uniqueKey || !json.level) {
+				responder.addError("Parameter data not correct.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var uniqueKey = json.uniqueKey;
+			var level = json.level;
+			var userState = this.uniqueStates[uniqueKey];
+			if (!userState.adminLevel) {
+				responder.addError("Not able to promote zero level user");
+				return responder.respondJson({}, safe(done));
+			}
+
+			if (userState.adminLevel >= 4) {
+				responder.addError("Not able to promote super administrator");
+				return responder.respondJson({}, safe(done));
+			}
+
+			userState.adminLevel = level;
+			yield $PersistanceManager.Commit(next);
+
+			responder.respondJson({uniqueKey:uniqueKey}, safe(done));
+		}, this);
 	},
 	disableuser:function(requestor, responder, done) {
 	},
