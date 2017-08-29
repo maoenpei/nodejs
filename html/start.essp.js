@@ -471,21 +471,22 @@ var showOnlyChild = function(outerCls, childCls) {
 };
 
 var clearEvents = function() {
-    $(".div_refresh_data").unbind();
-    $(".div_clear_all_match").unbind();
-    $(".div_manage_user").unbind();
-    $(".div_new_player").unbind();
-    $(".div_new_group").unbind();
-    $(".add_player_confirm").unbind();
-    $(".add_player_cancel").unbind();
-    $(".add_group_confirm").unbind();
     $(".add_group_cancel").unbind();
-    $(".input_type_pwd").unbind();
-    $(".input_confirm_pwd").unbind();
-    $(".div_user_manage").unbind();
-    $(".div_user_logout").unbind();
+    $(".add_group_confirm").unbind();
     $(".add_match_cancel").unbind();
     $(".add_match_confirm").unbind();
+    $(".add_player_cancel").unbind();
+    $(".add_player_confirm").unbind();
+    $(".div_clear_all_match").unbind();
+    $(".div_manage_user").unbind();
+    $(".div_new_group").unbind();
+    $(".div_new_player").unbind();
+    $(".div_refresh_data").unbind();
+    $(".div_user_back").unbind();
+    $(".div_user_logout").unbind();
+    $(".div_user_manage").unbind();
+    $(".input_confirm_pwd").unbind();
+    $(".input_type_pwd").unbind();
 }
 
 var selectableModes = [
