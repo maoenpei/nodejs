@@ -484,6 +484,8 @@ var clearEvents = function() {
     $(".input_confirm_pwd").unbind();
     $(".div_user_manage").unbind();
     $(".div_user_logout").unbind();
+    $(".add_match_cancel").unbind();
+    $(".add_match_confirm").unbind();
 }
 
 var selectableModes = [
