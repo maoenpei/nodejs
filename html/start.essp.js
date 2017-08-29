@@ -358,13 +358,22 @@ pageModel.clearallmatch = function(callback) {
 //-------------------------------------------------------------------------
 // Model:user
 
-var userModel = {selfKey:"NONE", states:[]};
+var userModel = {selfKey:"NONE", states:[], uniqueStates:{}};
 userModel.refresh = function(callback) {
     $this = this;
+    console.log("listuser");
+
     requestPost("listuser", {}, function(json) {
         console.log("user information", json);
         $this.key = json.selfKey;
         $this.states = (json.states ? json.states : []);
+        $this.uniqueStates = {};
+        for (var i = 0; i < $this.states.length; ++i) {
+            var stateInfo = $this.states[i];
+            if (stateInfo.uniqueKey) {
+                $this.uniqueStates[stateInfo.uniqueKey] = stateInfo;
+            }
+        }
         safe(callback)();
     });
 }
@@ -384,9 +393,28 @@ var userlevels = [
 userModel.levels = function() {
     return userlevels;
 }
-userModel.promote = function(uniqueKey, level) {
+userModel.comment = function(uniqueKey, comment, callback) {
+    $this = this;
+    if (!uniqueKey) {
+        return;
+    }
+
+    var stateInfo = $this.uniqueStates[uniqueKey];
+    if (!stateInfo || stateInfo.comment == comment) {
+        return;
+    }
+
+    console.log("commentuser", uniqueKey, comment);
+
+    requestPost("commentuser", {uniqueKey:uniqueKey, comment:comment}, function(json) {
+        if (json && json.uniqueKey && json.uniqueKey == uniqueKey) {
+            $this.refresh(callback);
+        }
+    });
 }
-userModel.disable = function(uniqueKey) {
+userModel.promote = function(uniqueKey, level, callback) {
+}
+userModel.disable = function(uniqueKey, callback) {
 }
 
 //-------------------------------------------------------------------------
@@ -657,16 +685,41 @@ function displayUser() {
         }
         tbodyUserList.html("");
         for (var i = 0; i < users.length; ++i) {
-            var userInfo = users[i];
-            var tableRowUser = $(userListTemplate({
-                uniqueKey:(userInfo.uniqueKey ? userInfo.uniqueKey : "missing"),
-                comment:"无",
-                levelText:levels[userInfo.level].name,
-                levels:levels,
-                unlockKey:"missing",
-            }));
+            (function() {
+                var userInfo = users[i];
+                var tableRowUser = $(userListTemplate({
+                    uniqueKey:(userInfo.uniqueKey ? userInfo.uniqueKey : "missing"),
+                    comment:(userInfo.comment ? userInfo.comment : "无"),
+                    levelText:levels[userInfo.level].name,
+                    levels:levels,
+                    unlockKey:"missing",
+                }));
 
-            tableRowUser.appendTo(tbodyUserList);
+                tableRowUser.appendTo(tbodyUserList);
+                if (!userInfo.uniqueKey) {
+                    return;
+                }
+
+                var divUserComment = tableRowUser.find(".div_user_comment");
+                var inputUserComment = tableRowUser.find(".input_user_comment");
+                divUserComment.click(function() {
+                    divUserComment.hide();
+                    inputUserComment.val(userInfo.comment ? userInfo.comment : "");
+                    inputUserComment.show();
+                    inputUserComment.focus();
+                    inputUserComment.select();
+                });
+                inputUserComment.blur(function() {
+                    var comment = inputUserComment.val();
+                    inputUserComment.hide();
+                    divUserComment.html(comment ? comment : "无");
+                    divUserComment.show();
+
+                    userModel.comment(userInfo.uniqueKey, comment, function() {
+                        loadUser();
+                    });
+                });
+            })();
         }
     }
     userModel.refresh(loadUser);

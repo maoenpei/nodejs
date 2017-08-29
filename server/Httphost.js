@@ -575,11 +575,46 @@ var hostCommand = {
 					states.push({
 						level:state.adminLevel,
 						uniqueKey:state.uniqueKey,
+						comment:state.comment,
 					});
 				}
 			});
 
 			responder.respondJson({selfKey:state.uniqueKey, states:states}, safe(done));
+		}, this);
+	},
+	commentuser:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			if (requestor.getMethod() == "GET") {
+				responder.addError("Not valid for 'GET' method.");
+				return safe(done)();
+			}
+
+			var obj = yield this.tokenValid(requestor, next);
+			if (!obj) {
+				responder.addError("Not valid token.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var state = $PersistanceManager.State(obj.getSerial());
+			if (state.adminLevel < 4) {
+				// Not enough admin level, just show self
+				return responder.respondJson({selfKey:state.uniqueKey}, safe(done));
+			}
+
+			var json = yield requestor.visitBodyJson(next);
+			if (!json || !json.uniqueKey || !json.comment) {
+				responder.addError("Parameter data not correct.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var uniqueKey = json.uniqueKey;
+			var comment = json.comment;
+			var userState = this.uniqueStates[uniqueKey];
+			userState.comment = comment;
+			yield $PersistanceManager.Commit(next);
+
+			responder.respondJson({uniqueKey:uniqueKey}, safe(done));
 		}, this);
 	},
 	promoteuser:function(requestor, responder, done) {
@@ -616,10 +651,10 @@ var hostCommand = {
             if (!uniqueKey) {
                 do {
                     uniqueKey = rkey();
-                } while(this.uniqueKeys[uniqueKey]);
-                this.uniqueKeys[uniqueKey] = true;
+                } while(this.uniqueStates[uniqueKey]);
+	            state.uniqueKey = uniqueKey;
+                this.uniqueStates[uniqueKey] = state;
             }
-            state.uniqueKey = uniqueKey;
 			yield $PersistanceManager.Commit(next);
 
 			var obj = $LoginManager.login(serial);
@@ -648,6 +683,10 @@ var hostCommand = {
 				return responder.respondJson({}, safe(done));
 			}
 
+			var state = $PersistanceManager.State(obj.getSerial());
+			if (this.uniqueStates[state.uniqueKey]) {
+				delete this.uniqueStates[state.uniqueKey];
+			}
 			$PersistanceManager.Dismiss(obj.getSerial());
 			yield $PersistanceManager.Commit(next);
 
@@ -780,10 +819,10 @@ Base.extends("Httphost", {
 		$FileCacher.setEnabled(!isHost);
 		$TemplateParser.setEnabled(!isHost);
 
-        this.uniqueKeys = {};
+        this.uniqueStates = {};
         $PersistanceManager.States((serial, state) => {
             if (state.uniqueKey) {
-                this.uniqueKeys[state.uniqueKey] = true;
+                this.uniqueStates[state.uniqueKey] = state;
             }
         });
 		this.logicManager = new LogicManager();
