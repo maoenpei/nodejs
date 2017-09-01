@@ -167,9 +167,12 @@ var hostCommand = {
 				return responder.respondJson({}, safe(done));
 			}
 
-			var lastModified = yield $PersistanceManager.LogicModified(next);
-
 			var state = $PersistanceManager.State(obj.getSerial());
+			if (state.adminLevel < 1) {
+				responder.addError("Admin level not enough.");
+				return responder.respondJson({}, safe(done));
+			}
+
 			var canView = state.adminLevel >= 1;
 			var canAddPlayer = state.adminLevel >= 1;
 			var canDelPlayer = state.adminLevel >= 2;
@@ -187,6 +190,9 @@ var hostCommand = {
 				editGroup:canEditGroup,
 				editUser:canEditUser,
 			};
+
+			var lastModified = yield $PersistanceManager.LogicModified(next);
+
 			responder.setLastModified(lastModified);
 			responder.setCacheTime(1);
 			responder.respondJson(json, safe(done));
@@ -576,6 +582,7 @@ var hostCommand = {
 						level:state.adminLevel,
 						uniqueKey:state.uniqueKey,
 						comment:state.comment,
+						unlockKey:state.unlockKey,
 					});
 				}
 			});
@@ -598,8 +605,8 @@ var hostCommand = {
 
 			var state = $PersistanceManager.State(obj.getSerial());
 			if (state.adminLevel < 4) {
-				// Not enough admin level, just show self
-				return responder.respondJson({selfKey:state.uniqueKey}, safe(done));
+				responder.addError("Admin level not enough.");
+				return responder.respondJson({}, safe(done));
 			}
 
 			var json = yield requestor.visitBodyJson(next);
@@ -632,8 +639,8 @@ var hostCommand = {
 
 			var state = $PersistanceManager.State(obj.getSerial());
 			if (state.adminLevel < 4) {
-				// Not enough admin level, just show self
-				return responder.respondJson({selfKey:state.uniqueKey}, safe(done));
+				responder.addError("Admin level not enough.");
+				return responder.respondJson({}, safe(done));
 			}
 
 			var json = yield requestor.visitBodyJson(next);
@@ -662,9 +669,89 @@ var hostCommand = {
 		}, this);
 	},
 	disableuser:function(requestor, responder, done) {
-	},
+		var next = coroutine(function*() {
+			if (requestor.getMethod() == "GET") {
+				responder.addError("Not valid for 'GET' method.");
+				return safe(done)();
+			}
 
-	// Account operation
+			var obj = yield this.tokenValid(requestor, next);
+			if (!obj) {
+				responder.addError("Not valid token.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var state = $PersistanceManager.State(obj.getSerial());
+			if (state.adminLevel < 4) {
+				responder.addError("Admin level not enough.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var json = yield requestor.visitBodyJson(next);
+			if (!json || !json.uniqueKey) {
+				responder.addError("Parameter data not correct.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var uniqueKey = json.uniqueKey;
+			var userState = this.uniqueStates[uniqueKey];
+			if (!userState.adminLevel) {
+				responder.addError("User is already disabled.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			if (userState.adminLevel >= 4) {
+				responder.addError("Not able to disable super administrator.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			userState.adminLevel = 0;
+			if (!userState.unlockKey) {
+				userState.unlockKey = rkey();
+			}
+			yield $PersistanceManager.Commit(next);
+
+			responder.respondJson({uniqueKey:uniqueKey, unlockKey:userState.unlockKey}, safe(done));
+		}, this);
+	},
+	enableuser:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			if (requestor.getMethod() == "GET") {
+				responder.addError("Not valid for 'GET' method.");
+				return safe(done)();
+			}
+
+			var obj = yield this.tokenValid(requestor, next);
+			if (!obj) {
+				responder.addError("Not valid token.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var state = $PersistanceManager.State(obj.getSerial());
+			if (state.adminLevel != 0) {
+				responder.addError("User is already enabled.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var json = yield requestor.visitBodyJson(next);
+			if (!json || !json.unlockKey) {
+				responder.addError("Parameter data not correct.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var unlockKey = json.unlockKey;
+			if (unlockKey != state.unlockKey) {
+				responder.addError("Failed to unlock user");
+				return responder.respondJson({}, safe(done));
+			}
+
+			state.adminLevel = 1;
+			delete state.unlockKey;
+			yield $PersistanceManager.Commit(next);
+
+			responder.respondJson({success:true}, safe(done));
+		}, this);
+	},
 	exchange:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			if (requestor.getMethod() == "GET") {
@@ -688,7 +775,7 @@ var hostCommand = {
 
 			// initialization
 			var state = $PersistanceManager.State(serial);
-            state.adminLevel = (state.adminLevel ? state.adminLevel : 1);
+            state.adminLevel = (typeof(state.adminLevel) != "undefined" ? state.adminLevel : 1);
             var uniqueKey = state.uniqueKey;
             if (!uniqueKey) {
                 do {
@@ -697,12 +784,15 @@ var hostCommand = {
 	            state.uniqueKey = uniqueKey;
                 this.uniqueStates[uniqueKey] = state;
             }
+
 			yield $PersistanceManager.Commit(next);
 
+			var lockKey = (state.adminLevel == 0 ? uniqueKey : null);
 			var obj = $LoginManager.login(serial);
 			responder.setCookies({token:obj.getToken()});
 			responder.respondJson({
 				serial:serial,
+				lockKey:lockKey,
 			}, safe(done));
 		}, this);
 	},

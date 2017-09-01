@@ -72,9 +72,9 @@ pageModel.refresh = function(force, callback) {
         requestPost("information", {}, function(json) {
             if (json) {
                 console.log("information result", json);
-                $this.groups = json.groups;
-                $this.players = json.players;
-                $this.match = json.match;
+                $this.groups = (json.groups ? json.groups : {});
+                $this.players = (json.players ? json.players : {});
+                $this.match = (json.match ? json.match : {});
                 $this.options = json;
                 safe(callback)();
             }
@@ -384,10 +384,11 @@ userModel.users = function() {
     return this.states;
 }
 var userlevels = [
+    "0 禁用",
     "1 浏览",
     "2 删除修改用户",
     "3 增删骑士团",
-    "4 增删用户",
+    "4 <最高>增删用户",
 ];
 userModel.levels = function() {
     return userlevels;
@@ -431,6 +432,24 @@ userModel.promote = function(uniqueKey, level, callback) {
     });
 }
 userModel.disable = function(uniqueKey, callback) {
+    $this = this;
+    if (!uniqueKey) {
+        return;
+    }
+
+    var stateInfo = $this.uniqueStates[uniqueKey];
+    if (!stateInfo) {
+        return;
+    }
+
+    console.log("disableuser", uniqueKey);
+    requestPost("disableuser", {uniqueKey:uniqueKey}, function(json) {
+        if (json && json.uniqueKey && json.uniqueKey == uniqueKey) {
+            stateInfo.level = 0;
+            stateInfo.unlockKey = json.unlockKey
+        }
+        safe(callback)();
+    });
 }
 
 //-------------------------------------------------------------------------
@@ -696,7 +715,7 @@ function displayUser() {
         var levelNames = userModel.levels();
         var levels = [];
         for (var i = 0; i < levelNames.length; ++i) {
-            levels.push({value:i+1, name:levelNames[i]});
+            levels.push({value:i, name:levelNames[i]});
         }
         if (users.length > 0) {
             $(".div_user_list_container").show();
@@ -710,9 +729,9 @@ function displayUser() {
                 var tableRowUser = $(userListTemplate({
                     uniqueKey:(userInfo.uniqueKey ? userInfo.uniqueKey : "missing"),
                     comment:(userInfo.comment ? userInfo.comment : "无"),
-                    levelText:levels[userInfo.level - 1].name,
+                    levelText:levels[userInfo.level].name,
                     levels:levels,
-                    unlockKey:"missing",
+                    unlockKey:(userInfo.unlockKey ? userInfo.unlockKey : "missing"),
                 }));
 
                 tableRowUser.appendTo(tbodyUserList);
@@ -740,24 +759,45 @@ function displayUser() {
                     });
                 });
 
-                var divUserLevel = tableRowUser.find(".div_user_level");
-                var selectUserLevel = tableRowUser.find(".select_user_level");
-                divUserLevel.click(function() {
-                    divUserLevel.hide();
-                    selectUserLevel.val(userInfo.level);
-                    selectUserLevel.show();
-                    selectUserLevel.focus();
-                });
-                selectUserLevel.blur(function() {
-                    selectUserLevel.hide();
-                    var level = selectUserLevel.val();
-                    divUserLevel.html(levels[level - 1].name);
-                    divUserLevel.show();
-
-                    userModel.promote(userInfo.uniqueKey, level, function() {
-                        loadUser();
+                if (userInfo.level != 0 && userInfo.level != 4) {
+                    var divUserLevel = tableRowUser.find(".div_user_level");
+                    var selectUserLevel = tableRowUser.find(".select_user_level");
+                    divUserLevel.click(function() {
+                        divUserLevel.hide();
+                        selectUserLevel.val(userInfo.level);
+                        selectUserLevel.show();
+                        selectUserLevel.focus();
                     });
-                });
+                    selectUserLevel.blur(function() {
+                        selectUserLevel.hide();
+                        var level = selectUserLevel.val();
+                        divUserLevel.html(levels[level].name);
+                        divUserLevel.show();
+
+                        userModel.promote(userInfo.uniqueKey, level, function() {
+                            loadUser();
+                        });
+                    });
+                }
+
+                var inputUserForbid = tableRowUser.find(".input_user_forbid");
+                var divUserForbid = tableRowUser.find(".div_user_forbid");
+                if (userInfo.unlockKey) {
+                    inputUserForbid.hide();
+                    divUserForbid.show();
+                } else {
+                    divUserForbid.hide();
+                    inputUserForbid.show();
+                    inputUserForbid.click(function() {
+                        if (confirm("确认禁用用户" + (userInfo.comment ? userInfo.comment : userInfo.uniqueKey) + "？")) {
+                            inputUserForbid.hide();
+
+                            userModel.disable(userInfo.uniqueKey, function() {
+                                loadUser();
+                            });
+                        }
+                    });
+                }
 
             })();
         }

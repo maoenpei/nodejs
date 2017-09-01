@@ -197,4 +197,6 @@ body{
 
 td{
     text-align:center;
+    word-break:break-all;
+    font-size:0.5rem;
 }
