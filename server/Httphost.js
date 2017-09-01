@@ -787,12 +787,11 @@ var hostCommand = {
 
 			yield $PersistanceManager.Commit(next);
 
-			var lockKey = (state.adminLevel == 0 ? uniqueKey : null);
 			var obj = $LoginManager.login(serial);
 			responder.setCookies({token:obj.getToken()});
 			responder.respondJson({
 				serial:serial,
-				lockKey:lockKey,
+				locked:(state.adminLevel == 0)
 			}, safe(done));
 		}, this);
 	},

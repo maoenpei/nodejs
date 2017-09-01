@@ -20,6 +20,7 @@ var sendAjax = function(url, postData, callback) {
 };
 
 var sendAjaxJSON = function(url, postData, callback) {
+    console.log("request", url, postData);
     sendAjax(url, postData, function (returnData) {
         var json = null;
         try {
@@ -27,6 +28,7 @@ var sendAjaxJSON = function(url, postData, callback) {
         } catch(e) {
         }
         if (json) {
+            console.log("reply", json);
             safe(callback)(json);
         }
     });
@@ -71,7 +73,6 @@ pageModel.refresh = function(force, callback) {
         $this.lastRefreshTime = currentTime;
         requestPost("information", {}, function(json) {
             if (json) {
-                console.log("information result", json);
                 $this.groups = (json.groups ? json.groups : {});
                 $this.players = (json.players ? json.players : {});
                 $this.match = (json.match ? json.match : {});
@@ -112,8 +113,6 @@ pageModel.player = function(playerId) {
 }
 pageModel.addPlayer = function(name, power, group, callback) {
     $this = this;
-    console.log("addplayer", name, power, group);
-
     var player = {name:name, power:power, group:group};
     requestPost("addplayer", player, function(json) {
         if (json && json.playerId) {
@@ -131,8 +130,6 @@ pageModel.delPlayer = function(playerId, callback) {
     }
 
     var playerName = playerData.name;
-    console.log("delplayer", playerId, playerName);
-
     requestPost("delplayer", {playerId:playerId}, function(json) {
         if (json && json.playerId && json.playerId == playerId) {
             delete $this.players[playerId];
@@ -151,8 +148,6 @@ pageModel.editPlayerGroup = function(playerId, groupId, callback) {
     }
 
     var playerName = playerData.name;
-    console.log("editgroup", playerId, playerName, groupId);
-
     requestPost("editgroup", {playerId:playerId, group:groupId}, function(json) {
         if (json && json.success) {
             playerData.group = groupId;
@@ -171,8 +166,6 @@ pageModel.editPlayerName = function(playerId, name, callback) {
     }
 
     var playerName = playerData.name;
-    console.log("editname", playerId, playerName, name);
-
     requestPost("editname", {playerId:playerId, name:name}, function(json) {
         if (json && json.success) {
             playerData.name = name;
@@ -191,8 +184,6 @@ pageModel.editPlayerPower = function(playerId, power, callback) {
     }
 
     var playerName = playerData.name;
-    console.log("editpower", playerId, playerName, power);
-
     requestPost("editpower", {playerId:playerId, power:power}, function(json) {
         if (json && json.success) {
             playerData.power = power;
@@ -234,8 +225,6 @@ pageModel.group = function(groupId) {
 }
 pageModel.addGroup = function(name, statusLevel, callback) {
     $this = this;
-    console.log("addgroup", name, statusLevel);
-
     var group = {name:name, status:statusLevel};
     requestPost("addgroup", group, function(json) {
         if (json && json.groupId) {
@@ -252,8 +241,6 @@ pageModel.delGroup = function(groupId, callback) {
     }
 
     var groupName = groupData.name;
-    console.log("delgroup", groupId, groupName);
-
     requestPost("delgroup", {groupId:groupId}, function(json) {
         if (json && json.groupId && json.groupId == groupId) {
             $this.refresh(true, callback);
@@ -315,8 +302,6 @@ pageModel.matchPlayerIds = function(matchId) {
 }
 pageModel.joinmatch = function(matchId, playerId, callback) {
     $this = this;
-    console.log("joinmatch", matchId, playerId);
-
     requestPost("joinmatch", {matchId:matchId, playerId:playerId}, function(json) {
         if (json && json.success) {
             var match = $this.match[matchId];
@@ -331,8 +316,6 @@ pageModel.joinmatch = function(matchId, playerId, callback) {
 }
 pageModel.quitmatch = function(matchId, playerId, callback) {
     $this = this;
-    console.log("joinmatch", matchId, playerId);
-
     requestPost("quitmatch", {matchId:matchId, playerId:playerId}, function(json) {
         if (json && json.success) {
             var match = $this.match[matchId];
@@ -345,8 +328,6 @@ pageModel.quitmatch = function(matchId, playerId, callback) {
 }
 pageModel.clearallmatch = function(callback) {
     $this = this;
-    console.log("clearallmatch");
-
     requestPost("clearmatch", {matchId:9999}, function(json) {
         if (json && json.success) {
             $this.match = {};
@@ -361,10 +342,7 @@ pageModel.clearallmatch = function(callback) {
 var userModel = {selfKey:"NONE", states:[], uniqueStates:{}};
 userModel.refresh = function(callback) {
     $this = this;
-    console.log("listuser");
-
     requestPost("listuser", {}, function(json) {
-        console.log("user information", json);
         $this.key = json.selfKey;
         $this.states = (json.states ? json.states : []);
         $this.uniqueStates = {};
@@ -404,7 +382,6 @@ userModel.comment = function(uniqueKey, comment, callback) {
         return;
     }
 
-    console.log("commentuser", uniqueKey, comment);
     requestPost("commentuser", {uniqueKey:uniqueKey, comment:comment}, function(json) {
         if (json && json.uniqueKey && json.uniqueKey == uniqueKey) {
             stateInfo.comment = comment;
@@ -423,7 +400,6 @@ userModel.promote = function(uniqueKey, level, callback) {
         return;
     }
 
-    console.log("promoteuser", uniqueKey, level);
     requestPost("promoteuser", {uniqueKey:uniqueKey, level:level}, function(json) {
         if (json && json.uniqueKey && json.uniqueKey == uniqueKey) {
             stateInfo.level = level;
@@ -442,7 +418,6 @@ userModel.disable = function(uniqueKey, callback) {
         return;
     }
 
-    console.log("disableuser", uniqueKey);
     requestPost("disableuser", {uniqueKey:uniqueKey}, function(json) {
         if (json && json.uniqueKey && json.uniqueKey == uniqueKey) {
             stateInfo.level = 0;
@@ -611,7 +586,7 @@ var initGroupSelection = function(groupList, hasZeroOption) {
 }
 
 function showMode(modeName) {
-    console.log("mode", modeName);
+    console.log("showMode", modeName);
     if (displayableMode(modeName)) {
         localStorage.lastMode = modeName;
     }
@@ -635,7 +610,7 @@ function showMode(modeName) {
         }
     }
     if (currMode) {
-        console.log("modes", allModes);
+        console.log("switchable modes", allModes);
         var modeSelectTemplate = templates.read(".hd_selectable_modes");
         var modeSelectorContainer = $(".div_title_bar_" + modeName).find(".div_mode_selector");
         modeSelectorContainer.html("");
@@ -705,7 +680,6 @@ function displayUser() {
     });
 
     function loadUser() {
-        console.log("loadUser", userModel.selfKey());
         $(".div_unique_key_display").html(userModel.selfKey());
 
         var userListTemplate = templates.read(".hd_user_item");
@@ -1199,7 +1173,6 @@ function displayWelcome() {
 
     var exchange = function (serial, success, failed) {
         requestPost("exchange", {serial:serial}, function(json) {
-            console.log("exchange result", json);
             if (json && json.serial) {
                 localStorage.serial_string = json.serial;
                 safe(success)();
