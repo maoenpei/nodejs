@@ -358,8 +358,32 @@ userModel.refresh = function(callback) {
 userModel.selfKey = function() {
     return this.key;
 }
-userModel.users = function() {
-    return this.states;
+userModel.orderedUsers = function() {
+    var uniqueKeys = {};
+    var restUsers = [];
+    for (var i = 0; i < this.states.length; ++i) {
+        var stateInfo = $this.states[i];
+        if (stateInfo.uniqueKey) {
+            uniqueKeys[stateInfo.uniqueKey] = true;
+        } else {
+            restUsers.push(stateInfo);
+        }
+    }
+    var keyedUsers = [];
+    while(true) {
+        var maxKey = "";
+        for (var uniqueKey in uniqueKeys) {
+            if (uniqueKey > maxKey) {
+                maxKey = uniqueKey;
+            }
+        }
+        if (maxKey == "") {
+            break;
+        }
+        keyedUsers.push(this.uniqueStates[maxKey]);
+        delete uniqueKeys[maxKey];
+    }
+    return keyedUsers.concat(restUsers);
 }
 var userlevels = [
     "0 禁用",
@@ -718,7 +742,7 @@ function displayUser(locked) {
         var userListTemplate = templates.read(".hd_user_item");
         var tbodyUserList = $(".table_user_list").find("tbody");
 
-        var users = userModel.users();
+        var users = userModel.orderedUsers();
         var levelNames = userModel.levels();
         var levels = [];
         for (var i = 0; i < levelNames.length; ++i) {

@@ -712,7 +712,7 @@ var hostCommand = {
 
 			userState.adminLevel = 0;
 			if (!userState.unlockKey) {
-				userState.unlockKey = rkey();
+				userState.unlockKey = rkey().substring(0, 4);
 			}
 			yield $PersistanceManager.Commit(next);
 

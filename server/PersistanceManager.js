@@ -82,7 +82,11 @@ Base.extends("$PersistanceManager", {
         delete this.states[serial];
     },
     State:function(serial) {
-        return this.states[serial];
+        var state = this.states[serial];
+        if (!state) {
+            console.log("error: cannot find state for serial", serial);
+        }
+        return (state ? state : {});
     },
 
     Commit:function(done) {
