@@ -957,11 +957,19 @@ Base.extends("Httphost", {
 
         this.uniqueStates = {};
         $PersistanceManager.States((serial, state) => {
-            if (state.uniqueKey) {
-                this.uniqueStates[state.uniqueKey] = state;
+            var uniqueKey = state.uniqueKey;
+            if (uniqueKey) {
+                this.uniqueStates[uniqueKey] = state;
+            } else {
+                do {
+                    uniqueKey = rkey();
+                } while(this.uniqueStates[uniqueKey]);
+	            state.uniqueKey = uniqueKey;
+                this.uniqueStates[uniqueKey] = state;
             }
         });
 		this.logicManager = new LogicManager();
+		$PersistanceManager.Commit();
 	},
 	onVisit:function(req, res) {
 		var requestor = new Requestor(req);
