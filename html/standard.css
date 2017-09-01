@@ -183,7 +183,7 @@ body{
     margin-top:0.2rem;
 }
 
-.div_unique_key_container{
+.div_unique_key_container, .div_unlock_key_container{
     margin:0.6rem;
 }
 

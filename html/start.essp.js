@@ -426,6 +426,20 @@ userModel.disable = function(uniqueKey, callback) {
         safe(callback)();
     });
 }
+userModel.enable = function(unlockKey, callback) {
+    $this = this;
+    if (!unlockKey) {
+        return;
+    }
+
+    requestPost("enableuser", {unlockKey:unlockKey}, function(json) {
+        if (json && json.success) {
+            safe(callback)(true);
+        } else {
+            safe(callback)(false);
+        }
+    });
+}
 
 //-------------------------------------------------------------------------
 // Utils
@@ -525,13 +539,13 @@ var clearEvents = function() {
     $(".div_user_manage").unbind();
     $(".input_confirm_pwd").unbind();
     $(".input_type_pwd").unbind();
+    $(".input_unlock_key_button").unbind();
 }
 
 var selectableModes = [
     {name:"list", desc:"玩家列表", condition:function() {return true;}, switcher:displayPlayerList},
     {name:"match", desc:"帝国战", condition:function() {return true;}, switcher:displayMatch},
     {name:"group", desc:"骑士团", condition:function() {return pageModel.canEditGroup();}, switcher:displayGroup},
-//    {name:"user", desc:null, condition:function() {return true;}, switcher:displayUser},
 ];
 var hashModes = {};
 for (var i = 0; i < selectableModes.length; ++i) {
@@ -658,7 +672,7 @@ function showMode(modeName) {
         }
     });
     $(".div_user_manage").click(function() {
-        displayUser();
+        displayUser(false);
     });
     $(".div_user_logout").click(function() {
         if (confirm("确认退出？")) {
@@ -668,16 +682,35 @@ function showMode(modeName) {
     });
 };
 
-function displayUser() {
+function displayUser(locked) {
     clearEvents();
     showMode("user");
 
     $(".div_refresh_data").click(function() {
         userModel.refresh(loadUser);
     });
-    $(".div_user_back").click(function() {
-        switchToMode(localStorage.lastMode);
-    });
+    if (!locked) {
+        $(".div_user_back").click(function() {
+            switchToMode(localStorage.lastMode);
+        });
+    }
+    if (locked) {
+        $(".div_unlock_key_container").show();
+        $(".input_unlock_key_button").click(function() {
+            var unlockKey = $(".input_unlock_key").val();
+            userModel.enable(unlockKey, function(unlocked) {
+                if (!unlocked) {
+                    alert("解锁码错误！");
+                } else {
+                    pageModel.refresh(true, function() {
+                        switchToMode(localStorage.lastMode);
+                    });
+                }
+            });
+        });
+    } else {
+        $(".div_unlock_key_container").hide();
+    }
 
     function loadUser() {
         $(".div_unique_key_display").html(userModel.selfKey());
@@ -704,7 +737,7 @@ function displayUser() {
                     uniqueKey:(userInfo.uniqueKey ? userInfo.uniqueKey : "missing"),
                     comment:(userInfo.comment ? userInfo.comment : "无"),
                     levelText:levels[userInfo.level].name,
-                    levels:levels,
+                    levels:levels.slice(1),
                     unlockKey:(userInfo.unlockKey ? userInfo.unlockKey : "missing"),
                 }));
 
@@ -733,30 +766,39 @@ function displayUser() {
                     });
                 });
 
-                if (userInfo.level != 0 && userInfo.level != 4) {
+                var superUser = userInfo.level == 4;
+                var disabledUser = userInfo.level == 0;
+                if (!superUser && !disabledUser) {
                     var divUserLevel = tableRowUser.find(".div_user_level");
                     var selectUserLevel = tableRowUser.find(".select_user_level");
+                    selectUserLevel.val(userInfo.level);
                     divUserLevel.click(function() {
                         divUserLevel.hide();
-                        selectUserLevel.val(userInfo.level);
                         selectUserLevel.show();
                         selectUserLevel.focus();
                     });
-                    selectUserLevel.blur(function() {
-                        selectUserLevel.hide();
+                    selectUserLevel.change(function() {
                         var level = selectUserLevel.val();
-                        divUserLevel.html(levels[level].name);
-                        divUserLevel.show();
+                        if (confirm("确定修改权限为" + level + "？")) {
+                            selectUserLevel.hide();
+                            divUserLevel.html(levels[level].name);
+                            divUserLevel.show();
 
-                        userModel.promote(userInfo.uniqueKey, level, function() {
-                            loadUser();
-                        });
+                            userModel.promote(userInfo.uniqueKey, level, function() {
+                                loadUser();
+                            });
+                        } else {
+                            selectUserLevel.val(userInfo.level);
+                        }
                     });
                 }
 
                 var inputUserForbid = tableRowUser.find(".input_user_forbid");
                 var divUserForbid = tableRowUser.find(".div_user_forbid");
-                if (userInfo.unlockKey) {
+                if (superUser) {
+                    inputUserForbid.hide();
+                    divUserForbid.hide();
+                } else if (userInfo.unlockKey) {
                     inputUserForbid.hide();
                     divUserForbid.show();
                 } else {
@@ -1175,7 +1217,7 @@ function displayWelcome() {
         requestPost("exchange", {serial:serial}, function(json) {
             if (json && json.serial) {
                 localStorage.serial_string = json.serial;
-                safe(success)();
+                safe(success)(json.locked);
             } else {
                 delete localStorage.serial_string;
                 safe(failed)();
@@ -1183,10 +1225,14 @@ function displayWelcome() {
         });
     };
 
-    var successFunc = function() {
-        pageModel.refresh(true, function() {
-            switchToMode(localStorage.lastMode);
-        });
+    var successFunc = function(locked) {
+        if (locked) {
+            displayUser(true);
+        } else {
+            pageModel.refresh(true, function() {
+                switchToMode(localStorage.lastMode);
+            });
+        }
     }
 
     $(".input_confirm_pwd").click(function () {

@@ -650,7 +650,12 @@ var hostCommand = {
 			}
 
 			var uniqueKey = json.uniqueKey;
-			var level = json.level;
+			var level = Number(json.level);
+			if (level == 0) {
+				responder.addError("Cannot promote to zero level!");
+				return responder.respondJson({}, safe(done));
+			}
+
 			var userState = this.uniqueStates[uniqueKey];
 			if (!userState.adminLevel) {
 				responder.addError("Not able to promote zero level user");
