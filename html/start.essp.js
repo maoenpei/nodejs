@@ -725,7 +725,7 @@ function displayUser(locked) {
     showMode("user");
 
     alert("0." + String(locked));
-    $(".div_refresh_data").click(function() {
+    $(".div_refresh_data").on("click touchend", function() {
         userModel.refresh(loadUser);
     });
     alert(1);
