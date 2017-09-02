@@ -28,6 +28,7 @@ Base.extends("Responder", {
 		this.finished = true;
 	},
 	respondJson:function(json, done) {
+		console.log(">>>> respond json:", json);
 		this.respondData(JSON.stringify(json), done);
 	},
 

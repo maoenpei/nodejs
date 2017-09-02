@@ -102,7 +102,9 @@ Base.extends("Requestor", {
     visitBodyJson:function(done) {
         this.visitBodyString((body) => {
             try {
-                safe(done)(JSON.parse(body));
+                var req_json = JSON.parse(body);
+                console.log(">>>> request json:", req_json);
+                safe(done)(req_json);
             } catch (e) {
                 safe(done)({});
             }
