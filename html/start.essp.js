@@ -780,14 +780,17 @@ function displayUser(locked) {
         for (var i = 0; i < levelNames.length; ++i) {
             levels.push({value:i, name:levelNames[i]});
         }
+        alert(6);
         if (users.length > 0) {
             $(".div_user_list_container").show();
         } else {
             $(".div_user_list_container").hide();
         }
+        alert(7);
         tbodyUserList.html("");
         for (var i = 0; i < users.length; ++i) {
             (function() {
+                alert("8." + String(i));
                 var userInfo = users[i];
                 var tableRowUser = $(userListTemplate({
                     uniqueKey:(userInfo.uniqueKey ? userInfo.uniqueKey : "missing"),
@@ -889,6 +892,7 @@ function displayUser(locked) {
 
             })();
         }
+        alert(1000);
     }
     userModel.refresh(loadUser);
 }
