@@ -804,9 +804,7 @@ function displayUser(locked) {
                     selectUserLevel.change(function() {
                         var level = selectUserLevel.val();
                         if (confirm("确定修改权限为" + level + "？")) {
-                            selectUserLevel.hide();
                             divUserLevel.html(levels[level].name);
-                            divUserLevel.show();
 
                             userModel.promote(userInfo.uniqueKey, level, function() {
                                 loadUser();
@@ -814,6 +812,10 @@ function displayUser(locked) {
                         } else {
                             selectUserLevel.val(userInfo.level);
                         }
+                    });
+                    selectUserLevel.blur(function() {
+                        selectUserLevel.hide();
+                        divUserLevel.show();
                     });
                 }
 
