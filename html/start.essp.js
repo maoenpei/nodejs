@@ -829,6 +829,35 @@ function displayUser(locked) {
                     });
                 }
 
+                if (!superUser && !disabledUser) {
+                    var divUserLevel = tableRowUser.find(".div_user_level");
+                    var selectUserLevel = tableRowUser.find(".select_user_level");
+                    selectUserLevel.val(userInfo.level);
+                    if (userInfo.uniqueKey) {
+                        divUserLevel.click(function() {
+                            divUserLevel.hide();
+                            selectUserLevel.show();
+                            selectUserLevel.focus();
+                        });
+                        selectUserLevel.change(function() {
+                            var level = selectUserLevel.val();
+                            if (confirm("确定修改权限为" + level + "？")) {
+                                divUserLevel.html(levels[level].name);
+
+                                userModel.promote(userInfo.uniqueKey, level, function() {
+                                    loadUser();
+                                });
+                            } else {
+                                selectUserLevel.val(userInfo.level);
+                            }
+                        });
+                        selectUserLevel.blur(function() {
+                            selectUserLevel.hide();
+                            divUserLevel.show();
+                        });
+                    }
+                }
+
             })();
         }
         alert(1000);
