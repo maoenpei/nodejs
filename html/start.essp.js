@@ -559,27 +559,6 @@ var showOnlyChild = function(outerCls, childCls) {
     $(outerCls).show();
 };
 
-var clearEvents = function() {
-    $(".add_group_cancel").unbind();
-    $(".add_group_confirm").unbind();
-    $(".add_match_cancel").unbind();
-    $(".add_match_confirm").unbind();
-    $(".add_player_cancel").unbind();
-    $(".add_player_confirm").unbind();
-    $(".div_add_user_pwd").unbind();
-    $(".div_clear_all_match").unbind();
-    $(".div_manage_user").unbind();
-    $(".div_new_group").unbind();
-    $(".div_new_player").unbind();
-    $(".div_refresh_data").unbind();
-    $(".div_user_back").unbind();
-    $(".div_user_logout").unbind();
-    $(".div_user_manage").unbind();
-    $(".input_confirm_pwd").unbind();
-    $(".input_type_pwd").unbind();
-    $(".input_unlock_key_button").unbind();
-}
-
 var selectableModes = [
     {name:"list", desc:"玩家列表", condition:function() {return true;}, switcher:displayPlayerList},
     {name:"match", desc:"帝国战", condition:function() {return true;}, switcher:displayMatch},
@@ -698,6 +677,7 @@ function showMode(modeName) {
     var showUserList = false;
     $(".div_list_user").hide();
     $(".div_manage_user").removeClass("div_manage_user_on");
+    $(".div_manage_user").unbind();
     $(".div_manage_user").click(function() {
         if (showUserList) {
             showUserList = false;
@@ -709,9 +689,11 @@ function showMode(modeName) {
             $(".div_manage_user").addClass("div_manage_user_on");
         }
     });
+    $(".div_user_manage").unbind();
     $(".div_user_manage").click(function() {
         displayUser(false);
     });
+    $(".div_user_logout").unbind();
     $(".div_user_logout").click(function() {
         if (confirm("确认退出？")) {
             delete localStorage.serial_string;
@@ -721,19 +703,21 @@ function showMode(modeName) {
 };
 
 function displayUser(locked) {
-    clearEvents();
     showMode("user");
 
+    $(".div_refresh_data").unbind();
     $(".div_refresh_data").click(function() {
         userModel.refresh(loadUser);
     });
     if (!locked) {
+        $(".div_user_back").unbind();
         $(".div_user_back").click(function() {
             switchToMode(localStorage.lastMode);
         });
     }
     if (locked) {
         $(".div_unlock_key_container").show();
+        $(".input_unlock_key_button").unbind();
         $(".input_unlock_key_button").click(function() {
             var unlockKey = $(".input_unlock_key").val();
             userModel.enable(unlockKey, function(unlocked) {
@@ -754,6 +738,7 @@ function displayUser(locked) {
         var divAddUser = $(".div_add_user_pwd");
         if (userModel.canAddUser()) {
             divAddUser.show();
+            divAddUser.unbind();
             divAddUser.click(function() {
                 if (confirm("确认添加新用户？")) {
                     userModel.addUser(function() {
@@ -889,10 +874,10 @@ function displayUser(locked) {
 }
 
 function displayGroup() {
-    clearEvents();
     showMode("group");
 
     // refresh
+    $(".div_refresh_data").unbind();
     $(".div_refresh_data").click(function() {
         pageModel.refresh(true, loadGroups);
     });
@@ -905,10 +890,13 @@ function displayGroup() {
         $(".select_group_level").val(0);
     };
     clearNewGroupInfo();
+    $(".div_new_group").unbind();
     $(".div_new_group").click(function() {
         divAddGroup.show();
     });
+    $(".add_group_cancel").unbind();
     $(".add_group_cancel").click(clearNewGroupInfo);
+    $(".add_group_confirm").unbind();
     $(".add_group_confirm").click(function() {
         var name = $(".input_group_name").val();
         if (name == '') {
@@ -1045,10 +1033,10 @@ function addPlayerToList(playerId, divParent, access, callback) {
 }
 
 function displayPlayerList() {
-    clearEvents();
     showMode("list");
 
     // refresh
+    $(".div_refresh_data").unbind();
     $(".div_refresh_data").click(function() {
         pageModel.refresh(true, loadPlayers);
     });
@@ -1062,10 +1050,13 @@ function displayPlayerList() {
         $(".select_player_group").val(0);
     };
     clearNewPlayerInfo();
+    $(".div_new_player").unbind();
     $(".div_new_player").click(function() {
         divAddPlayer.show();
     });
+    $(".add_player_cancel").unbind();
     $(".add_player_cancel").click(clearNewPlayerInfo);
+    $(".add_player_confirm").unbind();
     $(".add_player_confirm").click(function() {
         var name = $(".input_player_name").val();
         if (name == '') {
@@ -1135,9 +1126,9 @@ function displayPlayerList() {
 }
 
 function displayMatch() {
-    clearEvents();
     showMode("match");
 
+    $(".div_refresh_data").unbind();
     $(".div_refresh_data").click(function() {
         pageModel.refresh(true, loadMatch);
     });
@@ -1145,6 +1136,7 @@ function displayMatch() {
     var divClearAllMatch = $(".div_clear_all_match");
     if (pageModel.canClearMatch()) {
         divClearAllMatch.show();
+        divClearAllMatch.unbind();
         divClearAllMatch.click(function() {
             if (confirm("确认清空整场比赛？")) {
                 pageModel.clearallmatch(function() {
@@ -1184,9 +1176,11 @@ function displayMatch() {
         inputAddMatchName.val("");
         divAddMatchMask.hide();
     };
+    $(".add_match_cancel").unbind();
     $(".add_match_cancel").click(function() {
         clearSearchControl();
     });
+    $(".add_match_confirm").unbind();
     $(".add_match_confirm").click(function() {
         clearSearchControl();
         var playerId = selectMatchPlayer.val();
@@ -1278,8 +1272,6 @@ function displayMatch() {
 }
 
 function displayWelcome() {
-    clearEvents();
-
     var exchange = function (serial, success, failed) {
         requestPost("exchange", {serial:serial}, function(json) {
             if (json && json.serial) {
@@ -1302,9 +1294,11 @@ function displayWelcome() {
         }
     }
 
+    $(".input_confirm_pwd").unbind();
     $(".input_confirm_pwd").click(function () {
         inputNext($(".input_type_pwd").val());
     });
+    $(".input_type_pwd").unbind();
     $(".input_type_pwd").keypress(function (e) {
         if (e.which == 13) {
             $(".input_confirm_pwd").click();
