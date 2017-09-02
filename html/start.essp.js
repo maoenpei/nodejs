@@ -755,6 +755,40 @@ function displayUser(locked) {
     alert(3);
     function loadUser() {
         alert("4." + String(userModel.selfKey()));
+        var divAddUser = $(".div_add_user_pwd");
+        if (userModel.canAddUser()) {
+            divAddUser.show();
+            divAddUser.click(function() {
+                if (confirm("确认添加新用户？")) {
+                    userModel.addUser(function() {
+                        loadUser();
+                    });
+                }
+            });
+        } else {
+            divAddUser.hide();
+        }
+        alert(5);
+        $(".div_unique_key_display").html(userModel.selfKey());
+
+        var userListTemplate = templates.read(".hd_user_item");
+        var tbodyUserList = $(".table_user_list").find("tbody");
+
+        var users = userModel.orderedUsers();
+        var levelNames = userModel.levels();
+        var levels = [];
+        for (var i = 0; i < levelNames.length; ++i) {
+            levels.push({value:i, name:levelNames[i]});
+        }
+        alert(6);
+        if (users.length > 0) {
+            $(".div_user_list_container").show();
+        } else {
+            $(".div_user_list_container").hide();
+        }
+        alert(7);
+        tbodyUserList.html("");
+        alert(1000);
     }
     userModel.refresh(loadUser);
 }
