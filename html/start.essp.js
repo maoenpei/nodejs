@@ -639,19 +639,15 @@ var initGroupSelection = function(groupList, hasZeroOption) {
 
 function showMode(modeName) {
     console.log("showMode", modeName);
-    alert(1);
     if (displayableMode(modeName)) {
         localStorage.lastMode = modeName;
     }
-    alert(2);
     localTimer.clearFuncs();
 
     var currMode = null;
     var allModes = [];
     var otherModes = [];
-    alert(3);
     for (var i = 0; i < selectableModes.length; ++i) {
-        alert("4." + String(i));
         var mode = selectableModes[i];
         if (mode.name == modeName) {
             currMode = mode;
@@ -665,9 +661,7 @@ function showMode(modeName) {
             }
         }
     }
-    alert(5);
     if (currMode) {
-        alert(6);
         console.log("switchable modes", allModes);
         var modeSelectTemplate = templates.read(".hd_selectable_modes");
         var modeSelectorContainer = $(".div_title_bar_" + modeName).find(".div_mode_selector");
@@ -697,13 +691,10 @@ function showMode(modeName) {
             });
         }
     }
-    alert(7);
     showOnlyChild(".div_title_bar", ".div_title_bar_" + modeName);
-    alert(8);
     showOnlyChild(".div_content_panel", ".div_content_panel_" + modeName);
-    alert(9);
     adjustPageLayout();
-    alert(10);
+
     var showUserList = false;
     $(".div_list_user").hide();
     $(".div_manage_user").removeClass("div_manage_user_on");
@@ -718,24 +709,22 @@ function showMode(modeName) {
             $(".div_manage_user").addClass("div_manage_user_on");
         }
     });
-    alert(11);
     $(".div_user_manage").click(function() {
         displayUser(false);
     });
-    alert(12);
     $(".div_user_logout").click(function() {
         if (confirm("确认退出？")) {
             delete localStorage.serial_string;
             requestPost("giveup", {}, displayWelcome);
         }
     });
-    alert(13);
 };
 
 function displayUser(locked) {
     clearEvents();
     showMode("user");
 
+    alert("0." + String(locked));
     $(".div_refresh_data").click(function() {
         userModel.refresh(loadUser);
     });
