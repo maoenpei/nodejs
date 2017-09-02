@@ -788,6 +788,49 @@ function displayUser(locked) {
         }
         alert(7);
         tbodyUserList.html("");
+        for (var i = 0; i < users.length; ++i) {
+            (function() {
+                alert("8." + String(i));
+                var userInfo = users[i];
+                var tableRowUser = $(userListTemplate({
+                    uniqueKey:(userInfo.uniqueKey ? userInfo.uniqueKey : "missing"),
+                    comment:(userInfo.comment ? userInfo.comment : "无"),
+                    levelText:levels[userInfo.level].name,
+                    levels:levels.slice(1),
+                    unlockKey:(userInfo.unlockKey ? userInfo.unlockKey : "missing"),
+                    enterKey:(userInfo.enterSerial ? userInfo.enterSerial : "missing")
+                }));
+
+                tableRowUser.appendTo(tbodyUserList);
+
+                var newUser = !!userInfo.enterSerial;
+                var superUser = userInfo.level == 4;
+                var disabledUser = userInfo.level == 0;
+
+                var divUserComment = tableRowUser.find(".div_user_comment");
+                var inputUserComment = tableRowUser.find(".input_user_comment");
+                if (userInfo.uniqueKey) {
+                    divUserComment.click(function() {
+                        divUserComment.hide();
+                        inputUserComment.val(userInfo.comment ? userInfo.comment : "");
+                        inputUserComment.show();
+                        inputUserComment.focus();
+                        inputUserComment.select();
+                    });
+                    inputUserComment.blur(function() {
+                        inputUserComment.hide();
+                        var comment = inputUserComment.val();
+                        divUserComment.html(comment ? comment : "无");
+                        divUserComment.show();
+
+                        userModel.comment(userInfo.uniqueKey, comment, function() {
+                            loadUser();
+                        });
+                    });
+                }
+
+            })();
+        }
         alert(1000);
     }
     userModel.refresh(loadUser);
