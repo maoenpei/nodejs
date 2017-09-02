@@ -33,6 +33,7 @@
         </div>
         <div class="div_title_bar_user" style="display:none;">
             <div class="div_refresh_data visit_label">刷新</div>
+            <div class="div_add_user_pwd visit_label" style="display:none;">新用户</div>
             <div class="div_user_back visit_label">返回</div>
         </div>
     </div>
@@ -162,7 +163,12 @@
                         </td>
                         <td>
                             <input type="button" value="禁用" class="input_user_forbid"/>
-                            <div class="div_user_forbid" style="display:none;">解禁码：{{unlockKey}}</div>
+                            <div class="div_user_forbid" style="display:none;">
+                                解禁码：{{unlockKey}}
+                            </div>
+                            <div class="div_user_enter" style="display:none;">
+                                进入码：<input class="input_text_display" value="{{enterKey}}" readOnly=true/>
+                            </div>
                         </td>
                     </tr>
 </script>

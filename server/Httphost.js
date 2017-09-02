@@ -583,6 +583,7 @@ var hostCommand = {
 						uniqueKey:state.uniqueKey,
 						comment:state.comment,
 						unlockKey:state.unlockKey,
+						enterSerial:state.enterSerial,
 					});
 				}
 			});
@@ -757,6 +758,40 @@ var hostCommand = {
 			responder.respondJson({success:true}, safe(done));
 		}, this);
 	},
+	adduser:function(requestor, responder, done) {
+		var next = coroutine(function*() {
+			if (requestor.getMethod() == "GET") {
+				responder.addError("Not valid for 'GET' method.");
+				return safe(done)();
+			}
+
+			var obj = yield this.tokenValid(requestor, next);
+			if (!obj) {
+				responder.addError("Not valid token.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var state = $PersistanceManager.State(obj.getSerial());
+			if (state.adminLevel < 4) {
+				responder.addError("Admin level not enough.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var json = yield requestor.visitBodyJson(next);
+			if (!json) {
+				responder.addError("Parameter data not correct.");
+				return responder.respondJson({}, safe(done));
+			}
+
+			var serial = $PersistanceManager.NewState();
+			var userState = $PersistanceManager.State(serial);
+			userState.adminLevel = 1;
+			userState.enterSerial = serial;
+			yield $PersistanceManager.Commit(next);
+
+			responder.respondJson({success:true}, safe(done));
+		}, this);
+	},
 	exchange:function(requestor, responder, done) {
 		var next = coroutine(function*() {
 			if (requestor.getMethod() == "GET") {
@@ -788,6 +823,9 @@ var hostCommand = {
                 } while(this.uniqueStates[uniqueKey]);
 	            state.uniqueKey = uniqueKey;
                 this.uniqueStates[uniqueKey] = state;
+            }
+            if (state.enterSerial) {
+            	delete state.enterSerial;
             }
 
 			yield $PersistanceManager.Commit(next);
@@ -960,7 +998,7 @@ Base.extends("Httphost", {
             var uniqueKey = state.uniqueKey;
             if (uniqueKey) {
                 this.uniqueStates[uniqueKey] = state;
-            } else {
+            } else if (!state.enterSerial) {
                 do {
                     uniqueKey = rkey();
                 } while(this.uniqueStates[uniqueKey]);

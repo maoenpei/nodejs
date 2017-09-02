@@ -339,12 +339,13 @@ pageModel.clearallmatch = function(callback) {
 //-------------------------------------------------------------------------
 // Model:user
 
-var userModel = {selfKey:"NONE", states:[], uniqueStates:{}};
+var userModel = {selfKey:"NONE", states:[], uniqueStates:{}, options:{}};
 userModel.refresh = function(callback) {
     $this = this;
     requestPost("listuser", {}, function(json) {
         $this.key = json.selfKey;
         $this.states = (json.states ? json.states : []);
+        $this.options.addUser = !!json.states;
         $this.uniqueStates = {};
         for (var i = 0; i < $this.states.length; ++i) {
             var stateInfo = $this.states[i];
@@ -354,6 +355,9 @@ userModel.refresh = function(callback) {
         }
         safe(callback)();
     });
+}
+userModel.canAddUser = function() {
+    return this.options.addUser;
 }
 userModel.selfKey = function() {
     return this.key;
@@ -464,6 +468,15 @@ userModel.enable = function(unlockKey, callback) {
         }
     });
 }
+userModel.addUser = function(callback) {
+    $this = this;
+
+    requestPost("adduser", {}, function(json) {
+        if (json && json.success) {
+            $this.refresh(callback);
+        }
+    });
+}
 
 //-------------------------------------------------------------------------
 // Utils
@@ -553,6 +566,7 @@ var clearEvents = function() {
     $(".add_match_confirm").unbind();
     $(".add_player_cancel").unbind();
     $(".add_player_confirm").unbind();
+    $(".div_add_user_pwd").unbind();
     $(".div_clear_all_match").unbind();
     $(".div_manage_user").unbind();
     $(".div_new_group").unbind();
@@ -737,6 +751,19 @@ function displayUser(locked) {
     }
 
     function loadUser() {
+        var divAddUser = $(".div_add_user_pwd");
+        if (userModel.canAddUser()) {
+            divAddUser.show();
+            divAddUser.click(function() {
+                if (confirm("确认添加新用户？")) {
+                    userModel.addUser(function() {
+                        loadUser();
+                    });
+                }
+            });
+        } else {
+            divAddUser.hide();
+        }
         $(".div_unique_key_display").html(userModel.selfKey());
 
         var userListTemplate = templates.read(".hd_user_item");
@@ -763,82 +790,96 @@ function displayUser(locked) {
                     levelText:levels[userInfo.level].name,
                     levels:levels.slice(1),
                     unlockKey:(userInfo.unlockKey ? userInfo.unlockKey : "missing"),
+                    enterKey:(userInfo.enterSerial ? userInfo.enterSerial : "missing")
                 }));
 
                 tableRowUser.appendTo(tbodyUserList);
-                if (!userInfo.uniqueKey) {
-                    return;
-                }
+
+                var newUser = !!userInfo.enterSerial;
+                var superUser = userInfo.level == 4;
+                var disabledUser = userInfo.level == 0;
 
                 var divUserComment = tableRowUser.find(".div_user_comment");
                 var inputUserComment = tableRowUser.find(".input_user_comment");
-                divUserComment.click(function() {
-                    divUserComment.hide();
-                    inputUserComment.val(userInfo.comment ? userInfo.comment : "");
-                    inputUserComment.show();
-                    inputUserComment.focus();
-                    inputUserComment.select();
-                });
-                inputUserComment.blur(function() {
-                    inputUserComment.hide();
-                    var comment = inputUserComment.val();
-                    divUserComment.html(comment ? comment : "无");
-                    divUserComment.show();
-
-                    userModel.comment(userInfo.uniqueKey, comment, function() {
-                        loadUser();
+                if (userInfo.uniqueKey) {
+                    divUserComment.click(function() {
+                        divUserComment.hide();
+                        inputUserComment.val(userInfo.comment ? userInfo.comment : "");
+                        inputUserComment.show();
+                        inputUserComment.focus();
+                        inputUserComment.select();
                     });
-                });
+                    inputUserComment.blur(function() {
+                        inputUserComment.hide();
+                        var comment = inputUserComment.val();
+                        divUserComment.html(comment ? comment : "无");
+                        divUserComment.show();
 
-                var superUser = userInfo.level == 4;
-                var disabledUser = userInfo.level == 0;
+                        userModel.comment(userInfo.uniqueKey, comment, function() {
+                            loadUser();
+                        });
+                    });
+                }
+
                 if (!superUser && !disabledUser) {
                     var divUserLevel = tableRowUser.find(".div_user_level");
                     var selectUserLevel = tableRowUser.find(".select_user_level");
                     selectUserLevel.val(userInfo.level);
-                    divUserLevel.click(function() {
-                        divUserLevel.hide();
-                        selectUserLevel.show();
-                        selectUserLevel.focus();
-                    });
-                    selectUserLevel.change(function() {
-                        var level = selectUserLevel.val();
-                        if (confirm("确定修改权限为" + level + "？")) {
-                            divUserLevel.html(levels[level].name);
+                    if (userInfo.uniqueKey) {
+                        divUserLevel.click(function() {
+                            divUserLevel.hide();
+                            selectUserLevel.show();
+                            selectUserLevel.focus();
+                        });
+                        selectUserLevel.change(function() {
+                            var level = selectUserLevel.val();
+                            if (confirm("确定修改权限为" + level + "？")) {
+                                divUserLevel.html(levels[level].name);
 
-                            userModel.promote(userInfo.uniqueKey, level, function() {
-                                loadUser();
-                            });
-                        } else {
-                            selectUserLevel.val(userInfo.level);
-                        }
-                    });
-                    selectUserLevel.blur(function() {
-                        selectUserLevel.hide();
-                        divUserLevel.show();
-                    });
+                                userModel.promote(userInfo.uniqueKey, level, function() {
+                                    loadUser();
+                                });
+                            } else {
+                                selectUserLevel.val(userInfo.level);
+                            }
+                        });
+                        selectUserLevel.blur(function() {
+                            selectUserLevel.hide();
+                            divUserLevel.show();
+                        });
+                    }
                 }
 
                 var inputUserForbid = tableRowUser.find(".input_user_forbid");
                 var divUserForbid = tableRowUser.find(".div_user_forbid");
-                if (superUser) {
+                var divUserEnter = tableRowUser.find(".div_user_enter");
+                if (newUser) {
                     inputUserForbid.hide();
                     divUserForbid.hide();
-                } else if (userInfo.unlockKey) {
+                    divUserEnter.show();
+                } else if (superUser) {
+                    inputUserForbid.hide();
+                    divUserForbid.hide();
+                    divUserEnter.hide();
+                } else if (disabledUser) {
                     inputUserForbid.hide();
                     divUserForbid.show();
+                    divUserEnter.hide();
                 } else {
-                    divUserForbid.hide();
                     inputUserForbid.show();
-                    inputUserForbid.click(function() {
-                        if (confirm("确认禁用用户" + (userInfo.comment ? userInfo.comment : userInfo.uniqueKey) + "？")) {
-                            inputUserForbid.hide();
+                    divUserForbid.hide();
+                    divUserEnter.hide();
+                    if (userInfo.uniqueKey) {
+                        inputUserForbid.click(function() {
+                            if (confirm("确认禁用用户" + (userInfo.comment ? userInfo.comment : userInfo.uniqueKey) + "？")) {
+                                inputUserForbid.hide();
 
-                            userModel.disable(userInfo.uniqueKey, function() {
-                                loadUser();
-                            });
-                        }
-                    });
+                                userModel.disable(userInfo.uniqueKey, function() {
+                                    loadUser();
+                                });
+                            }
+                        });
+                    }
                 }
 
             })();

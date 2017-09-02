@@ -198,5 +198,9 @@ body{
 td{
     text-align:center;
     word-break:break-all;
-    font-size:0.5rem;
+    font-size:0.7rem;
+}
+
+.input_text_display{
+    width:100%;
 }

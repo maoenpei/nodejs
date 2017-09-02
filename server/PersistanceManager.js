@@ -88,6 +88,14 @@ Base.extends("$PersistanceManager", {
         }
         return (state ? state : {});
     },
+    NewState:function() {
+        var serial = rkey();
+        while(this.states[serial]) {
+            serial = rkey();
+        }
+        this.states[serial] = {};
+        return serial;
+    },
 
     Commit:function(done) {
         var next = coroutine(function*(){
