@@ -790,7 +790,6 @@ function displayUser(locked) {
         tbodyUserList.html("");
         for (var i = 0; i < users.length; ++i) {
             (function() {
-                alert("8." + String(i));
                 var userInfo = users[i];
                 var tableRowUser = $(userListTemplate({
                     uniqueKey:(userInfo.uniqueKey ? userInfo.uniqueKey : "missing"),
@@ -854,6 +853,38 @@ function displayUser(locked) {
                         selectUserLevel.blur(function() {
                             selectUserLevel.hide();
                             divUserLevel.show();
+                        });
+                    }
+                }
+
+                var inputUserForbid = tableRowUser.find(".input_user_forbid");
+                var divUserForbid = tableRowUser.find(".div_user_forbid");
+                var divUserEnter = tableRowUser.find(".div_user_enter");
+                if (newUser) {
+                    inputUserForbid.hide();
+                    divUserForbid.hide();
+                    divUserEnter.show();
+                } else if (superUser) {
+                    inputUserForbid.hide();
+                    divUserForbid.hide();
+                    divUserEnter.hide();
+                } else if (disabledUser) {
+                    inputUserForbid.hide();
+                    divUserForbid.show();
+                    divUserEnter.hide();
+                } else {
+                    inputUserForbid.show();
+                    divUserForbid.hide();
+                    divUserEnter.hide();
+                    if (userInfo.uniqueKey) {
+                        inputUserForbid.click(function() {
+                            if (confirm("确认禁用用户" + (userInfo.comment ? userInfo.comment : userInfo.uniqueKey) + "？")) {
+                                inputUserForbid.hide();
+
+                                userModel.disable(userInfo.uniqueKey, function() {
+                                    loadUser();
+                                });
+                            }
                         });
                     }
                 }
