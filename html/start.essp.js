@@ -724,17 +724,14 @@ function displayUser(locked) {
     clearEvents();
     showMode("user");
 
-    alert("0." + String(locked));
-    $(".div_refresh_data").on("click touchend", function() {
+    $(".div_refresh_data").click(function() {
         userModel.refresh(loadUser);
     });
-    alert(1);
     if (!locked) {
         $(".div_user_back").click(function() {
             switchToMode(localStorage.lastMode);
         });
     }
-    alert(2);
     if (locked) {
         $(".div_unlock_key_container").show();
         $(".input_unlock_key_button").click(function() {
@@ -752,9 +749,8 @@ function displayUser(locked) {
     } else {
         $(".div_unlock_key_container").hide();
     }
-    alert(3);
+
     function loadUser() {
-        alert("4." + String(userModel.selfKey()));
         var divAddUser = $(".div_add_user_pwd");
         if (userModel.canAddUser()) {
             divAddUser.show();
@@ -768,7 +764,6 @@ function displayUser(locked) {
         } else {
             divAddUser.hide();
         }
-        alert(5);
         $(".div_unique_key_display").html(userModel.selfKey());
 
         var userListTemplate = templates.read(".hd_user_item");
@@ -780,13 +775,11 @@ function displayUser(locked) {
         for (var i = 0; i < levelNames.length; ++i) {
             levels.push({value:i, name:levelNames[i]});
         }
-        alert(6);
         if (users.length > 0) {
             $(".div_user_list_container").show();
         } else {
             $(".div_user_list_container").hide();
         }
-        alert(7);
         tbodyUserList.html("");
         for (var i = 0; i < users.length; ++i) {
             (function() {
@@ -891,7 +884,6 @@ function displayUser(locked) {
 
             })();
         }
-        alert(1000);
     }
     userModel.refresh(loadUser);
 }
