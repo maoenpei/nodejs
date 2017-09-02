@@ -49,7 +49,7 @@ Base.extends("Responder", {
 		this.res.setHeader("Set-Cookie", cookieData);
 	},
 	setCacheTime:function(seconds) {
-		//this.res.setHeader("Cache-Control", "max-age=" + String(seconds));
+		this.res.setHeader("Cache-Control", "max-age=" + String(seconds));
 	},
 	setLastModified:function(mtime) {
 		this.res.setHeader("Last-Modified", mtime.toUTCString());
