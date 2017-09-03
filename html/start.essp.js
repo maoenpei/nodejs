@@ -703,6 +703,8 @@ function showMode(modeName) {
             $(".div_manage_user").addClass("div_manage_user_on");
         }
     });
+    $(".div_navigate_races").hide();
+    $(".div_navigate_stars").hide();
     $(".div_user_manage").unbind();
     $(".div_user_manage").click(function() {
         displayUser(false);
@@ -1209,78 +1211,119 @@ function displayMatch() {
 
     var raceBlockTemplate = templates.read(".hd_race_block");
     var playerOptionTemplate = templates.read(".hd_player_option");
+    var navigateRaceTemplate = templates.read(".hd_navigate_race_item");
+    var navigateStarTemplate = templates.read(".hd_navigate_star_item");
 
     var divMatchDetail = $(".div_match_detail");
+    var divNavigateRaces = $(".div_navigate_races");
+    var divNavigateStars = $(".div_navigate_stars");
     function loadMatch() {
         var raceBlocks = {};
+        var scrollToMatch = function(matchId) {
+            var targetBlock = raceBlocks[matchId];
+            if (targetBlock) {
+                var top = targetBlock.position().top;
+                $("html,body").animate({"scrollTop":top})
+            }
+        };
         localTimer.clearFuncs();
 
         var genMatchId = function(raceIndex, starIndex) {
             return raceIndex * 1000 + starIndex;
         };
         divMatchDetail.html("");
+        divNavigateRaces.html("");
         var raceTypes = ["黄鹿", "玫瑰", "咸鱼"];
-        for (var raceIndex = 0; raceIndex < raceTypes.length; ++raceIndex) {
-            for (var starIndex = 10; starIndex >= 1; --starIndex) {
-                (function() {
-                    var currentMatchId = genMatchId(raceIndex, starIndex);
-                    var raceBlock = $(raceBlockTemplate({
-                        name:(raceTypes[raceIndex] + starIndex + "星"),
-                    }));
-                    raceBlock.appendTo(divMatchDetail);
-                    raceBlocks[currentMatchId] = raceBlock;
-                    var isgoden = (raceIndex < 2);
-                    raceBlock.find(".div_race_title_text").addClass(isgoden ? "display_race_golden" : "display_race_gray");
+        var raceListShown = -1;
+        for (var raceI = 0; raceI < raceTypes.length; ++raceI) {
+            (function() {
+                var raceIndex = raceI;
+                var isgoden = (raceIndex < 2);
+                var colorCls = (isgoden ? "display_race_golden" : "display_race_gray");
+                for (var starIndex = 10; starIndex >= 1; --starIndex) {
+                    (function() {
+                        var currentMatchId = genMatchId(raceIndex, starIndex);
+                        var starName = raceTypes[raceIndex] + starIndex + "星";
+                        var raceBlock = $(raceBlockTemplate({name:starName,}));
+                        raceBlock.appendTo(divMatchDetail);
+                        raceBlocks[currentMatchId] = raceBlock;
+                        raceBlock.find(".div_race_title_text").addClass(colorCls);
 
-                    var divRaceLasttime = raceBlock.find(".div_race_lasttime");
-                    var updateLasttime = function() {
-                        var lasttime = pageModel.matchLasttime(currentMatchId);
-                        var duration = durationFromLasttime(lasttime);
-                        divRaceLasttime.html(duration.desc);
-                        divRaceLasttime.css("color", duration.color);
-                    };
-                    updateLasttime();
-                    localTimer.addFunc(updateLasttime);
+                        var divRaceLasttime = raceBlock.find(".div_race_lasttime");
+                        var updateLasttime = function() {
+                            var lasttime = pageModel.matchLasttime(currentMatchId);
+                            var duration = durationFromLasttime(lasttime);
+                            divRaceLasttime.html(duration.desc);
+                            divRaceLasttime.css("color", duration.color);
+                        };
+                        updateLasttime();
+                        localTimer.addFunc(updateLasttime);
 
-                    var addButton = raceBlock.find(".div_race_title_add");
-                    addButton.click(function() {
-                        addPlayerToMatchId = currentMatchId;
-                        updateSelectablePlayers();
-                        divAddMatchMask.show();
-                    });
+                        var addButton = raceBlock.find(".div_race_title_add");
+                        addButton.click(function() {
+                            addPlayerToMatchId = currentMatchId;
+                            updateSelectablePlayers();
+                            divAddMatchMask.show();
+                        });
 
-                    var matchPlayerIds = pageModel.matchPlayerIds(currentMatchId);
-                    var divPlayers = raceBlock.find(".div_race_players");
-                    for (var i = 0; i < matchPlayerIds.length; ++i) {
-                        (function() {
-                            var playerId = matchPlayerIds[i];
-                            var callback = function(name, val) {
-                                if (name == 'del') {
-                                    pageModel.quitmatch(currentMatchId, playerId, function() {
-                                        loadMatch();
-                                    });
-                                } else if (name == 'power') {
-                                    pageModel.editPlayerPower(playerId, val, function() {
-                                        loadMatch();
-                                    });
-                                }
-                            };
-                            addPlayerToList(playerId, divPlayers, {
-                                del:true,
-                                power:true
-                            }, callback);
-                        })();
+                        var matchPlayerIds = pageModel.matchPlayerIds(currentMatchId);
+                        var divPlayers = raceBlock.find(".div_race_players");
+                        for (var i = 0; i < matchPlayerIds.length; ++i) {
+                            (function() {
+                                var playerId = matchPlayerIds[i];
+                                var callback = function(name, val) {
+                                    if (name == 'del') {
+                                        pageModel.quitmatch(currentMatchId, playerId, function() {
+                                            loadMatch();
+                                        });
+                                    } else if (name == 'power') {
+                                        pageModel.editPlayerPower(playerId, val, function() {
+                                            loadMatch();
+                                        });
+                                    }
+                                };
+                                addPlayerToList(playerId, divPlayers, {
+                                    del:true,
+                                    power:true
+                                }, callback);
+                            })();
+                        }
+                        if (matchPlayerIds.length == 0) {
+                            divPlayers.html("无人报名");
+                        }
+                    })();
+                }
+
+                var raceSelectBlock = $(navigateRaceTemplate({name:raceTypes[raceIndex]}));
+                raceSelectBlock.appendTo(divNavigateRaces);
+                raceSelectBlock.addClass(colorCls);
+                raceSelectBlock.click(function() {
+                    if (raceListShown == raceIndex) {
+                        divNavigateStars.hide();
+                        raceListShown = -1;
+                    } else {
+                        divNavigateStars.html("");
+                        for (var starIndex = 10; starIndex >= 1; --starIndex) {
+                            (function() {
+                                var currentMatchId = genMatchId(raceIndex, starIndex);
+                                var starName = raceTypes[raceIndex] + starIndex + "星";
+                                var starSelectBlock = $(navigateStarTemplate({name:starName}));
+                                starSelectBlock.appendTo(divNavigateStars);
+                                starSelectBlock.addClass(colorCls);
+                                starSelectBlock.click(function() {
+                                    scrollToMatch(currentMatchId);
+                                    divNavigateStars.hide();
+                                    raceListShown = -1;
+                                });
+                            })();
+                        }
+                        divNavigateStars.show();
+                        raceListShown = raceIndex;
                     }
-                    if (matchPlayerIds.length == 0) {
-                        divPlayers.html("无人报名");
-                    }
-                })();
-            }
+                });
+            })();
         }
-
-        var scrollToMatch = function(matchId) {
-            $("body").scrollTop(raceBlocks[matchId].position().top);
-        };
+        divNavigateRaces.show();
     }
     pageModel.refresh(false, loadMatch);
 }

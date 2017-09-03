@@ -21,7 +21,7 @@ body{
     text-align:center;
     background-color:#999;
     padding:0.5rem 0;
-    z-index:1;
+    z-index:5;
 }
 .div_content_panel{
     position:relative;
@@ -34,14 +34,14 @@ body{
     color:blue;
 }
 
-.visit_label:hover{
+.visit_label:hover, .div_navigate_race:hover, .div_navigate_star:hover{
     color:red;
     cursor:hand;
 }
-.visit_label:active{
+.visit_label:active, .div_navigate_race:active, .div_navigate_star:active{
     color:#bd1551;
 }
-.visit_label:visited{
+.visit_label:visited, .div_navigate_race:visited, .div_navigate_star:visited{
     color:blue;
 }
 
@@ -174,33 +174,56 @@ body{
     padding:0.4rem;
     padding-top:0rem;
     background-color:#999999;
-    z-index:1;
+    z-index:10;
     right:0.2rem;
     opacity:0.8;
 }
-
 .div_list_user_item{
     margin-top:0.2rem;
 }
-
 .div_unique_key_container, .div_unlock_key_container{
     margin:0.6rem;
 }
-
 .div_user_list_container{
     margin-top:0.5rem;
+}
+
+.div_navigate_races, .div_navigate_stars{
+    position:fixed;
+    z-index:12;
+    text-align:center;
+    padding-bottom:1rem;
+    font-size:1.2rem;
+}
+.div_navigate_races{
+    right:0.5rem;
+    bottom:0.5rem;
+}
+.div_navigate_stars{
+    right:5.5rem;
+    bottom:0.5rem;
+}
+.div_navigate_race{
+    margin:0.2rem;
+    width:4rem;
+    height:1.8rem;
+    background:rgba(200, 127, 0, 0.6);
+}
+.div_navigate_star{
+    margin:0.2rem;
+    width:6rem;
+    height:1.8rem;
+    background:rgba(200, 127, 0, 0.6);
 }
 
 .table_user_list{
     width:100%;
 }
-
 td{
     text-align:center;
     word-break:break-all;
     font-size:0.7rem;
 }
-
 .input_text_display{
     width:100%;
 }
