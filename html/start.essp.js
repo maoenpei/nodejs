@@ -2,6 +2,20 @@
 var urlRoot = "<%=PageInfo.urlRoot%>";
 var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
+var dataStorage = null;
+var StorageItem = function() {
+    if (!dataStorage) {
+        try {
+            dataStorage = localStorage;
+            localStorage.test = "ttt";
+            delete localStorage.test;
+        } catch(e) {
+            dataStorage = {};
+        }
+    }
+    return dataStorage;
+}
+
 var tmpsafe = function(){};
 var safe = function(callback) {
     return (callback ? callback : tmpsafe);
@@ -619,7 +633,7 @@ var initGroupSelection = function(groupList, hasZeroOption) {
 function showMode(modeName) {
     console.log("showMode", modeName);
     if (displayableMode(modeName)) {
-        localStorage.lastMode = modeName;
+        StorageItem().lastMode = modeName;
     }
     localTimer.clearFuncs();
 
@@ -696,7 +710,7 @@ function showMode(modeName) {
     $(".div_user_logout").unbind();
     $(".div_user_logout").click(function() {
         if (confirm("确认退出？")) {
-            delete localStorage.serial_string;
+            delete StorageItem().serial_string;
             requestPost("giveup", {}, displayWelcome);
         }
     });
@@ -712,7 +726,7 @@ function displayUser(locked) {
     if (!locked) {
         $(".div_user_back").unbind();
         $(".div_user_back").click(function() {
-            switchToMode(localStorage.lastMode);
+            switchToMode(StorageItem().lastMode);
         });
     }
     if (locked) {
@@ -725,7 +739,7 @@ function displayUser(locked) {
                     alert("解锁码错误！");
                 } else {
                     pageModel.refresh(true, function() {
-                        switchToMode(localStorage.lastMode);
+                        switchToMode(StorageItem().lastMode);
                     });
                 }
             });
@@ -1275,10 +1289,10 @@ function displayWelcome() {
     var exchange = function (serial, success, failed) {
         requestPost("exchange", {serial:serial}, function(json) {
             if (json && json.serial) {
-                localStorage.serial_string = json.serial;
+                StorageItem().serial_string = json.serial;
                 safe(success)(json.locked);
             } else {
-                delete localStorage.serial_string;
+                delete StorageItem().serial_string;
                 safe(failed)();
             }
         });
@@ -1289,7 +1303,7 @@ function displayWelcome() {
             displayUser(true);
         } else {
             pageModel.refresh(true, function() {
-                switchToMode(localStorage.lastMode);
+                switchToMode(StorageItem().lastMode);
             });
         }
     }
@@ -1305,7 +1319,7 @@ function displayWelcome() {
         }
     });
 
-    var serial = localStorage.serial_string;
+    var serial = StorageItem().serial_string;
     if (serial) {
         exchange(serial, successFunc, exchangeNext);
     } else {
