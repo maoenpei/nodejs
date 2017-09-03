@@ -6,3 +6,5 @@ data/keys.in
 data/pwd.in
 nohup.out
 run.sh
+kill.sh
+pid

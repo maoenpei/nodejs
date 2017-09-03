@@ -34,6 +34,7 @@ console.log("Server running at http://" + ip + ":" + port);
 
 console.log("Working at:" + __dirname, rkey());
 $FileManager.RootDirectory = __dirname;
+$FileManager.saveFile("/pid", String(process.pid));
 
 $PersistanceManager.initFiles(() => {
     var host = new Httphost(urlRoot, isHost);
