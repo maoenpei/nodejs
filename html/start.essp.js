@@ -389,19 +389,19 @@ userModel.orderedUsers = function() {
     }
     var keyedUsers = [];
     while(true) {
-        var maxKey = "";
+        var minKey = "~";
         for (var uniqueKey in uniqueKeys) {
-            if (uniqueKey > maxKey) {
-                maxKey = uniqueKey;
+            if (uniqueKey < minKey) {
+                minKey = uniqueKey;
             }
         }
-        if (maxKey == "") {
+        if (minKey == "~") {
             break;
         }
-        keyedUsers.push(this.uniqueStates[maxKey]);
-        delete uniqueKeys[maxKey];
+        keyedUsers.push(this.uniqueStates[minKey]);
+        delete uniqueKeys[minKey];
     }
-    return keyedUsers.concat(restUsers);
+    return restUsers.concat(keyedUsers);
 }
 var userlevels = [
     "0 禁用",
