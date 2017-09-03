@@ -506,21 +506,20 @@ templates.read = function(templateCls) {
     return template;
 }
 
-var pamN = Math.log(2) / Math.log(60);
-var pamK = 2;
+var pamK = 24; // 24 hours to half reduce
 var durationFromLasttime = function(lasttime) {
     var time = new Date().getTime();
     var seconds = (time - lasttime) / 1000;
 
-    var Y = 1;
+    var pamKsec = pamK * 3600;
+    var Y = 0;
     if (seconds > 0) {
-        Y = 2 / Math.pow(seconds, pamN);
-        Y = (Y > 1 ? 1 : Y);
+        Y = pamKsec / (seconds + pamKsec);
     }
     var T = 1 - Y;
     var color = "rgb(" + String(Math.floor(T*255)) + "," + String(Math.floor(Y*255)) + ",0)";
 
-    var desc = "> 2天";
+    var desc = "> 7天";
     if (seconds < 60) {
         desc = "< 1分钟";
     } else if (seconds < 3600) {
@@ -529,6 +528,10 @@ var durationFromLasttime = function(lasttime) {
         desc = String(Math.floor(seconds / 3600)) + "小时";
     } else if (seconds < 2 * 24 * 3600) {
         desc = "1天" + String(Math.floor((seconds - 24 * 3600) / 3600)) + "小时";
+    } else if (seconds < 3 * 24 * 3600) {
+        desc = "2天" + String(Math.floor((seconds - 2 * 24 * 3600) / 3600)) + "小时";
+    } else if (seconds < 7 * 24 * 3600) {
+        desc = String(Math.floor(seconds / 3600 / 24)) + "天";
     }
 
     return {color:color, desc:desc};
