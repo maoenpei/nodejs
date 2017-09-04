@@ -512,7 +512,7 @@ var durationFromLasttime = function(lasttime) {
     var seconds = (time - lasttime) / 1000;
 
     var pamKsec = pamK * 3600;
-    var Y = 0;
+    var Y = 1;
     if (seconds > 0) {
         Y = pamKsec / (seconds + pamKsec);
     }
