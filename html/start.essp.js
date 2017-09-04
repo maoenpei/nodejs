@@ -1014,6 +1014,11 @@ function addPlayerToList(playerId, divParent, access, callback) {
             inputEditName.show();
             inputEditName.focus();
         });
+        inputEditName.keypress(function (e) {
+            if (e.which == 13) {
+                inputEditName.hide();
+            }
+        });
         inputEditName.blur(function() {
             var name = inputEditName.val();
             if (name != '') {
