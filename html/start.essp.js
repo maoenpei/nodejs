@@ -1314,8 +1314,18 @@ function displayMatch() {
                         for (var starIndex = 10; starIndex >= 1; --starIndex) {
                             (function() {
                                 var currentMatchId = genMatchId(raceIndex, starIndex);
+                                // name
                                 var starName = raceTypes[raceIndex] + starIndex + "星";
-                                var starSelectBlock = $(navigateStarTemplate({name:starName}));
+                                // max power
+                                var matchPlayerIds = pageModel.matchPlayerIds(currentMatchId);
+                                var maxPower = " --- ";
+                                if (matchPlayerIds.length > 0) {
+                                    var playerId = matchPlayerIds[0];
+                                    var playerInfo = pageModel.player(playerId);
+                                    maxPower = String(playerInfo.power) + "万";
+                                };
+
+                                var starSelectBlock = $(navigateStarTemplate({name:starName, power:maxPower}));
                                 starSelectBlock.appendTo(divNavigateStars);
                                 starSelectBlock.addClass(colorCls);
                                 starSelectBlock.click(function() {
