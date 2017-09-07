@@ -193,6 +193,12 @@ var hostCommand = {
 
 			var lastModified = yield $PersistanceManager.LogicModified(next);
 
+			if (!requestor.compareModified(lastModified)) {
+				responder.setCode(304);
+				responder.respondData(Buffer.alloc(0), safe(done));
+				return;
+			}
+
 			responder.setLastModified(lastModified);
 			responder.setCacheTime(1);
 			responder.respondJson(json, safe(done));
@@ -1059,9 +1065,17 @@ Base.extends("Httphost", {
 
 			var fileBlock = yield this.visitHTTP(requestor, "/start.html", null, next);
 
+			if (!requestor.compareModified(fileBlock.time)) {
+				responder.setCode(304);
+				responder.respondData(Buffer.alloc(0), safe(done));
+				return;
+			}
+
 			responder.setLastModified(fileBlock.time);
 			if (!this.InfoBase.isHost) {
 				responder.setCacheTime(5*60);
+			} else {
+				responder.setCacheTime(1);
 			}
 
 			responder.setType(".html");
@@ -1077,6 +1091,12 @@ Base.extends("Httphost", {
 			if (!fileBlock.data) {
 				responder.addError("Cannot find file.");
 				return safe(done);
+			}
+
+			if (!requestor.compareModified(fileBlock.time)) {
+				responder.setCode(304);
+				responder.respondData(Buffer.alloc(0), safe(done));
+				return;
 			}
 
 			responder.setLastModified(fileBlock.time);

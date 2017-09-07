@@ -80,6 +80,16 @@ Base.extends("Requestor", {
         }
         return this.range;
     },
+    compareModified:function(mtime) {
+        var ModifiedUTC = this.req.headers["if-modified-since"];
+        if (ModifiedUTC) {
+            var date = new Date(ModifiedUTC);
+            var baseDate = new Date(mtime.toUTCString());
+            console.log("compareModified", baseDate, date, baseDate > date);
+            return baseDate > date;
+        }
+        return true;
+    },
 
     visitBody:function(done) {
         var body = [];

@@ -21,9 +21,9 @@ var safe = function(callback) {
     return (callback ? callback : tmpsafe);
 };
 
-var sendAjax = function(url, postData, callback) {
+var sendAjax = function(method, url, postData, callback) {
     $.ajax({
-        type:"POST",
+        type:method,
         url:url,
         data:JSON.stringify(postData),
         success:safe(callback),
@@ -33,9 +33,9 @@ var sendAjax = function(url, postData, callback) {
     });
 };
 
-var sendAjaxJSON = function(url, postData, callback) {
+var sendAjaxJSON = function(method, url, postData, callback) {
     console.log("request", url, postData);
-    sendAjax(url, postData, function (returnData) {
+    sendAjax(method, url, postData, function (returnData) {
         var json = null;
         try {
             json = JSON.parse(returnData);
@@ -49,7 +49,11 @@ var sendAjaxJSON = function(url, postData, callback) {
 };
 
 var requestPost = function (url, postData, callback) {
-    sendAjaxJSON(urlRoot + "/" + url, postData, safe(callback));
+    sendAjaxJSON("POST", urlRoot + "/" + url, postData, safe(callback));
+};
+
+var requestGet = function(url, postData, callback) {
+    sendAjaxJSON("GET", urlRoot + "/" + url, postData, safe(callback));
 };
 
 var uploadFile = function(url, callback) {
@@ -85,7 +89,7 @@ pageModel.refresh = function(force, callback) {
     var currentTime = new Date().getTime();
     if (force || currentTime - $this.lastRefreshTime > 1000 * 10) {
         $this.lastRefreshTime = currentTime;
-        requestPost("information", {}, function(json) {
+        requestGet("information", {}, function(json) {
             if (json) {
                 $this.groups = (json.groups ? json.groups : {});
                 $this.players = (json.players ? json.players : {});
