@@ -1283,11 +1283,14 @@ function displayMatch() {
                         for (var i = 0; i < matchPlayerIds.length; ++i) {
                             (function() {
                                 var playerId = matchPlayerIds[i];
+                                var playerInfo = pageModel.player(playerId);
                                 var callback = function(name, val) {
                                     if (name == 'del') {
-                                        pageModel.quitmatch(currentMatchId, playerId, function() {
-                                            loadMatch();
-                                        });
+                                        if (confirm("确定将玩家'" + playerInfo.name + "'从'" + starName + "'中移除？")) {
+                                            pageModel.quitmatch(currentMatchId, playerId, function() {
+                                                loadMatch();
+                                            });
+                                        }
                                     } else if (name == 'power') {
                                         pageModel.editPlayerPower(playerId, val, function() {
                                             loadMatch();
