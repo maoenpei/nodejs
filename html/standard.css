@@ -197,16 +197,16 @@ body{
 }
 .div_navigate_races{
     right:0.5rem;
-    bottom:0.5rem;
+    bottom:6rem;
 }
 .div_navigate_stars{
-    right:5.5rem;
+    right:4.5rem;
     bottom:0.5rem;
 }
 .div_navigate_race{
     padding-top:0.3rem;
     margin:0.6rem;
-    width:4rem;
+    width:3rem;
     height:2.0rem;
     background:rgba(200, 127, 0, 0.6);
 }
