@@ -1218,8 +1218,10 @@ function displayMatch() {
             });
         }
     });
+    selectAddMatchGroup.unbind();
     selectAddMatchGroup.change(updateSelectablePlayers);
-    inputAddMatchName.change(updateSelectablePlayers);
+    inputAddMatchName.unbind();
+    inputAddMatchName.on("input", updateSelectablePlayers);
 
     var raceBlockTemplate = templates.read(".hd_race_block");
     var playerOptionTemplate = templates.read(".hd_player_option");
