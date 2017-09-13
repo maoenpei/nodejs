@@ -1328,13 +1328,17 @@ function displayMatch() {
                                 // max power
                                 var matchPlayerIds = pageModel.matchPlayerIds(currentMatchId);
                                 var maxPower = " --- ";
+                                var playerInfo = null;
                                 if (matchPlayerIds.length > 0) {
                                     var playerId = matchPlayerIds[0];
-                                    var playerInfo = pageModel.player(playerId);
+                                    playerInfo = pageModel.player(playerId);
                                     maxPower = String(playerInfo.power) + "万";
                                 };
 
                                 var starSelectBlock = $(navigateStarTemplate({name:starName, power:maxPower}));
+                                if (playerInfo && playerInfo.status == 0) {
+                                    starSelectBlock.find(".div_navigate_star_max").addClass("div_navigate_star_occupy");
+                                }
                                 starSelectBlock.appendTo(divNavigateStars);
                                 starSelectBlock.addClass(colorCls);
                                 starSelectBlock.click(function() {
