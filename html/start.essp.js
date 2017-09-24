@@ -25,7 +25,7 @@ var sendAjax = function(method, url, postData, callback) {
     $.ajax({
         type:method,
         url:url,
-        data:JSON.stringify(postData),
+        data:(postData ? JSON.stringify(postData) : null),
         success:safe(callback),
         error:function() {
             safe(callback)(null);
@@ -52,8 +52,8 @@ var requestPost = function (url, postData, callback) {
     sendAjaxJSON("POST", urlRoot + "/" + url, postData, safe(callback));
 };
 
-var requestGet = function(url, postData, callback) {
-    sendAjaxJSON("GET", urlRoot + "/" + url, postData, safe(callback));
+var requestGet = function(url, callback) {
+    sendAjaxJSON("GET", urlRoot + "/" + url, null, safe(callback));
 };
 
 var uploadFile = function(url, callback) {
@@ -89,7 +89,7 @@ pageModel.refresh = function(force, callback) {
     var currentTime = new Date().getTime();
     if (force || currentTime - $this.lastRefreshTime > 1000 * 10) {
         $this.lastRefreshTime = currentTime;
-        requestGet("information", {}, function(json) {
+        requestGet("information", function(json) {
             if (json) {
                 $this.groups = (json.groups ? json.groups : {});
                 $this.players = (json.players ? json.players : {});
