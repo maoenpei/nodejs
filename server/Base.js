@@ -194,3 +194,34 @@ Global.arrEqual = function(arr, index, arr2, index2, length) {
 Global.codeEqual = function(code, data, index) {
     return arrEqual(code, 0, data, index, code.length);
 };
+
+Global.clone = function(obj) {
+	var t = {};
+	for (var k in obj) {
+		t[k] = obj[k];
+	}
+	return t;
+}
+
+String.prototype.format = function(args) {
+    var result = this;
+    if (arguments.length > 0) {
+        if (arguments.length == 1 && typeof (args) == "object") {
+            for (var key in args) {
+                if(args[key]!=undefined){
+                    var reg = new RegExp("({" + key + "})", "g");
+                    result = result.replace(reg, args[key]);
+                }
+            }
+        }
+        else {
+            for (var i = 0; i < arguments.length; i++) {
+                if (arguments[i] != undefined) {
+                    var reg= new RegExp("({)" + i + "(})", "g");
+                    result = result.replace(reg, arguments[i]);
+                }
+            }
+        }
+    }
+    return result;
+}
