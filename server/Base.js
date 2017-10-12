@@ -196,7 +196,7 @@ Global.codeEqual = function(code, data, index) {
 };
 
 Global.clone = function(obj) {
-	var t = {};
+	var t = (obj instanceof Array ? [] : {});
 	for (var k in obj) {
 		t[k] = obj[k];
 	}

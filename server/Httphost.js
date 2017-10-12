@@ -1015,13 +1015,6 @@ Base.extends("Httphost", {
         });
 		this.logicManager = new LogicManager();
 		$PersistanceManager.Commit();
-
-		this.gameController = new GameController();
-		this.accountManager = this.gameController.getAccountManager();
-		this.accountManager.login("aaa", (obj)=>{
-			obj.prepare(()=>{
-			});
-		});
 	},
 	onVisit:function(req, res) {
 		var requestor = new Requestor(req);
