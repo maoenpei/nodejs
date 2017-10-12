@@ -1,8 +1,5 @@
 files
-data/States.d
-data/Files.d
-data/Logic.d
-data/keys.in
-data/pwd.in
+data/*.d
+data/*.in
 nohup.out
 pid
