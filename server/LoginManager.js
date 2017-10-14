@@ -24,9 +24,6 @@ Base.extends("Login", {
         this.expire = now + expirePeriod;
         return false;
     },
-    updateTime:function() {
-        
-    },
 });
 
 Base.extends("$LoginManager", {
@@ -47,10 +44,5 @@ Base.extends("$LoginManager", {
     },
     query:function(token) {
         return this.loginData[token];
-    },
-    cancel:function(token) {
-        if (this.loginData[token]) {
-            delete this.loginData[token];
-        }
     },
 });

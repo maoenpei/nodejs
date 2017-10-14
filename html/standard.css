@@ -45,22 +45,36 @@ body{
     color:blue;
 }
 
-.display_input_pwd{
+.display_input_name, .display_waiting{
     margin:10 auto;
 }
 
-.div_content_panel_match{
-    padding-top:0.3rem;
-    position:relative;
-    color:#055;
+.div_submit_name{
+    font-size: 0.8rem;
+    padding: 0.2rem;
 }
-.div_race_block{
+
+.div_area_block{
     background-color:#aaa;
     padding-top:0.5rem;
     margin:0.8rem;
 }
-.div_race_title_text{
+.div_area_title_text{
     font-size:1.5rem;
+    display:inline-block;
+}
+
+.div_player_union, .div_player_name, .div_player_power{
+    display:inline-block;
+}
+
+
+
+-----------------------------------------------------
+.div_content_panel_match{
+    padding-top:0.3rem;
+    position:relative;
+    color:#055;
 }
 .display_race_golden{
     color:#ff1;
@@ -151,7 +165,7 @@ body{
 }
 
 .div_group_delete,.div_group_line,.div_group_name,.div_add_player_item,.div_add_player_group,
-.div_player_group,.div_player_name,.div_player_power,.div_mode_selector,.div_race_title_text,
+.div_player_group,.div_player_name,.div_player_power,.div_mode_selector,
 .visit_label,.display_label,.display_input_pwd,.div_race_title_add,.div_player_line,.div_player_display,
 .div_player_delete_option,.div_add_match_group,.div_add_match_item,.display_search_text,
 .div_player_lasttime,.div_race_lasttime{

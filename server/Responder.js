@@ -1,6 +1,8 @@
 
 require("./Base");
-require("./PersistanceManager");
+require("./StateManager");
+
+EXTENSION_CONFIG = "ExtTypes.i";
 
 Base.extends("Responder", {
 	_constructor:function(res) {
@@ -23,7 +25,7 @@ Base.extends("Responder", {
 				this.res.end(data, safe(done));
 			}
 		} else {
-			this.res.end();
+			this.res.end(safe(done));
 		}
 		this.finished = true;
 	},
@@ -33,7 +35,7 @@ Base.extends("Responder", {
 	},
 
 	setType:function(ext) {
-		var responderType = $PersistanceManager.ExtensionType(ext);
+		var responderType = $StateManager.getState(EXTENSION_CONFIG)[ext];
 		responderType = (responderType ? responderType : "text/plain");
 		this.res.setHeader("Content-Type", responderType + "; charset=utf-8");
 	},

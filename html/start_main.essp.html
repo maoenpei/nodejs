@@ -1,0 +1,60 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+    <title>s96_老司机</title>
+    <link rel="stylesheet" type="text/css" href="<%=PageInfo.urlRoot%>/standard.css">
+    <script type="text/javascript" src="<%=PageInfo.urlRoot%>/constant/jquery.js"></script>
+    <script type="text/javascript" src="<%=PageInfo.urlRoot%>/constant/handlebars.js"></script>
+    <script type="text/javascript" src="<%=PageInfo.urlRoot%>/start_main.js"></script>
+</head>
+<body>
+    <div class="div_title_bar">
+        <div class="display_label">恭喜你发现了一个神奇的网站</div>
+    </div>
+    <div class="div_content_panel">
+    </div>
+<script type="text/x-handlebars-template" class="hd_authorize_request">
+        <div class="display_input_name">
+            <div>请提交游戏名(用于管理员识别并授权)</div>
+            <input class="input_name" type="text" />
+            <div class="div_submit_name visit_label">提交</div>
+        </div>
+</script>
+<script type="text/x-handlebars-template" class="hd_authorize_waiting">
+        <div class="display_waiting">
+            您已提交游戏名“{{name}}”，正在等待管理员确认...
+        </div>
+</script>
+<script type="text/x-handlebars-template" class="hd_display_loading">
+        <div class="display_waiting">
+            {{#if getting_state}}
+                正在获取状态...
+            {{else if state_error}}
+                显示状态错误...
+            {{else if refreshing_data}}
+                正在刷新数据...
+            {{/if}}
+        </div>
+</script>
+<script type="text/x-handlebars-template" class="hd_title_content">
+        <div class="visit_label">{{funcName}}</div>
+</script>
+<script type="text/x-handlebars-template" class="hd_kingwar_areastar">
+        <div class="div_areastar_block">
+            <div class="div_areastar_title">
+                <div class="div_areastar_title_text">{{name}}</div>
+            </div>
+            <div class="div_areastar_players_breaf">
+            </div>
+        </div>
+</script>
+<script type="text/x-handlebars-template" class="hd_common_player">
+        <div class="div_player_block">
+            <div class="div_player_union">{{union}}</div>
+            <div class="div_player_name">{{name}}</div>
+            <div class="div_player_power">{{power}}</div>
+        </div>
+</script>
+</body>
+</html>

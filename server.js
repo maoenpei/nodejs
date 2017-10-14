@@ -1,7 +1,6 @@
 
-require("./server/Httphost");
+require("./server/HttpServer");
 require("./server/FileManager");
-require("./server/PersistanceManager");
 require("./server/ArgParser");
 var http = require("http");
 var readline = require("readline");
@@ -36,17 +35,5 @@ console.log("Working at:" + __dirname, rkey());
 $FileManager.RootDirectory = __dirname;
 $FileManager.saveFile("/pid", String(process.pid));
 
-$PersistanceManager.initFiles(() => {
-    var host = new Httphost(urlRoot, isHost);
-
-    if (isHost) {
-        var reading = readline.createInterface({
-            input:process.stdin,
-        });
-        reading.on("line", (line) => {
-            line.replace(/^\s*|\s*$/g, "");
-            host.onCommand(line);
-        });
-    }
-    http.createServer((req, res) => {host.onVisit(req, res)}).listen(port, ip);
-});
+var host = new HttpServer(urlRoot, isHost);
+http.createServer((req, res) => {host.onVisit(req, res)}).listen(port, ip);
