@@ -43,6 +43,7 @@ Base.extends("GameController", {
         this.accountManager = new AccountManager();
 
         this.kingwarAreaStars = {};
+        this.kingwarRefs = {};
         this.kingwarRefreshing = null;
     },
     getAccountManager:function() {
@@ -54,17 +55,20 @@ Base.extends("GameController", {
 
     setKingwarAccount:function(accountKey, serverDesc, area, star) {
         var key = area * 100 + star;
+        var refData = {
+            constant:false,
+            players:[],
+        }
         var areaStarData = {
             area:area,
             star:star,
             account:accountKey,
             server:serverDesc,
 
-            refData:areaStarData;
-            constant:false,
-            players:[],
+            refData:refData,
         };
         this.kingwarAreaStars[key] = areaStarData; // force set
+        this.kingwarRefs[key] = refData;
     },
     refreshKingwar:function(interval) {
         if (this.kingwarRefreshing) {
@@ -109,7 +113,7 @@ Base.extends("GameController", {
                         continue;
                     }
                     var realKey = data.areaId * 100 + data.starId;
-                    var realData = this.kingwarAreaStars[realKey];
+                    var realData = this.kingwarRefs[realKey];
                     if (realKey != key) {
                         areaStarData.refData = realData;
                         console.log("kingwar search key({0}) doesn't equal to result key({1})".format(key, realKey));
@@ -138,8 +142,8 @@ Base.extends("GameController", {
     },
     getKingwar:function() {
         var areastars = {};
-        for (var key in this.kingwarAreaStars) {
-            var data = this.kingwarAreaStars[key];
+        for (var key in this.kingwarRefs) {
+            var data = this.kingwarRefs[key];
             areastars[key] = (data.players ? data.players : []);
         }
         return areastars;

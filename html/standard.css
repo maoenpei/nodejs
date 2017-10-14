@@ -54,12 +54,12 @@ body{
     padding: 0.2rem;
 }
 
-.div_area_block{
+.div_areastar_block{
     background-color:#aaa;
     padding-top:0.5rem;
     margin:0.8rem;
 }
-.div_area_title_text{
+.div_areastar_title_text{
     font-size:1.5rem;
     display:inline-block;
 }
