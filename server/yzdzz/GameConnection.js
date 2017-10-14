@@ -159,7 +159,7 @@ Base.extends("GameConnection", {
             };
             var result = yield GameHTTP.stat(this.gameInfo.playerId, "reg", next);
             if (result != 'done') {
-                console.log("stat failed playerId:{0} error:{1}".format(this.gameInfo.playerId, result));
+                console.log("stat failed playerId:{0} error:{1}".format(this.gameInfo.playerId, JSON.stringify(result)));
             }
             console.log("Player id:{0}, name:{1}".format(this.gameInfo.playerId, this.gameInfo.name));
             //var obj = yield GameHTTP.save(this.accountInfo.accountId, this.gameInfo.playerId, server.serverId, this.accountInfo.accessToken, next);
@@ -168,7 +168,7 @@ Base.extends("GameConnection", {
             //}
             var result = yield GameHTTP.loginServer(this.accountInfo.accountId, server.serverId, next);
             if (result != 'ok') {
-                console.log("loginServer failed accountId:{0} result:{1}".format(this.accountInfo.accountId, result));
+                console.log("loginServer failed accountId:{0} result:{1}".format(this.accountInfo.accountId, JSON.stringify(result)));
             }
 
             safe(done)({

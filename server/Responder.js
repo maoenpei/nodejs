@@ -56,6 +56,9 @@ Base.extends("Responder", {
 	setLastModified:function(mtime) {
 		this.res.setHeader("Last-Modified", mtime.toUTCString());
 	},
+	setTag:function(tag) {
+		this.res.setHeader("Etag", tag);
+	},
 	redirect:function(url, delay) {
 		delay = (delay ? delay : 3);
 		this.res.setHeader("refresh", delay + ";url="+url);

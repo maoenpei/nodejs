@@ -8,6 +8,7 @@ require("./Responder");
 require("./StateManager");
 require("./TemplateParser");
 var assert = require("assert");
+var crypto = require("crypto");
 
 // Models
 Base.extends("$HttpModel", {
@@ -16,6 +17,10 @@ Base.extends("$HttpModel", {
         this.modelBase = Base.inherit({
             initialize:function(done) {
                 later(done);
+            },
+            getTag:function(obj) {
+                var toMd5 = JSON.stringify(obj) + "PAUMS01233323";
+                return crypto.createHash("md5WithRSAEncryption").update(toMd5).digest("hex");
             },
         });
     },

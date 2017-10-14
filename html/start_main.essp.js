@@ -93,10 +93,11 @@ templates.read = function(templateCls) {
     }
     return template;
 }
-templates.delayLoad = function(template, items, callback) {
+templates.delayLoad = function(templateCls, items, callback) {
     if (items.length <= 0) {
-        return;
+        return callback([]);
     }
+    var template = this.read(templateCls);
     $this = this;
     $this.loading = items;
     var result = [];
@@ -109,7 +110,7 @@ templates.delayLoad = function(template, items, callback) {
         if (index == items.length) {
             callback(result);
         } else {
-            setTimeout(load, 1);
+            setTimeout(load, 0);
         }
     }
     load(0);
@@ -178,11 +179,11 @@ $(function() {
 var displayFuncsModel = {
     supports:{
         kingwar:{name:"帝国战", show:displayKingWar,},
-        players:{name:"玩家列表", },
-        serverInfo:{name:"信息", },
-        automation:{name:"自动化", },
-        setting:{name:"设置", },
-        users:{name:"用户", },
+        //players:{name:"玩家列表", },
+        //serverInfo:{name:"信息", },
+        //automation:{name:"自动化", },
+        //setting:{name:"设置", },
+        users:{name:"用户", show:displayUsers,},
     },
 };
 displayFuncsModel.get = function(callback){
@@ -230,8 +231,8 @@ function displayFuncs() {
                 });
             }
         }
-        var titleTemplate = templates.read(".hd_title_content");
-        templates.delayLoad(titleTemplate, supportFuncs, function(titleBlocks) {
+
+        templates.delayLoad(".hd_title_content", supportFuncs, function(titleBlocks) {
             var defaultFunc = "kingwar";
             var divTitleBar = $(".div_title_bar");
             divTitleBar.html("");
@@ -317,7 +318,6 @@ function displayKingWar() {
         var areastarInfo = {};
         var playerInfo = [];
         var areastarTemplate = templates.read(".hd_kingwar_areastar");
-        var playerTemplate = templates.read(".hd_common_player");
         var navigateAreaTemplate = templates.read(".hd_navigate_area_item");
         var navigateStarTemplate = templates.read(".hd_navigate_star_item");
         for (var area = 1; area <= 3; area++) {
@@ -391,7 +391,7 @@ function displayKingWar() {
                 }
             })();
         }
-        templates.delayLoad(playerTemplate, playerInfo, function(playerBlocks) {
+        templates.delayLoad(".hd_common_player", playerInfo, function(playerBlocks) {
             for (var i = 0; i < playerBlocks.length; ++i) {
                 var playerBlock = playerBlocks[i];
                 var info = playerInfo[i];
@@ -405,4 +405,15 @@ function displayKingWar() {
             }
         });
     });
+}
+
+var displayUsers = {
+};
+displayUsers.get = function(callback) {
+}
+
+function displayUsers() {
+    var divContentPanel = $(".div_content_panel");
+    var waitingTemplate = templates.read(".hd_display_loading");
+    divContentPanel.html(waitingTemplate({refreshing_data: true}));
 }

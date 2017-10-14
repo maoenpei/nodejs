@@ -90,6 +90,13 @@ Base.extends("Requestor", {
         }
         return true;
     },
+    compareTags:function(tag) {
+        var oldTag = this.req.headers["if-none-match"];
+        if (oldTag) {
+            return tag != oldTag;
+        }
+        return true;
+    },
 
     visitBody:function(done) {
         var body = [];

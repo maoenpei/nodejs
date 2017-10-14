@@ -1,7 +1,7 @@
 
 require("../Base");
-require("../StateManager");
 require("../LoginManager");
+require("../StateManager");
 require("./GameController");
 
 GAME_ACCOUNTS_CONFIG = "GameAcounts.d";
@@ -71,6 +71,13 @@ $HttpModel.addClass({
             }
 
             var kingwarData = this.controller.getKingwar();
+            var tag = this.getTag(kingwarData);
+            console.log("tag - ", tag);
+            if (!requestor.compareTags(tag)) {
+                responder.setCode(304);
+                return responder.respondData(Buffer.alloc(0), safe(done));
+            }
+            responder.setTag(tag);
             responder.respondJson({
                 areastars:kingwarData,
             }, done);
