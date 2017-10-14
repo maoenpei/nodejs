@@ -47,7 +47,7 @@ Base.extends("GameConnection", {
         var next = coroutine(function*() {
             // login request
             var obj = yield GameHTTP.login(this.username, this.password, next);
-            if (obj.code != 'SUCCESS') {
+            if (!obj || obj.code != 'SUCCESS') {
                 return safe(done)({});
             }
             this.accountInfo = {
@@ -62,7 +62,10 @@ Base.extends("GameConnection", {
                 var serverList = null;
                 var data = yield $FileManager.visitFile("/data/serverCache.d", next);
                 if (!data) {
-                    var obj = yield GameHTTP.servers(this.accountInfo.accountId, next);
+                    var obj = null;
+                    while(!obj) {
+                        obj = yield GameHTTP.servers(this.accountInfo.accountId, next);
+                    }
                     serverList = obj.list;
                     data = JSON.stringify(obj.list);
                     yield $FileManager.saveFile("/data/serverCache.d", data, next);
@@ -241,12 +244,14 @@ Base.extends("GameConnection", {
                     pos: gem.pos,
                     playerId: gem.owner,
                     unionId: gem.union_id,
+                    playerLife: gem.hp,
+                    mineLife: gem.gem,
                 });
             }
             safe(done)({
                 cardReady: Number(data.card_used) == 0,
                 cardType: data.card_id,
-                isGood: data.card_id <= 4,
+                isGoodCard: data.card_id <= 4,
                 mineArray: mineArray,
             });
         }, this);
@@ -383,6 +388,20 @@ Base.extends("GameConnection", {
             });
         }, this);
     },
+
+    autoSign:function(done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("Sign", "getinfo", null, next);
+            var signed = !!(data.list[String(data.count)]);
+            if (!signed) {
+                var data = yield this.sendMsg("Sign", "start", {point:0}, next);
+            }
+            safe(done)({
+                success:true,
+                signed:signed,
+            });
+        }, this);
+    },
     testProtocol:function(done) {
         var next = coroutine(function*() {
             console.log(new Date().getTime() / 1000);
@@ -400,8 +419,6 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("UnionWar", "refreshCard", null, next); // 刷新可用卡牌
             //var data = yield this.sendMsg("KingWar", "areaRank", {areaid:1}, next);
 
-            //var data = yield this.sendMsg("Sign", "getinfo", null, next); // 打卡
-            //var data = yield this.sendMsg("Sign", "start", {point:0}, next); // 打卡，今天
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
             safe(done)();
@@ -479,6 +496,7 @@ Base.extends("GameConnection", {
     },
     registerMessages:function() {
         this.regMsg("MsgBox", "message", (data) => {});
+        this.regMsg("Chat", "msg", (data) => {});
         this.regMsg("Role", "kick", (data) => { this.quit(); safe(this.events["break"])(); });
         this.regMsg("UnionRace", "notify", (data) => {});
         this.regMsg("UnionWar", "kill", (data) => {});

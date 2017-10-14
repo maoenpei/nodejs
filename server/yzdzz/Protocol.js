@@ -14,12 +14,13 @@ var SendHTTP = function(options, postData, done) {
         });
         res.on('end', function() {
             var buf = Buffer.concat(body);
-            safe(done)(buf);
+            return safe(done)(buf);
         });
     });
 
     req.on('error', function(err) {
         console.log('HTTP error:', err);
+        return safe(done)(null);
     });
 
     if (postData) {
@@ -54,7 +55,7 @@ GameSock.connect = function(ip, port, done) {
     };
     var connectError = (err) => {
         socketError(err);
-        safe(done)(null);
+        return safe(done)(null);
     };
     sock.on("error", connectError);
     sock.connect({port:port, host:ip,}, () => {
@@ -77,6 +78,9 @@ GameSock.receive = function(sock, callback) {
             stream = stream.slice(packageSize + 4);
             zlib.gunzip(package, (err, decoded) => {
                 var obj = JSON.parse(decoded.toString());
+                if (!obj.data) {
+                    console.log("Error on c({0}) m({1}):".format(obj.c, obj.m), obj.error);
+                }
                 safe(callback)(obj.c, obj.m, obj.data);
             });
         }
@@ -132,8 +136,9 @@ GameHTTP.login = function(username, password, done) {
         },
     };
     SendHTTP(loginOptions, null, (buf) => {
+        if (!buf){ return safe(done)(null); }
         var obj = JSON.parse(buf.toString());
-        safe(done)(obj);
+        return safe(done)(obj);
     });
 }
 
@@ -157,10 +162,11 @@ GameHTTP.servers = function(uid, done) {
         },
     };
     SendHTTP(getServersOptions, postData, (buf) => {
+        if (!buf){ return safe(done)(null); }
         zlib.gunzip(buf, (err, decoded) => {
             zlib.gunzip(decoded, (err, decoded2) => {
                 var obj = JSON.parse(decoded2.toString());
-                safe(done)(obj);
+                return safe(done)(obj);
             });
         });
     });
@@ -182,9 +188,10 @@ GameHTTP.stat = function(uid, type, done) {
         },
     };
     SendHTTP(statOptions, null, (buf) => {
+        if (!buf){ return safe(done)(null); }
         zlib.gunzip(buf, (err, decoded)=> {
             var result = decoded.toString();
-            safe(done)(result);
+            return safe(done)(result);
         });
     });
 }
@@ -241,8 +248,9 @@ GameHTTP.save = function(uid, roleId, serverId, accessToken, done) {
         }
     };
     SendHTTP(saveGameOptions, postData, (buf) => {
+        if (!buf){ return safe(done)(null); }
         var obj = JSON.parse(buf.toString());
-        safe(done)(obj);
+        return safe(done)(obj);
     });
 }
 
@@ -262,9 +270,10 @@ GameHTTP.loginServer = function(uid, serverId, done) {
         },
     };
     SendHTTP(loginServerOptions, null, (buf) => {
+        if (!buf){ return safe(done)(null); }
         zlib.gunzip(buf, (err, decoded)=> {
             var result = decoded.toString();
-            safe(done)(result);
+            return safe(done)(result);
         });
     });
 }

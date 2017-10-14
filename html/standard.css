@@ -34,14 +34,14 @@ body{
     color:blue;
 }
 
-.visit_label:hover, .div_navigate_race:hover, .div_navigate_star:hover{
+.visit_label:hover, .div_navigate_area:hover, .div_navigate_star:hover{
     color:red;
     cursor:hand;
 }
-.visit_label:active, .div_navigate_race:active, .div_navigate_star:active{
+.visit_label:active, .div_navigate_area:active, .div_navigate_star:active{
     color:#bd1551;
 }
-.visit_label:visited, .div_navigate_race:visited, .div_navigate_star:visited{
+.visit_label:visited, .div_navigate_area:visited, .div_navigate_star:visited{
     color:blue;
 }
 
@@ -57,6 +57,7 @@ body{
 .div_areastar_block{
     background-color:#aaa;
     padding-top:0.5rem;
+    padding-bottom:0.5rem;
     margin:0.8rem;
 }
 .div_areastar_title_text{
@@ -64,30 +65,25 @@ body{
     display:inline-block;
 }
 
+.div_player_block{
+    position:relative;
+}
 .div_player_union, .div_player_name, .div_player_power{
     display:inline-block;
 }
-
-
-
------------------------------------------------------
-.div_content_panel_match{
-    padding-top:0.3rem;
-    position:relative;
-    color:#055;
-}
-.display_race_golden{
-    color:#ff1;
-}
-.display_race_gray{
-    color:#ffe;
-}
-.div_player_item{
-    padding:0.2rem;
+.div_player_name, .div_player_power{
+    padding:0.1rem;
     color:#df3;
 }
-.div_player_line{
-    color:#fff;
+.div_player_power{
+    right:0.6rem;
+    position:absolute;
+}
+.display_area_golden{
+    color:#ff1;
+}
+.display_area_gray{
+    color:#ffe;
 }
 .display_player_green{
     color:#0f0;
@@ -95,11 +91,74 @@ body{
 .display_player_blue{
     color:#0ff;
 }
-.display_player_red{
-    color:#c00;
-}
 .display_player_orange{
-    color:#fa0;
+    color:#fc0;
+}
+.display_player_red{
+    color:#d22;
+}
+.display_player_purple{
+    color:#709;
+}
+
+.div_navigate_areas, .div_navigate_stars{
+    position:fixed;
+    z-index:12;
+    text-align:center;
+    padding-bottom:0.3rem;
+    font-size:0.9rem;
+}
+.div_navigate_areas{
+    left:0.5rem;
+    bottom:6rem;
+}
+.div_navigate_stars{
+    left:4.5rem;
+    bottom:0.5rem;
+}
+.div_navigate_stars_mask{
+    position:fixed;
+    background:rgba(0,0,0,0.5);
+    left:0;
+    top:0;
+    width:100%;
+    height: 100%;
+}
+.div_navigate_area{
+    padding-top:0.3rem;
+    margin:0.6rem;
+    width:3rem;
+    height:2.0rem;
+    background:rgba(200, 127, 0, 0.6);
+}
+.div_navigate_star{
+    margin:0.2rem;
+    width:6rem;
+    height:2.2rem;
+    background:rgba(222, 160, 0, 0.8);
+}
+.div_navigate_star_name{
+}
+.div_navigate_star_max{
+    font-size:0.53rem;
+    color:#00f;
+}
+.div_navigate_star_ous{
+    color:#0f0;
+}
+
+-----------------------------------------------------
+.div_content_panel_match{
+    padding-top:0.3rem;
+    position:relative;
+    color:#055;
+}
+.div_player_item{
+    padding:0.2rem;
+    color:#df3;
+}
+.div_player_line{
+    color:#fff;
 }
 
 .div_add_player_mask, .div_add_group_mask, .div_add_match_mask{
@@ -165,7 +224,7 @@ body{
 }
 
 .div_group_delete,.div_group_line,.div_group_name,.div_add_player_item,.div_add_player_group,
-.div_player_group,.div_player_name,.div_player_power,.div_mode_selector,
+.div_player_group,.div_player_power,.div_mode_selector,
 .visit_label,.display_label,.display_input_pwd,.div_race_title_add,.div_player_line,.div_player_display,
 .div_player_delete_option,.div_add_match_group,.div_add_match_item,.display_search_text,
 .div_player_lasttime,.div_race_lasttime{
@@ -200,44 +259,6 @@ body{
 }
 .div_user_list_container{
     margin-top:0.5rem;
-}
-
-.div_navigate_races, .div_navigate_stars{
-    position:fixed;
-    z-index:12;
-    text-align:center;
-    padding-bottom:0.3rem;
-    font-size:0.9rem;
-}
-.div_navigate_races{
-    right:0.5rem;
-    bottom:6rem;
-}
-.div_navigate_stars{
-    right:4.5rem;
-    bottom:0.5rem;
-}
-.div_navigate_race{
-    padding-top:0.3rem;
-    margin:0.6rem;
-    width:3rem;
-    height:2.0rem;
-    background:rgba(200, 127, 0, 0.6);
-}
-.div_navigate_star{
-    margin:0.2rem;
-    width:6rem;
-    height:2.2rem;
-    background:rgba(222, 160, 0, 0.8);
-}
-.div_navigate_star_name{
-}
-.div_navigate_star_max{
-    font-size:0.53rem;
-    color:#00f;
-}
-.div_navigate_star_occupy{
-    color:#0f0;
 }
 
 .table_user_list{

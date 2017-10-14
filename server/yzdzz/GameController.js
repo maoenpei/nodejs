@@ -91,6 +91,7 @@ Base.extends("GameController", {
                         this.errLog("loginGame", "server({2}) area({0}), star({1})".format(areaStarData.area, areaStarData.star, areaStarData.server));
                         continue;
                     }
+                    yield conn.autoSign(next);
                     var data = yield conn.getKingWar(next);
                     var constant = !data.allowJoin;
                     if (!data.joined && data.allowJoin) {
@@ -114,8 +115,8 @@ Base.extends("GameController", {
                     }
                     var realKey = data.areaId * 100 + data.starId;
                     var realData = this.kingwarRefs[realKey];
+                    areaStarData.refData = realData;
                     if (realKey != key) {
-                        areaStarData.refData = realData;
                         console.log("kingwar search key({0}) doesn't equal to result key({1})".format(key, realKey));
                     }
                     var players = [];
