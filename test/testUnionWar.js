@@ -15,11 +15,11 @@ var accounts = [
 ];
 
 var servers = [
-    "s96", "s93", "s94", "s95",
+    "s93", "s94", "s95", "s96", 
 ];
 
-var friendUnion = ["b275705814a85d98"];
-var enemyUnion = ["b3b4461918285dc2", "b3bdc946b8285de7"];
+var friendUnion = ["b275705814a85d98", "b3bdc946b8285de7"];
+var enemyUnion = ["b26d0533bba85c43"];
 
 var throwCard = true;
 var occupyGem = false;
@@ -91,6 +91,7 @@ var next = coroutine(function*() {
                 conn.quit();
             }
         }
+        console.log("waiting 5 seconds");
         yield setTimeout(next, 5000);
     }
 

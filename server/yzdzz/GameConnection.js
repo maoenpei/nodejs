@@ -25,6 +25,9 @@ Base.extends("GameConnection", {
     on:function(type, callback) {
         this.events[type] = callback;
     },
+    getUsername:function() {
+        return this.username;
+    },
     getAccountInfo:function() {
         return this.accountInfo;
     },
@@ -95,7 +98,7 @@ Base.extends("GameConnection", {
                 }
             }
 
-            safe(done)({
+            return safe(done)({
                 success: true,
             });
         }, this);
@@ -171,7 +174,7 @@ Base.extends("GameConnection", {
                 console.log("loginServer failed accountId:{0} result:{1}".format(this.accountInfo.accountId, JSON.stringify(result)));
             }
 
-            safe(done)({
+            return safe(done)({
                 success:true,
             });
         }, this);
@@ -187,10 +190,10 @@ Base.extends("GameConnection", {
             // team: 装备
             // wake: 神石
             // weapon_type: 专精
-            safe(done)();
+            return safe(done)();
         }, this);
     },
-    getVisiblePlayers:function() {
+    getRankPlayers:function() {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("KingWar", "roleRank", null, next);
             var players = [];
@@ -203,7 +206,7 @@ Base.extends("GameConnection", {
                     union: item.server + "." + item.union_name,
                 });
             }
-            safe(done)({
+            return safe(done)({
                 players: players,
             });
         }, this);
@@ -211,9 +214,56 @@ Base.extends("GameConnection", {
     getUnion:function(done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("Union", "getinfo", null, next);
-            safe(done)({
+            if (!data) {
+                return safe(done)({});
+            }
+            return safe(done)({
                 unionId : data.id,
                 ownerId : data.owner,
+            });
+        }, this);
+    },
+    getUnionList:function(done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("Union", "getRankList", null, next);
+            if (!data) {
+                return safe(done)({});
+            }
+            var unions = [];
+            for (var i = 0; i < data.list.length; ++i) {
+                var item = data.list[i];
+                unions.push({
+                    unionId: item.id,
+                    name: item.name,
+                    short: item.short_name,
+                });
+            }
+            return safe(done)({
+                unions: unions,
+            });
+        }, this);
+    },
+    getUnionPlayers:function(unionId, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("Union", "view", {unionid:unionId}, next);
+            if (!data || data.level <= 0) {
+                return safe(done)({});
+            }
+
+            var players = [];
+            for (var i = 0; i < data.members.length; ++i) {
+                var item = data.members[i];
+                players.push({
+                    playerId: item.id,
+                    name: item.role_name,
+                    power: item.cpi,
+                    level: item.level,
+                    lastLogin: new Date(item.time * 1000),
+                });
+            }
+
+            return safe(done)({
+                players: players,
             });
         }, this);
     },
@@ -221,9 +271,66 @@ Base.extends("GameConnection", {
     getUnionWar:function(done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("UnionWar", "getinfo", null, next);
+            if (!data) {
+                return safe(done)({});
+            }
             var isOpen = Number(data.open) == 1;
-            safe(done)({
+            return safe(done)({
                 isOpen: isOpen,
+            });
+        }, this);
+    },
+    getUnionRelation:function(done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("UnionWar", "getinfo", null, next);
+            if (!data) {
+                return safe(done)({});
+            }
+            var unions = [];
+            for (var i = 0; i < data.relation.length; ++i) {
+                var item = data.relation[i];
+                unions.push({
+                    unionId: item.id,
+                    name: item.name,
+                    onBoard: true,
+                    takeEffect: item.alive == 1,
+                    isEnemy: item.pos <= 3,
+                });
+            }
+            var data = yield this.sendMsg("UnionWar", "select", {type:1}, next);
+            if (!data) {
+                return safe(done)({
+                    unions: unions,
+                });
+            }
+            for (var i = 0; i < data.list.length; ++i) {
+                var item = data.list[i];
+                unions.push({
+                    unionId: item.id,
+                    name: item.name,
+                    onBoard: false,
+                    takeEffect: false,
+                    isEnemy: true,
+                });
+            }
+            var data = yield this.sendMsg("UnionWar", "select", {type:2}, next);
+            if (!data) {
+                return safe(done)({
+                    unions: unions,
+                });
+            }
+            for (var i = 0; i < data.list.length; ++i) {
+                var item = data.list[i];
+                unions.push({
+                    unionId: item.id,
+                    name: item.name,
+                    onBoard: false,
+                    takeEffect: false,
+                    isEnemy: false,
+                });
+            }
+            return safe(done)({
+                unions: unions,
             });
         }, this);
     },
@@ -248,7 +355,7 @@ Base.extends("GameConnection", {
                     mineLife: gem.gem,
                 });
             }
-            safe(done)({
+            return safe(done)({
                 cardReady: Number(data.card_used) == 0,
                 cardType: data.card_id,
                 isGoodCard: data.card_id <= 4,
@@ -272,7 +379,7 @@ Base.extends("GameConnection", {
                     bad: target.debuff,
                 });
             }
-            safe(done)({
+            return safe(done)({
                 cardList: cardList,
             });
         }, this);
@@ -292,7 +399,7 @@ Base.extends("GameConnection", {
             if (!data) {
                 return safe(done)({});
             }
-            safe(done)({
+            return safe(done)({
                 playerId: data.owner,
                 unionId: data.union_id,
             });
@@ -304,7 +411,7 @@ Base.extends("GameConnection", {
             if (!data) {
                 return safe(done)({});
             }
-            safe(done)({
+            return safe(done)({
                 success:true,
             });
         }, this);
@@ -313,7 +420,7 @@ Base.extends("GameConnection", {
     getKingWar:function(done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("KingWar", "getinfo", null, next);
-            safe(done)({
+            return safe(done)({
                 allowJoin: data.state == 1,
                 joined: data.check != 0,
                 inlist: data.check == 1,
@@ -327,7 +434,7 @@ Base.extends("GameConnection", {
             for (var i = 0; i < data.lands.length; ++i) {
                 starNumbers.push(data[i].num);
             }
-            safe(done)({
+            return safe(done)({
                 starNumbers : starNumbers,
             });
         }, this);
@@ -341,7 +448,7 @@ Base.extends("GameConnection", {
             if (areaId != data.areaid || starId != data.star) {
                 console.log("Join KingWar (area:{0}, star:{1}) error:".format(areaId, starId), data);
             }
-            safe(done)({
+            return safe(done)({
                 success: true,
             });
         }, this);
@@ -362,7 +469,7 @@ Base.extends("GameConnection", {
                     union: item.server + "." + item.union_short,
                 });
             }
-            safe(done)({
+            return safe(done)({
                 areaId:data.areaid,
                 starId:data.star,
                 players: players,
@@ -383,7 +490,7 @@ Base.extends("GameConnection", {
                     name: item.role_name,
                 });
             }
-            safe(done)({
+            return safe(done)({
                 players: players,
             });
         }, this);
@@ -396,7 +503,7 @@ Base.extends("GameConnection", {
             if (!signed) {
                 var data = yield this.sendMsg("Sign", "start", {point:0}, next);
             }
-            safe(done)({
+            return safe(done)({
                 success:true,
                 signed:signed,
             });
@@ -417,11 +524,13 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("UnionWar", "cardlog", null, next); // 查看卡牌列表
             //var data = yield this.sendMsg("UnionWar", "ahead", null, next); // 查看名次信息
             //var data = yield this.sendMsg("UnionWar", "refreshCard", null, next); // 刷新可用卡牌
-            //var data = yield this.sendMsg("KingWar", "areaRank", {areaid:1}, next);
+            //var data = yield this.sendMsg("KingWar", "areaRank", {areaid:1}, next); // 帝国战团队排行
+
+            var data = yield this.sendMsg("Union", "view", {unionid:"b275705814a85d98"}, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
-            safe(done)();
+            return safe(done)();
         }, this);
     },
 

@@ -371,11 +371,15 @@ function displayKingWar() {
                         playersContainer.html("正在加载...");
                         for (var i = 0; i < areastarData.length; ++i) {
                             var player = areastarData[i];
+                            var power = Math.floor(player.power / 10000) + "万";
+                            if (player.maxPower > 0) {
+                                power = "(" + Math.floor(player.maxPower / 10000) + "万)" + power;
+                            }
                             playerInfo.push({
                                 first: i == 0,
                                 union: player.union,
                                 name: player.name,
-                                power: player.power,
+                                power: power,
                                 belongTo: areastar,
                             });
                         }

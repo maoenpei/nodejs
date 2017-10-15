@@ -54,6 +54,9 @@ body{
 .display_input_name, .display_waiting{
     margin:10 auto;
 }
+.display_submit_name{
+    font-size: 1.5rem;
+}
 
 .div_submit_name{
     font-size: 0.8rem;
@@ -92,6 +95,9 @@ body{
 .div_player_name, .div_player_power{
     padding:0.1rem;
     color:#df3;
+}
+.div_player_name{
+    margin-right: 5rem;
 }
 .div_player_power{
     right:0.6rem;

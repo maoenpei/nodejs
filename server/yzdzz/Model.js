@@ -39,12 +39,17 @@ $HttpModel.addClass({
             }
             yield $StateManager.openState(GAME_SETTING_CONFIG, null, next);
             var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
+            for (var i = 0; i < settingStates.players.length; ++i) {
+                var playerConfig = settingStates.players[i];
+                var accountInfo = this.accounts[playerConfig.account];
+                this.controller.setPlayerListAccount(accountInfo.accountKey, playerConfig.server, 8, 3, 3000000);
+            }
             for (var i = 0; i < settingStates.kingwar.length; ++i) {
                 var kingwarConfig = settingStates.kingwar[i];
                 var accountInfo = this.accounts[kingwarConfig.account];
-                this.controller.setKingwarAccount(accountInfo.accountKey, kingwarConfig.server, kingwarConfig.area, kingwarConfig.star);
+                this.controller.setKingwarAccount(accountInfo.accountKey, kingwarConfig.server, 1, kingwarConfig.area, kingwarConfig.star);
             }
-            this.controller.refreshKingwar(60*5);
+            this.controller.startRefresh(60*5);
             safe(done)();
         }, this);
     },
