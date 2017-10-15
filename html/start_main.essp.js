@@ -292,12 +292,6 @@ displayKingWarModel.unionColor = function(union) {
     }
     return "";
 }
-displayKingWarModel.starBreafColor = function(union) {
-    if (union == "s96.火") {
-        return "div_navigate_star_ous";
-    }
-    return "";
-}
 
 // show kingwar
 function displayKingWar() {
@@ -346,7 +340,7 @@ function displayKingWar() {
                             }));
                             divNavStarBlock.appendTo(divNavStarList);
                             divNavStarBlock.find(".div_navigate_star_name").addClass(areaColor);
-                            var starColor = (player ? displayKingWarModel.starBreafColor(player.union) : "");
+                            var starColor = (player ? displayKingWarModel.unionColor(player.union) : "");
                             divNavStarBlock.find(".div_navigate_star_max").addClass(starColor);
                             divNavStarBlock.click(function() {
                                 var targetBlock = areastar.block;
