@@ -407,13 +407,181 @@ function displayKingWar() {
     });
 }
 
-var displayUsers = {
+var displayUsersModel = {
+    authLevels: [
+        {name:"查看", val:1},
+        {name:"自动", val:2},
+        {name:"管理", val:3},
+    ],
 };
-displayUsers.get = function(callback) {
+displayUsersModel.get = function(callback) {
+    $this = this;
+    requestPost("listusers", {jetson:true}, function(json) {
+        if (json.users) {
+            $this.users = json.users;
+            callback($this.users);
+        }
+    });
+}
+displayUsersModel.promote = function(serial, level, callback) {
+    requestPost("promote", {target:serial, auth:level}, function(json) {
+        if (json.success) {
+            callback();
+        }
+    });
+}
+displayUsersModel.newuser = function(serial, callback) {
+    requestPost("authorize", {previous:serial}, function(json) {
+        if (json.success) {
+            callback();
+        }
+    });
+}
+displayUsersModel.associate = function(prevSerial, nextSerial, callback) {
+    requestPost("authorize", {previous:prevSerial, next:nextSerial}, function(json) {
+        if (json.success) {
+            callback();
+        }
+    });
+}
+displayUsersModel.rename = function(serial, name, callback) {
+    requestPost("rename", {target:serial, name:name}, function(json) {
+        if (json.success) {
+            callback();
+        }
+    });
+}
+displayUsersModel.deluser = function(serial, callback) {
+    requestPost("disable", {target:serial}, function(json) {
+        if (json.success) {
+            callback();
+        }
+    });
+}
+displayUsersModel.auths = function() {
+    return this.authLevels;
 }
 
 function displayUsers() {
     var divContentPanel = $(".div_content_panel");
     var waitingTemplate = templates.read(".hd_display_loading");
     divContentPanel.html(waitingTemplate({refreshing_data: true}));
+
+    displayUsersModel.get(function(usersData) {
+        divContentPanel.html($(".hd_users_all").html());
+        var divUserContainer = divContentPanel.find(".div_users_list");
+
+        var userItemBlocks = [];
+        var associateBlockInfo = null;
+        var userItemTemplate = templates.read(".hd_user_item");
+        for (var i = 0; i < usersData.length; ++i) {
+            (function() {
+                var userInfo = usersData[i];
+                var superAdmin = userInfo.auth > 3;
+                var authorized = userInfo.auth > 0;
+                var userBlockInfo = {
+                    name:userInfo.name,
+                    superAdmin:superAdmin,
+                    authorized:authorized,
+                    auths: displayUsersModel.auths(),
+                };
+                var divUserItemBlock = $(userItemTemplate(userBlockInfo));
+                divUserItemBlock.appendTo(divUserContainer);
+
+                userBlockInfo.block = divUserItemBlock;
+                userBlockInfo.serial = userInfo.serial;
+                userItemBlocks.push(userBlockInfo);
+
+                if (userInfo.serial == StorageItem().serial) {
+                    divUserItemBlock.addClass("user_myself");
+                }
+
+                var divUserDelete = divUserItemBlock.find(".div_user_delete");
+                divUserDelete.click(function() {
+                    if (confirm("确认删除'" + userInfo.name + "'？")) {
+                        displayUsersModel.deluser(userInfo.serial, displayUsers);
+                    }
+                });
+
+                var divUserName = divUserItemBlock.find(".div_user_name");
+                var inputUserName = divUserItemBlock.find(".input_user_name");
+                inputUserName.hide();
+                divUserName.click(function() {
+                    divUserName.hide();
+                    inputUserName.show();
+                    inputUserName.focus();
+                    inputUserName.select();
+                });
+                inputUserName.keypress(function(e) {
+                    if (e.which == 13) {
+                        inputUserName.blur();
+                    }
+                });
+                inputUserName.blur(function() {
+                    var newName = inputUserName.val();
+                    inputUserName.hide();
+                    divUserName.show();
+                    if (newName != userInfo.name) {
+                        displayUsersModel.rename(userInfo.serial, newName, function() {
+                            userInfo.name = newName;
+                            userBlockInfo.name = newName;
+                            divUserName.html(newName);
+                            inputUserName.val(newName);
+                        });
+                    }
+                });
+
+                if (authorized && !superAdmin) {
+                    var selectAuthLevel = divUserItemBlock.find(".div_user_select_auth_level");
+                    selectAuthLevel.val(userInfo.auth);
+                    selectAuthLevel.change(function() {
+                        var level = selectAuthLevel.val();
+                        if (confirm("确认为'" + userInfo.name + "'修改权限？")) {
+                            displayUsersModel.promote(userInfo.serial, level, displayUsers);
+                        }
+                        selectAuthLevel.val(userInfo.auth);
+                    });
+                } else if (!authorized) {
+                    var divNewUser = divUserItemBlock.find(".div_user_auth_new");
+                    divNewUser.click(function() {
+                        if (confirm("确认为'" + userInfo.name + "'创建用户？")) {
+                            displayUsersModel.newuser(userInfo.serial, displayUsers);
+                        }
+                    });
+                    var divAssociateUser = divUserItemBlock.find(".div_user_auth_target");
+                    divAssociateUser.click(function() {
+                        associateBlockInfo = userBlockInfo;
+                        for (var i = 0; i < userItemBlocks.length; ++i) {
+                            var blockInfo = userItemBlocks[i];
+                            if (blockInfo.authorized) {
+                                blockInfo.block.addClass("user_clickable");
+                            } else {
+                                blockInfo.block.addClass("user_unclickable");
+                            }
+                        }
+                        return false;
+                    });
+                }
+
+                divUserItemBlock.click(function() {
+                    console.log("ttclicked", associateBlockInfo);
+                    if (associateBlockInfo) {
+                        var baseSerial = associateBlockInfo.serial;
+                        var name = associateBlockInfo.name;
+                        associateBlockInfo = null;
+                        for (var i = 0; i < userItemBlocks.length; ++i) {
+                            var userBlockInfo = userItemBlocks[i];
+                            userBlockInfo.block.removeClass("user_clickable");
+                            userBlockInfo.block.removeClass("user_unclickable");
+                        }
+                        if (authorized) {
+                            if (confirm("确认关联用户'" + name + "'到'" + userInfo.name + "'？")) {
+                                displayUsersModel.associate(baseSerial, userInfo.serial, displayUsers);
+                            }
+                        }
+                    }
+                });
+            })();
+        }
+    });
 }

@@ -68,6 +68,7 @@ Base.extends("Responder", {
 	},
 
 	addError:function(err) {
+		console.log("error generated:", err);
 		this.errorInfo.push(err);
 	},
 	getErrors:function() {

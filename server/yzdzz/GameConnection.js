@@ -503,5 +503,6 @@ Base.extends("GameConnection", {
         this.regMsg("UnionWar", "sync", (data) => {});
         this.regMsg("UnionWar", "occupy", (data) => {});
         this.regMsg("UnionWar", "leave", (data) => {});
+        this.regMsg("League", "warClose", (data) => {});
     },
 });

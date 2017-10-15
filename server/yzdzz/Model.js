@@ -59,13 +59,13 @@ $HttpModel.addClass({
 
             var userStates = $StateManager.getState(USER_CONFIG);
             var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData.userKey) {
+            if (!keyData || !keyData.userKey) {
                 responder.addError("Not an authorized user.");
                 return responder.respondJson({}, done);
             }
 
             var userData = userStates.users[keyData.userKey];
-            if (userData.auth < 1) {
+            if (!userData || userData.auth < 1) {
                 responder.addError("Admin level not enough.");
                 return responder.respondJson({}, done);
             }
@@ -93,12 +93,17 @@ $HttpModel.addClass({
 
             var userStates = $StateManager.getState(USER_CONFIG);
             var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData.userKey) {
+            if (!keyData || !keyData.userKey) {
                 responder.addError("Not an authorized user.");
                 return responder.respondJson({}, done);
             }
 
             var userData = userStates.users[keyData.userKey];
+            if (!userData || userData.auth < 1) {
+                responder.addError("Admin level not enough.");
+                return responder.respondJson({}, done);
+            }
+
             var funcs = [];
             for (var i = 0; i < allFuncs.length; ++i) {
                 if (userData.auth >= allFuncs[i].authBase) {
