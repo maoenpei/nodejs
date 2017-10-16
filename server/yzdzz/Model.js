@@ -6,6 +6,7 @@ require("./GameController");
 
 GAME_ACCOUNTS_CONFIG = "GameAcounts.d";
 GAME_SETTING_CONFIG = "GameSetting.d";
+GAME_POWER_MAX_CONFIG = "GamePowerMax.d";
 
 var allFuncs = [
     {name:"kingwar", authBase:1},
@@ -37,19 +38,29 @@ $HttpModel.addClass({
                     accountKey:this.accountManager.add(accountInfo.username, accountInfo.password),
                 };
             }
+            yield $StateManager.openState(GAME_POWER_MAX_CONFIG, null, next);
+            var allPowerMax = $StateManager.getState(GAME_POWER_MAX_CONFIG);
+            this.controller.setMaxPowers(allPowerMax);
             yield $StateManager.openState(GAME_SETTING_CONFIG, null, next);
             var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
             for (var i = 0; i < settingStates.players.length; ++i) {
                 var playerConfig = settingStates.players[i];
                 var accountInfo = this.accounts[playerConfig.account];
-                this.controller.setPlayerListAccount(accountInfo.accountKey, playerConfig.server, 8, 3, 3000000);
+                this.controller.setPlayerListAccount(accountInfo.accountKey, playerConfig.server, 2, 3, 3000000);
             }
             for (var i = 0; i < settingStates.kingwar.length; ++i) {
                 var kingwarConfig = settingStates.kingwar[i];
                 var accountInfo = this.accounts[kingwarConfig.account];
                 this.controller.setKingwarAccount(accountInfo.accountKey, kingwarConfig.server, 1, kingwarConfig.area, kingwarConfig.star);
             }
-            this.controller.startRefresh(60*5);
+            this.controller.startRefresh(60*5, (done) => {
+                var players = this.controller.getPlayers();
+                var allPowerMax = $StateManager.getState(GAME_POWER_MAX_CONFIG);
+                for (var playerId in players) {
+                    allPowerMax[playerId] = players[playerId].maxPower;
+                }
+                $StateManager.commitState(GAME_POWER_MAX_CONFIG, done);
+            });
             safe(done)();
         }, this);
     },

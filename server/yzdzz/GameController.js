@@ -69,6 +69,15 @@ Base.extends("GameController", {
     getUnions:function() {
         return this.allUnions;
     },
+    //API
+    setMaxPowers:function(allPowerMax) {
+        for (var playerId in allPowerMax) {
+            var playerInfo = this.allPlayers[playerId];
+            playerInfo = (playerInfo ? playerInfo : {});
+            playerInfo.maxPower = allPowerMax[playerId];
+            this.allPlayers[playerId] = playerInfo;
+        }
+    },
     initPlayers:function() {
         this.allUnions = {};
         this.allPlayers = {};
@@ -98,7 +107,7 @@ Base.extends("GameController", {
                     for (var j = 0; j < playersData.players.length; ++j) {
                         var playerItem = playersData.players[j];
                         var playerData = this.allPlayers[playerItem.playerId];
-                        var lastPower = (playerData ? playerData.power : 0);
+                        var lastPower = (playerData ? playerData.maxPower : 0);
                         var maxPower = (playerItem.power > lastPower ? playerItem.power : lastPower);
                         if (maxPower > refreshData.minPower) {
                             playerData = {
@@ -199,11 +208,11 @@ Base.extends("GameController", {
         }, this);
     },
 
-    startRefresh:function(interval) {
+    startRefresh:function(interval, callback) {
         if (this.refreshUnique) {
             return;
         }
-        var mark = {};
+        var mark = { callback: callback };
         this.refreshUnique = mark;
         var next = coroutine(function*() {
             while(this.refreshUnique === mark) {
@@ -230,6 +239,9 @@ Base.extends("GameController", {
                         item.index = (item.index + 1) % item.count;
                     }
                     conn.quit();
+                }
+                if (mark.callback) {
+                    yield mark.callback(next);
                 }
                 console.log("waiting {0} seconds...".format(interval));
                 yield setTimeout(next, interval * 1000);

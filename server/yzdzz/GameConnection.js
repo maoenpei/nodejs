@@ -254,7 +254,7 @@ Base.extends("GameConnection", {
             for (var i = 0; i < data.members.length; ++i) {
                 var item = data.members[i];
                 players.push({
-                    playerId: item.id,
+                    playerId: item.uid,
                     name: item.role_name,
                     power: item.cpi,
                     level: item.level,
