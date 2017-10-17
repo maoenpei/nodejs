@@ -4,7 +4,7 @@ require("../LoginManager");
 require("../StateManager");
 require("./GameController");
 
-var RefreshInterval = 60 * 8;
+var RefreshInterval = 60 * 6;
 
 GAME_ACCOUNTS_CONFIG = "GameAcounts.d";
 GAME_SETTING_CONFIG = "GameSetting.d";
