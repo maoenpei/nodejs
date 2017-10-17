@@ -3,6 +3,8 @@ require("../Base");
 require("../StateManager");
 require("../LoginManager");
 
+var AuthorizeOnlySuperAdmin = true;
+
 USER_CONFIG = "UserStates.d";
 BREAKIN_CONFIG = "Breakin.d";
 
@@ -57,13 +59,13 @@ $HttpModel.addClass({
                 return responder.respondJson({}, done);
             }
 
-            var userData = userStates.users[keyData.userKey];
-            if (!userData || userData.auth < 3) {
+            var rootUserData = userStates.users[keyData.userKey];
+            if (!rootUserData || rootUserData.auth < 3) {
                 responder.addError("Admin level not enough.");
                 return responder.respondJson({}, done);
             }
-            var json = yield requestor.visitBodyJson(next);
 
+            var json = yield requestor.visitBodyJson(next);
             if (!json || !json.jetson) {
                 responder.addError("Parameter data not correct.");
                 return responder.respondJson({}, done);
@@ -93,7 +95,9 @@ $HttpModel.addClass({
                 }
             }
 
+            var canAuthorize = (AuthorizeOnlySuperAdmin ? rootUserData.auth >= 4 : true);
             responder.respondJson({
+                canAuthorize: canAuthorize,
                 users: allUsers,
             }, done);
         }, this);
@@ -313,6 +317,10 @@ $HttpModel.addClass({
                 nextUserKey = this.createUser();
                 userStates.users[nextUserKey].auth = 1;
             } else {
+                if (AuthorizeOnlySuperAdmin && userData.auth < 4) {
+                    responder.addError("Admin level not enough.");
+                    return responder.respondJson({}, done);
+                }
                 var lastData = userStates.keys[lastSerial];
                 if (!lastData.userKey) {
                     responder.addError("Fail to authorize user.");

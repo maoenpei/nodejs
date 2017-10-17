@@ -18,7 +18,7 @@ var servers = [
     "s93", "s94", "s95", "s96", 
 ];
 
-var friendUnion = ["b275705814a85d98", "b3bdc946b8285de7"];
+var friendUnion = ["b275705814a85d98", "b3b459f1b6a85a2a", "b3b455b0e2a85cc1"];
 var enemyUnion = ["b26d0533bba85c43"];
 
 var throwCard = true;

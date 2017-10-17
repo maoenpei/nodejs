@@ -19,7 +19,7 @@ Base.extends("$StateManager", {
         } else {
             this.canSave[fileName] = true;
             $FileManager.visitFile(path, (data) => {
-                this.fileStates[fileName] = JSON.parse(data.toString());
+                this.fileStates[fileName] = (data ? JSON.parse(data.toString()) : {});
                 safe(done)();
             });
         }

@@ -98,7 +98,9 @@
                 </select>
                 {{else}}
                 <div class="div_user_auth_new visit_label">新用户</div>
-                <div class="div_user_auth_target visit_label">关联用户</div>
+                    {{#if associate}}
+                    <div class="div_user_auth_target visit_label">关联用户</div>
+                    {{/if}}
                 {{/if}}
             </div>
         </div>

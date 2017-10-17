@@ -136,8 +136,20 @@ $(function() {
     $(window).resize(adjustPageLayout);
 });
 
+var usedKeys = {
+    "defaultFunc":true,
+    "serial":true,
+};
+
 // login
 $(function() {
+    // delete unused old data.
+    var storage = StorageItem();
+    for (var key in storage) {
+        if (!usedKeys[key]) {
+            delete storage[key];
+        }
+    }
     var showLoginState = function(json) {
         var divContentPanel = $(".div_content_panel");
         var state = json.state;
@@ -178,12 +190,13 @@ $(function() {
 // supported funcs
 var displayFuncsModel = {
     supports:{
-        kingwar:{name:"帝国战", show:displayKingWar,},
+        refresh:{name:"刷新", click:clickRefresh, },
+        kingwar:{name:"帝国战", show:displayKingWar, },
         //players:{name:"玩家列表", },
         //serverInfo:{name:"信息", },
         //automation:{name:"自动化", },
         //setting:{name:"设置", },
-        users:{name:"用户", show:displayUsers,},
+        users:{name:"用户", show:displayUsers, },
     },
 };
 displayFuncsModel.get = function(callback){
@@ -199,19 +212,21 @@ displayFuncsModel.get = function(callback){
 }
 displayFuncsModel.show = function(funcKey) {
     var support = this.supports[funcKey];
-    console.log(support, funcKey);
+    console.log("show", support, funcKey);
     if (support && support.show) {
         support.show();
         return true;
     }
     return false;
 }
-
-var showFuncPanel = function(funcKey) {
-    StorageItem().defaultFunc = funcKey;
-    if (!displayFuncsModel.show(funcKey)) {
-        divContentPanel.html(waitingTemplate({state_error: true}));
+displayFuncsModel.click = function(funcKey) {
+    var support = this.supports[funcKey];
+    if (support && support.click) {
+        console.log("click", support, funcKey);
+        support.click();
+        return true;
     }
+    return false;
 }
 
 // show content
@@ -219,6 +234,14 @@ function displayFuncs() {
     var divContentPanel = $(".div_content_panel");
     var waitingTemplate = templates.read(".hd_display_loading");
     divContentPanel.html(waitingTemplate({getting_state: true}));
+
+    var showFuncPanel = function(funcKey) {
+        if (displayFuncsModel.show(funcKey)) {
+            StorageItem().defaultFunc = funcKey;
+        } else {
+            divContentPanel.html(waitingTemplate({state_error: true}));
+        }
+    }
 
     displayFuncsModel.get(function(funcs) {
         var supportFuncs = [];
@@ -246,12 +269,22 @@ function displayFuncs() {
                         defaultFunc = funcItem.funcKey;
                     }
                     block.click(function() {
-                        showFuncPanel(funcItem.funcKey);
+                        if (!displayFuncsModel.click(funcItem.funcKey)) {
+                            showFuncPanel(funcItem.funcKey);
+                        }
                     });
                 })();
             }
             showFuncPanel(defaultFunc);
         });
+    });
+}
+
+function clickRefresh() {
+    requestPost("manrefresh", {integrity:true}, function(json) {
+        if (json.success) {
+            //
+        }
     });
 }
 
@@ -411,11 +444,16 @@ var displayUsersModel = {
         {name:"自动", val:2},
         {name:"管理", val:3},
     ],
+    canAuthorize:false,
 };
+displayUsersModel.canAssociate = function() {
+    return this.canAuthorize;
+}
 displayUsersModel.get = function(callback) {
     $this = this;
     requestPost("listusers", {jetson:true}, function(json) {
         if (json.users) {
+            $this.canAuthorize = json.canAuthorize;
             $this.users = json.users;
             callback($this.users);
         }
@@ -482,6 +520,7 @@ function displayUsers() {
                     superAdmin:superAdmin,
                     authorized:authorized,
                     auths: displayUsersModel.auths(),
+                    associate: displayUsersModel.canAssociate(),
                 };
                 var divUserItemBlock = $(userItemTemplate(userBlockInfo));
                 divUserItemBlock.appendTo(divUserContainer);

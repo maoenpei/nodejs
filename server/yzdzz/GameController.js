@@ -44,6 +44,7 @@ Base.extends("GameController", {
 
         this.refreshUnique = null;
         this.refreshData = {};
+        this.refreshingState = false;
         this.initKingwar();
         this.initPlayers();
     },
@@ -74,7 +75,7 @@ Base.extends("GameController", {
         for (var playerId in allPowerMax) {
             var playerInfo = this.allPlayers[playerId];
             playerInfo = (playerInfo ? playerInfo : {});
-            playerInfo.maxPower = allPowerMax[playerId];
+            playerInfo.maxPower = allPowerMax[playerId].maxPower;
             this.allPlayers[playerId] = playerInfo;
         }
     },
@@ -198,7 +199,7 @@ Base.extends("GameController", {
                 players.push({
                     union: playerData.union,
                     name: playerData.name,
-                    power: (constant && playerExtraData ? playerExtraData.power : playerData.power),
+                    power: playerData.power,
                     maxPower: (playerExtraData ? playerExtraData.maxPower : 0),
                 });
             }
@@ -212,44 +213,61 @@ Base.extends("GameController", {
         if (this.refreshUnique) {
             return;
         }
+        console.log("refreshing start!");
         var mark = { callback: callback };
         this.refreshUnique = mark;
         var next = coroutine(function*() {
             while(this.refreshUnique === mark) {
+                this.refreshingState = true;
                 for (var accountGameKey in this.refreshData) {
+                    if (this.refreshUnique !== mark) {
+                        break;
+                    }
+
                     var refreshInfo = this.refreshData[accountGameKey];
-                    var conn = this.accountManager.connectAccount(refreshInfo.account);
-                    var data = yield conn.loginAccount(next);
-                    if (!data.success) {
-                        this.errLog("connectAccount", "account({0}), server({1})".format(conn.getUsername(), refreshInfo.server));
-                        continue;
-                    }
-                    var data = yield conn.loginGame(refreshInfo.server, next);
-                    if (!data.success) {
-                        this.errLog("loginGame", "account({0}), server({1})".format(conn.getUsername(), refreshInfo.server));
-                        continue;
-                    }
-                    yield conn.autoSign(next);
-                    var funcs = refreshInfo.funcs;
-                    for (var i = 0; i < funcs.length; ++i) {
-                        var item = funcs[i];
+                    var executables = [];
+                    for (var i = 0; i < refreshInfo.funcs.length; ++i) {
+                        var item = refreshInfo.funcs[i];
                         if (item.index == 0) {
-                            yield item.func(conn, next);
+                            executables.push(item.func);
                         }
                         item.index = (item.index + 1) % item.count;
                     }
-                    conn.quit();
+
+                    if (executables.length > 0) {
+                        var conn = this.accountManager.connectAccount(refreshInfo.account);
+                        var data = yield conn.loginAccount(next);
+                        if (!data.success) {
+                            this.errLog("connectAccount", "account({0}), server({1})".format(conn.getUsername(), refreshInfo.server));
+                            continue;
+                        }
+                        var data = yield conn.loginGame(refreshInfo.server, next);
+                        if (!data.success) {
+                            this.errLog("loginGame", "account({0}), server({1})".format(conn.getUsername(), refreshInfo.server));
+                            continue;
+                        }
+                        yield conn.autoSign(next);
+                        for (var i = 0; i < executables.length; ++i) {
+                            yield executables[i](conn, next);
+                        }
+                        conn.quit();
+                    }
                 }
+                this.refreshingState = false;
                 if (mark.callback) {
                     yield mark.callback(next);
                 }
                 console.log("waiting {0} seconds...".format(interval));
                 yield setTimeout(next, interval * 1000);
             }
+            console.log("refreshing quit!");
         }, this);
     },
     cancelRefresh:function() {
         this.refreshUnique = null;
+    },
+    isRefreshing:function() {
+        return this.refreshingState;
     },
 
     errLog:function(action, state) {
