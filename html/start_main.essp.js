@@ -41,10 +41,12 @@ var sendAjax = function(method, url, postData, callback) {
         type:method,
         url:url,
         data:(postData ? JSON.stringify(postData) : null),
-        success:safe(protCallback),
+        success:function(returnData) {
+            safe(protCallback)(returnData);
+        },
         error:function() {
             safe(protCallback)(null);
-        }
+        },
     });
 };
 
