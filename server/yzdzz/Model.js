@@ -14,7 +14,6 @@ GAME_UNIONS_CONFIG = "GameUnions.d";
 var allFuncs = [
     {name:"refresh", authBase:2},
     {name:"kingwar", authBase:1},
-    {name:"players", authBase:1},
     {name:"serverInfo", authBase:1},
     {name:"automation", authBase:2},
     {name:"setting", authBase:3},

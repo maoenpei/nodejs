@@ -71,8 +71,15 @@
 </script>
 <script type="text/x-handlebars-template" class="hd_navigate_star_item">
         <div class="div_navigate_star">
-            <div class="div_navigate_star_name">{{name}}</div>
-            <div class="div_navigate_star_max">最高:{{power}}万</div>
+            <div class="div_navigate_star_name">
+                {{name}}
+                <div class="div_navigate_star_num">({{count}})</div>
+            </div>
+            <div class="div_navigate_star_max">
+                {{#each powers}}
+                <div class="div_navigate_star_power">{{number}}万</div>
+                {{/each}}
+            </div>
         </div>
 </script>
 <script type="text/x-handlebars-template" class="hd_users_all">

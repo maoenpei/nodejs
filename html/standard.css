@@ -157,14 +157,28 @@ body{
 }
 .div_navigate_star{
     margin:0.2rem;
-    width:6rem;
+    width:11rem;
     height:2.2rem;
     background:rgba(222, 160, 0, 0.8);
 }
 .div_navigate_star_name{
+    font-size: 0.7rem;
+}
+.div_navigate_star_num{
+    display:inline-block;
+    margin-left: 0.3rem;
+    font-size: 0.7rem;
 }
 .div_navigate_star_max{
-    font-size:0.53rem;
+    font-size:0.6rem;
+}
+.div_navigate_star_power{
+    display: inline-block;
+    margin-right: 0.2rem;
+    margin-left: 0.2rem;
+}
+.div_navigate_star_power_max{
+    font-size: 0.8rem;
 }
 
 .div_users_list{

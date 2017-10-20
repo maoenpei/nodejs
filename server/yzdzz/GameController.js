@@ -111,7 +111,7 @@ Base.extends("GameController", {
                         var lastPower = (playerData ? playerData.maxPower : 0);
                         var maxPower = (playerItem.power > lastPower ? playerItem.power : lastPower);
                         if (maxPower > refreshData.minPower) {
-                            playerData = {
+                            this.allPlayers[playerItem.playerId] = {
                                 server: refreshData.server,
                                 unionId: unionItem.unionId,
                                 name: playerItem.name,
@@ -120,7 +120,6 @@ Base.extends("GameController", {
                                 level: playerItem.level,
                                 lastLogin: playerItem.lastLogin,
                             };
-                            this.allPlayers[playerItem.playerId] = playerData;
                         }
                     }
                 }
@@ -150,11 +149,23 @@ Base.extends("GameController", {
         var areastars = {};
         for (var key in this.kingwarRefs) {
             var data = this.kingwarRefs[key];
-            areastars[key] = (data.players ? data.players : []);
+            areastars[key] = [];
+            for (var i = 0; i < data.players.length; ++i) {
+                var warPlayer = data.players[i];
+                var extraPlayerData = this.allPlayers[warPlayer.playerId];
+                areastars[key].push({
+                    union: warPlayer.union,
+                    power: warPlayer.power,
+                    name: (extraPlayerData && extraPlayerData.name ? extraPlayerData.name : warPlayer.name),
+                    maxPower: (extraPlayerData ? extraPlayerData.maxPower : warPlayer.power),
+                });
+            }
         }
         return areastars;
     },
     initKingwar:function() {
+        this.constantKingwar = false;
+        this.playerToKingwar = {};
         this.kingwarRefs = {};
         for (var area = 1; area <= 3; ++area) {
             for (var star = 1; star <= 10; ++star) {
@@ -171,6 +182,12 @@ Base.extends("GameController", {
             console.log("refreshKingwar..");
             var data = yield conn.getKingWar(next);
             var constant = !data.allowJoin;
+            if (this.constantKingwar && !constant) {
+                this.constantKingwar = false;
+                this.playerToKingwar = {};
+            } else if (!this.constantKingwar && constant) {
+                this.constantKingwar = true;
+            }
             if (!data.joined && data.allowJoin) {
                 var joinData = yield conn.joinKingWar(refreshData.area, refreshData.star, next);
                 if (!joinData.success) {
@@ -186,22 +203,24 @@ Base.extends("GameController", {
                 this.errLog("getKingWarPlayers", "server({2}) area({0}), star({1})".format(refreshData.area, refreshData.star, refreshData.server));
                 return safe(done)();
             }
+
             var realKey = data.areaId * 100 + data.starId;
             var realData = this.kingwarRefs[realKey];
             refreshData.refData = realData;
             if (realKey != refreshData.key) {
                 console.log("kingwar search key({0}) doesn't equal to result key({1})".format(refreshData.key, realKey));
             }
+
             var players = [];
             for (var i = 0; i < data.players.length; ++i) {
                 var playerData = data.players[i];
-                var playerExtraData = this.allPlayers[playerData.playerId];
                 players.push({
+                    playerId: playerData.playerId,
                     union: playerData.union,
                     name: playerData.name,
                     power: playerData.power,
-                    maxPower: (playerExtraData ? playerExtraData.maxPower : 0),
                 });
+                this.playerToKingwar[playerData.playerId] = realKey;
             }
             realData.constant = constant;
             realData.players = players;

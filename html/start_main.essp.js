@@ -190,9 +190,8 @@ $(function() {
 // supported funcs
 var displayFuncsModel = {
     supports:{
-        refresh:{name:"刷新", click:clickRefresh, },
+        refresh:{name:"更新", click:clickRefresh, },
         kingwar:{name:"帝国战", show:displayKingWar, },
-        //players:{name:"玩家列表", },
         //serverInfo:{name:"信息", },
         //automation:{name:"自动化", },
         //setting:{name:"设置", },
@@ -283,7 +282,7 @@ function displayFuncs() {
 function clickRefresh() {
     requestPost("manrefresh", {integrity:true}, function(json) {
         if (json.success) {
-            //
+            alert("成功开始更新数据!");
         }
     });
 }
@@ -299,8 +298,41 @@ displayKingWarModel.get = function(callback) {
     $this = this;
     requestGet("kingwarinfo", function(json) {
         $this.kingwar = json;
+        for (var key in json.areastars) {
+            var areastarData = json.areastars[key];
+            for (var i = 0; i < areastarData.length; ++i) {
+                var player = areastarData[i];
+                player.showMax = player.maxPower > player.power + 200000;
+                player.unionShort = player.union.substr(4);
+            }
+        }
         callback($this.kingwar);
     });
+}
+displayKingWarModel.firstThree = function(key) {
+    var areastarData = this.kingwar.areastars[key];
+    var firstThreeData = [];
+    var copiedAreastarData = [];
+    for (var i = 0; i < areastarData.length; ++i) {
+        copiedAreastarData[i] = areastarData[i];
+    }
+    for (var i = 0; i < 3; ++i) {
+        var maxPower = 0;
+        var maxIndex = -1;
+        for (var j = 0; j < copiedAreastarData.length; ++j) {
+            var player = copiedAreastarData[j];
+            if (player.maxPower > maxPower) {
+                maxPower = player.maxPower;
+                maxIndex = j;
+            }
+        }
+        if (maxIndex < 0) {
+            break;
+        }
+        firstThreeData.push(copiedAreastarData[maxIndex]);
+        copiedAreastarData.splice(maxIndex, 1);
+    }
+    return firstThreeData;
 }
 displayKingWarModel.areaName = function(area) {
     return this.areaNames[String(area)];
@@ -365,16 +397,28 @@ function displayKingWar() {
                             var key = areaId * 100 + star;
                             var areastarData = data.areastars[key];
                             var areastar = areastarInfo[key];
-                            var player = (areastarData && areastarData.length > 0 ? areastarData[0] : null);
-                            var power = power = (player ? Math.floor(player.power / 10000) : 0);
-                            var divNavStarBlock = $(navigateStarTemplate({
+                            var players = displayKingWarModel.firstThree(key);
+                            var navStarInfo = {
                                 name:areastar.name,
-                                power: power,
-                            }));
+                                count: areastarData.length,
+                                powers: [],
+                            };
+                            for (var i = 0; i < players.length; ++i) {
+                                navStarInfo.powers.push({
+                                    number: players[i].unionShort + "." + Math.floor(players[i].maxPower / 10000),
+                                });
+                            }
+                            var divNavStarBlock = $(navigateStarTemplate(navStarInfo));
                             divNavStarBlock.appendTo(divNavStarList);
                             divNavStarBlock.find(".div_navigate_star_name").addClass(areaColor);
-                            var starColor = (player ? displayKingWarModel.unionColor(player.union) : "");
-                            divNavStarBlock.find(".div_navigate_star_max").addClass(starColor);
+                            var divPowerDisplays = divNavStarBlock.find(".div_navigate_star_power");
+                            for (var i = 0; i < players.length; ++i) {
+                                var unionColor = displayKingWarModel.unionColor(players[i].union);
+                                $(divPowerDisplays[i]).addClass(unionColor);
+                                if (i == 0) {
+                                    $(divPowerDisplays[i]).addClass("div_navigate_star_power_max");
+                                }
+                            }
                             divNavStarBlock.click(function() {
                                 var targetBlock = areastar.block;
                                 var top = targetBlock.position().top;
@@ -386,6 +430,7 @@ function displayKingWar() {
 
                 for (var star = 10; star >= 1; star--) {
                     var key = areaId * 100 + star;
+                    var areastarData = data.areastars[key];
                     var areastar = {
                         area:areaId,
                         star:star,
@@ -399,13 +444,12 @@ function displayKingWar() {
                     areastar.container = playersContainer;
                     areastar.block = divAreaStarBlock;
                     areastarInfo[key] = areastar;
-                    var areastarData = data.areastars[key];
                     if (areastarData && areastarData.length > 0) {
                         playersContainer.html("正在加载...");
                         for (var i = 0; i < areastarData.length; ++i) {
                             var player = areastarData[i];
                             var power = Math.floor(player.power / 10000) + "万";
-                            if (player.maxPower > 0 && player.maxPower > player.power + 200000) {
+                            if (player.showMax) {
                                 power = "(" + Math.floor(player.maxPower / 10000) + "万)" + power;
                             }
                             playerInfo.push({
