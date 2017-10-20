@@ -40,14 +40,14 @@ body{
     color:#c0f;
 }
 
-.visit_label:hover, .div_navigate_area:hover, .div_navigate_star:hover{
+.visit_label:hover, .div_navigate_area:hover, .div_navigate_star:hover, .div_show_players:hover{
     color:red;
     cursor:hand;
 }
-.visit_label:active, .div_navigate_area:active, .div_navigate_star:active{
+.visit_label:active, .div_navigate_area:active, .div_navigate_star:active, .div_show_players:active{
     color:#bd1551;
 }
-.visit_label:visited, .div_navigate_area:visited, .div_navigate_star:visited{
+.visit_label:visited, .div_navigate_area:visited, .div_navigate_star:visited, .div_show_players:visited{
     color:blue;
 }
 
@@ -125,6 +125,20 @@ body{
     color:#709;
 }
 
+.div_show_players{
+    position:fixed;
+    z-index:12;
+    left:0.5rem;
+    top:6rem;
+    padding-top:0.3rem;
+    margin:0.6rem;
+    width:5rem;
+    height:2.0rem;
+    font-size:0.9rem;
+    color: rgb(50, 0, 255);
+    background:rgba(200, 127, 0, 0.6);
+}
+
 .div_navigate_areas, .div_navigate_stars{
     position:fixed;
     z-index:12;
@@ -134,7 +148,7 @@ body{
 }
 .div_navigate_areas{
     left:0.5rem;
-    bottom:6rem;
+    bottom:4rem;
 }
 .div_navigate_stars{
     left:4.5rem;

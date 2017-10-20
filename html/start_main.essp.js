@@ -366,7 +366,9 @@ function displayKingWar() {
         var divNavAreaList = divContentPanel.find(".div_navigate_areas");
         var divNavStarList = divContentPanel.find(".div_navigate_stars");
         var divNavAreaStarMask = divContentPanel.find(".div_navigate_stars_mask");
+        var navAreaId = 0;
         unique_click(divNavAreaStarMask, function() {
+            navAreaId = 0;
             divNavAreaStarMask.hide();
         });
 
@@ -375,7 +377,6 @@ function displayKingWar() {
         var areastarTemplate = templates.read(".hd_kingwar_areastar");
         var navigateAreaTemplate = templates.read(".hd_navigate_area_item");
         var navigateStarTemplate = templates.read(".hd_navigate_star_item");
-        var navAreaId = 0;
         for (var area = 1; area <= 3; area++) {
             (function() {
                 var areaId = area;
