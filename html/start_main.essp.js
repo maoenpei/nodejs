@@ -20,15 +20,30 @@ var tmpsafe = function(){};
 var safe = function(callback) {
     return (callback ? callback : tmpsafe);
 };
+var protToken = null;
+var prot = function(callback) {
+    if (protToken) {
+        console.log("break some operation!", protToken.callback);
+    }
+    var token = { callback: callback };
+    protToken = token;
+    return function() {
+        if (token === protToken) {
+            protToken = null;
+            safe(callback).apply(this, arguments);
+        }
+    };
+};
 
 var sendAjax = function(method, url, postData, callback) {
+    var protCallback = prot(callback);
     $.ajax({
         type:method,
         url:url,
         data:(postData ? JSON.stringify(postData) : null),
-        success:safe(callback),
+        success:safe(protCallback),
         error:function() {
-            safe(callback)(null);
+            safe(protCallback)(null);
         }
     });
 };
@@ -54,30 +69,6 @@ var requestPost = function (url, postData, callback) {
 
 var requestGet = function(url, callback) {
     sendAjaxJSON("GET", urlRoot + "/" + url, null, safe(callback));
-};
-
-var uploadFile = function(url, callback) {
-    var formUploader = $("<form></form>");
-    formUploader.attr("enctype", "multipart/form-data");
-
-    var fileLoader = $("<input/>");
-    fileLoader.attr("type", "file");
-    fileLoader.attr("accept", ".*");
-    fileLoader.appendTo(formUploader);
-
-    fileLoader.change(function() {
-        var formData = new FormData(formUploader[0]);
-        formData.append("file", fileLoader[0].files[0]);
-        $.ajax({
-            type:"POST",
-            url:urlRoot + "/" + url,
-            data:formData,
-            processData:false,
-            contentType:false,
-            success:callback,
-        });
-    });
-    fileLoader.click();
 };
 
 // template parser
@@ -108,6 +99,7 @@ templates.delayLoad = function(templateCls, items, callback) {
         }
         result.push($(template(items[index++])));
         if (index == items.length) {
+            $this.loading = null;
             callback(result);
         } else {
             setTimeout(load, 0);
@@ -213,6 +205,7 @@ displayFuncsModel.show = function(funcKey) {
     var support = this.supports[funcKey];
     console.log("show", support, funcKey);
     if (support && support.show) {
+        templates.cancel();
         support.show();
         return true;
     }
@@ -282,7 +275,10 @@ function displayFuncs() {
 function clickRefresh() {
     requestPost("manrefresh", {integrity:true}, function(json) {
         if (json.success) {
-            alert("成功开始更新数据!");
+            setTimeout(prot(function() {
+                window.location.reload();
+            }), 30 * 1000);
+            alert("后台开始更新数据，30秒后刷新页面!");
         }
     });
 }
@@ -379,6 +375,7 @@ function displayKingWar() {
         var areastarTemplate = templates.read(".hd_kingwar_areastar");
         var navigateAreaTemplate = templates.read(".hd_navigate_area_item");
         var navigateStarTemplate = templates.read(".hd_navigate_star_item");
+        var navAreaId = 0;
         for (var area = 1; area <= 3; area++) {
             (function() {
                 var areaId = area;
@@ -390,6 +387,12 @@ function displayKingWar() {
                 divNavAreaBlock.appendTo(divNavAreaList);
                 divNavAreaBlock.addClass(areaColor);
                 divNavAreaBlock.click(function() {
+                    if (navAreaId == areaId) {
+                        navAreaId = 0;
+                        divNavAreaStarMask.hide();
+                        return;
+                    }
+                    navAreaId = areaId;
                     divNavStarList.html("");
                     divNavAreaStarMask.show();
                     for (var star = 10; star >= 1; star--) {
