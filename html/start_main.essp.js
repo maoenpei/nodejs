@@ -134,6 +134,7 @@ var usedKeys = {
     "defaultFunc":true,
     "serial":true,
     "showKingwar":true,
+    "showQuit":true,
 };
 
 // login
@@ -339,6 +340,7 @@ playerCommon.duration = function(lasttime) {
     var color = "rgb(" + String(Math.floor(T*255)) + "," + String(Math.floor(Y*255)) + ",0)";
 
     var desc = "> 7天";
+    var quit = false;
     if (seconds < 60) {
         desc = "< 1分钟";
     } else if (seconds < 3600) {
@@ -351,9 +353,11 @@ playerCommon.duration = function(lasttime) {
         desc = "2天" + String(Math.floor((seconds - 2 * 24 * 3600) / 3600)) + "小时";
     } else if (seconds < 7 * 24 * 3600) {
         desc = String(Math.floor(seconds / 3600 / 24)) + "天";
+    } else {
+        quit = true;
     }
 
-    return {color:color, desc:desc};
+    return {color:color, desc:desc, quit:quit};
 }
 
 var displayPlayerListModel = {
@@ -381,12 +385,25 @@ function displayPlayerList() {
             loadPlayers();
         });
 
+        var divShowQuit = divContentPanel.find(".div_show_quit");
+        unique_click(divShowQuit, function() {
+            StorageItem().showQuit = (StorageItem().showQuit == "true" ? "false" : "true");
+            loadPlayers();
+        });
+
         var loadPlayers = function() {
             var showKingwar = StorageItem().showKingwar == "true";
             if (showKingwar) {
-                divShowKingwar.addClass("div_show_kingwar_checked");
+                divShowKingwar.addClass("div_show_checked");
             } else {
-                divShowKingwar.removeClass("div_show_kingwar_checked");
+                divShowKingwar.removeClass("div_show_checked");
+            }
+
+            var showQuit = StorageItem().showQuit == "true";
+            if (showQuit) {
+                divShowQuit.addClass("div_show_checked");
+            } else {
+                divShowQuit.removeClass("div_show_checked");
             }
 
             var divPlayerList = divContentPanel.find(".div_player_list");
@@ -399,6 +416,10 @@ function displayPlayerList() {
                     continue;
                 }
                 var duration = playerCommon.duration(playerData.last);
+                console.log(showQuit, duration.quit);
+                if (!showQuit && duration.quit) {
+                    continue;
+                }
                 playerInfo.push({
                     union_short: playerData.server + "." + playerData.uShort,
                     name: playerData.name,

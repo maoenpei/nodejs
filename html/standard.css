@@ -239,7 +239,7 @@ body{
 }
 .div_player_item_last_content{
 }
-.div_show_kingwar{
+.div_show_kingwar, .div_show_quit{
     position:fixed;
     z-index:10;
     text-align:center;
@@ -250,10 +250,15 @@ body{
     width:4.2rem;
     height:2.3rem;
     right: 1.5rem;
-    top: 6rem;
     background:rgba(200, 127, 0, 0.4);
 }
-.div_show_kingwar_checked{
+.div_show_kingwar{
+    top: 6rem;
+}
+.div_show_quit{
+    top: 9rem;
+}
+.div_show_checked{
     border: 2px solid #0ad;
 }
 
