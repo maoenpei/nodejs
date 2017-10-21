@@ -599,6 +599,7 @@ function displayKingWar() {
                             }
                             playerInfo.push({
                                 first: i == 0,
+                                inlist: i < 16,
                                 union: player.union,
                                 name: player.name,
                                 power: power,
@@ -620,7 +621,7 @@ function displayKingWar() {
                     playersContainer.html("");
                 }
                 playerBlock.appendTo(playersContainer);
-                if (i >= 16) {
+                if (!info.inlist) {
                     playerBlock.find(".div_player_union").addClass("div_player_block_not_in");
                     playerBlock.find(".div_player_name").addClass("div_player_block_not_in");
                     playerBlock.find(".div_player_power").addClass("div_player_block_not_in");
