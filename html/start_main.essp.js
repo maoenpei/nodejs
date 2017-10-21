@@ -599,8 +599,14 @@ function displayKingWar() {
                     playersContainer.html("");
                 }
                 playerBlock.appendTo(playersContainer);
-                var unionColor = playerCommon.unionColor(info.union);
-                playerBlock.find(".div_player_union").addClass(unionColor);
+                if (i >= 16) {
+                    playerBlock.find(".div_player_union").addClass("div_player_block_not_in");
+                    playerBlock.find(".div_player_name").addClass("div_player_block_not_in");
+                    playerBlock.find(".div_player_power").addClass("div_player_block_not_in");
+                } else {
+                    var unionColor = playerCommon.unionColor(info.union);
+                    playerBlock.find(".div_player_union").addClass(unionColor);
+                }
             }
         });
     });
