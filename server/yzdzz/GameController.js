@@ -53,12 +53,14 @@ Base.extends("GameController", {
     },
 
     // API
-    setPlayerListAccount:function(accountKey, serverDesc, intervalCount, unionCount, minPower) {
+    setPlayerListAccount:function(accountKey, serverDesc, intervalCount, unionCount, minPower, limitPower, limitDay) {
         this.appendRefresh(accountKey, serverDesc, intervalCount, (conn, done) => {
             this.refreshPlayers(conn, {
                 server: serverDesc,
                 minPower: minPower,
-                count:unionCount,
+                count: unionCount,
+                limitPower: limitPower,
+                limitDay: limitDay,
             }, done);
         });
     },
@@ -149,6 +151,7 @@ Base.extends("GameController", {
                 this.errLog("getUnionList", "none");
                 return safe(done)();
             }
+            var limitMilliSeconds = refreshData.limitDay * 24 * 3600 * 1000
             for (var i = 0; i < data.unions.length; ++i) {
                 var unionItem = data.unions[i];
                 this.allUnions[unionItem.unionId] = {
@@ -162,22 +165,28 @@ Base.extends("GameController", {
                         this.errLog("getUnionPlayers", "none");
                         return safe(done)();
                     }
+                    var now = new Date().getTime();
                     for (var j = 0; j < playersData.players.length; ++j) {
                         var playerItem = playersData.players[j];
                         var playerData = this.allPlayers[playerItem.playerId];
                         var lastPower = (playerData ? playerData.maxPower : 0);
                         var maxPower = (playerItem.power > lastPower ? playerItem.power : lastPower);
-                        if (maxPower > refreshData.minPower) {
-                            this.allPlayers[playerItem.playerId] = {
-                                server: refreshData.server,
-                                unionId: unionItem.unionId,
-                                name: playerItem.name,
-                                power: playerItem.power,
-                                maxPower: maxPower,
-                                level: playerItem.level,
-                                lastLogin: playerItem.lastLogin,
-                            };
+                        if (maxPower <= refreshData.minPower) {
+                            continue;
                         }
+                        var t = playerItem.lastLogin.getTime();
+                        if (maxPower <= refreshData.limitPower && now - t > limitMilliSeconds) {
+                            continue;
+                        }
+                        this.allPlayers[playerItem.playerId] = {
+                            server: refreshData.server,
+                            unionId: unionItem.unionId,
+                            name: playerItem.name,
+                            power: playerItem.power,
+                            maxPower: maxPower,
+                            level: playerItem.level,
+                            lastLogin: playerItem.lastLogin,
+                        };
                     }
                 }
             }

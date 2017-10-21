@@ -73,7 +73,7 @@ $HttpModel.addClass({
             for (var i = 0; i < settingStates.players.length; ++i) {
                 var playerConfig = settingStates.players[i];
                 var accountInfo = this.accounts[playerConfig.account];
-                this.controller.setPlayerListAccount(accountInfo.accountKey, playerConfig.server, 1, 3, 3000000);
+                this.controller.setPlayerListAccount(accountInfo.accountKey, playerConfig.server, 1, 10, 3000000, 8000000, 20);
             }
             for (var i = 0; i < settingStates.kingwar.length; ++i) {
                 var kingwarConfig = settingStates.kingwar[i];
