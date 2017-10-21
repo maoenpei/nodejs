@@ -34,23 +34,41 @@
                 显示状态错误...
             {{else if refreshing_data}}
                 正在刷新数据...
+            {{else if loading_data}}
+                正在加载...
             {{/if}}
         </div>
 </script>
 <script type="text/x-handlebars-template" class="hd_title_content">
         <div class="visit_label">{{funcName}}</div>
 </script>
-<script type="text/x-handlebars-template" class="hd_kingwar_areastar_all">
-        <div class="div_areastar_list">
+<script type="text/x-handlebars-template" class="hd_player_list_all">
+        <div class="div_player_list_title">
+            <div class="div_player_item_union">位置</div>
+            <div class="div_player_item_name">名字</div>
+            <div class="div_player_item_power">战力</div>
+            <div class="div_player_item_kingwar">帝国战</div>
+            <div class="div_player_item_union_name">骑士团</div>
+            <div class="div_player_item_last">登录</div>
         </div>
-        <div class="div_show_players">
-            玩家列表
-        </div>
-        <div class="div_navigate_areas">
-        </div>
-        <div class="div_navigate_stars_mask" style="display:none">
-            <div class="div_navigate_stars">
+        <div class="div_player_list"></div>
+        <div class="div_show_kingwar visit_label">显示已加入帝国战的玩家</div>
+</script>
+<script type="text/x-handlebars-template" class="hd_player_item">
+            <div class="div_player_item">
+                <div class="div_player_item_union div_player_item_union_content">{{union_short}}</div>
+                <div class="div_player_item_name div_player_item_name_content">{{name}}</div>
+                <div class="div_player_item_power div_player_item_power_content">{{power}}万</div>
+                <div class="div_player_item_kingwar div_player_item_kingwar_content">{{kingwar}}</div>
+                <div class="div_player_item_union_name div_player_item_union_name_content">{{union}}</div>
+                <div class="div_player_item_last div_player_item_last_content">{{last}}</div>
             </div>
+</script>
+<script type="text/x-handlebars-template" class="hd_kingwar_areastar_all">
+        <div class="div_areastar_list"></div>
+        <div class="div_navigate_areas"></div>
+        <div class="div_navigate_stars_mask" style="display:none">
+            <div class="div_navigate_stars"></div>
         </div>
 </script>
 <script type="text/x-handlebars-template" class="hd_kingwar_areastar">

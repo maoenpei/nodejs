@@ -70,6 +70,62 @@ Base.extends("GameController", {
     getUnions:function() {
         return this.allUnions;
     },
+    // API
+    getSortedPlayers:function(count) {
+        var sortedPlayerIds = this.sortedPlayerIds;
+        var allPlayerIds = {};
+        for (var playerId in this.allPlayers) {
+            allPlayerIds[playerId] = true;
+        }
+        for (var i = 0; i < sortedPlayerIds.length; ++i) {
+            var playerId = sortedPlayerIds[i];
+            delete allPlayerIds[playerId];
+        }
+        for (var playerId in allPlayerIds) {
+            sortedPlayerIds.push(playerId);
+        }
+        for (var i = 1; i < sortedPlayerIds.length; ++i) {
+            var player = this.allPlayers[sortedPlayerIds[i]];
+            var prevPlayer = this.allPlayers[sortedPlayerIds[i - 1]];
+            if (player.maxPower > prevPlayer.maxPower) {
+                var toExchange = [];
+                var startIndex = 0;
+                for (var j = i - 1; j >= 0; --j) {
+                    prevPlayer = this.allPlayers[sortedPlayerIds[j]];
+                    if (player.maxPower <= prevPlayer.maxPower) {
+                        startIndex = j + 1;
+                        break;
+                    } else {
+                        toExchange.push(sortedPlayerIds[j]);
+                    }
+                }
+                toExchange.push(sortedPlayerIds[i]);
+                toExchange.push(i - startIndex + 1); // length
+                toExchange.push(startIndex); // start
+                toExchange.reverse();
+                Array.prototype.splice.apply(sortedPlayerIds, toExchange);
+            }
+        }
+        var sortedPlayers = [];
+        count = (count < sortedPlayerIds.length ? count : sortedPlayerIds.length);
+        for (var i = 0; i < count; ++i) {
+            var playerId = sortedPlayerIds[i];
+            var player = this.allPlayers[playerId];
+            var union = (player.unionId ? this.allUnions[player.unionId] : {});
+            var kingwarKey = this.playerToKingwar[playerId];
+            sortedPlayers.push({
+                server: (player.server ? player.server : ""),
+                uName: (union.name ? union.name : ""),
+                uShort: (union.short ? union.short : ""),
+                name: (player.name ? player.name : ""),
+                power: player.maxPower,
+                level: (player.level ? player.level : 0),
+                last: (player.lastLogin ? player.lastLogin.getTime() : 0),
+                kingwar: (kingwarKey ? kingwarKey : 0),
+            });
+        }
+        return sortedPlayers;
+    },
     //API
     setMaxPowers:function(allPowerMax) {
         for (var playerId in allPowerMax) {
@@ -82,6 +138,7 @@ Base.extends("GameController", {
     initPlayers:function() {
         this.allUnions = {};
         this.allPlayers = {};
+        this.sortedPlayerIds = [];
     },
     refreshPlayers:function(conn, refreshData, done) {
         var next = coroutine(function*() {

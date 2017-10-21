@@ -14,6 +14,7 @@ GAME_UNIONS_CONFIG = "GameUnions.d";
 var allFuncs = [
     {name:"refresh", authBase:2},
     {name:"kingwar", authBase:1},
+    {name:"playerlist", authBase:1},
     {name:"serverInfo", authBase:1},
     {name:"automation", authBase:2},
     {name:"setting", authBase:3},
@@ -32,6 +33,7 @@ $HttpModel.addClass({
         this.delayRefresh = false;
 
         httpServer.registerCommand("manrefresh", this);
+        httpServer.registerCommand("playersinfo", this);
         httpServer.registerCommand("kingwarinfo", this);
         httpServer.registerCommand("functions", this);
     },
@@ -159,6 +161,40 @@ $HttpModel.addClass({
             responder.respondJson({
                 success: true,
                 isDelay: this.delayRefresh,
+            }, done);
+        }, this);
+    },
+    playersinfo:function(requestor, responder, done) {
+        var next = coroutine(function*() {
+            var obj = yield this.httpServer.tokenValid(requestor, next);
+            if (!obj) {
+                responder.addError("Not valid token for logout.");
+                return responder.respondJson({}, done);
+            }
+
+            var userStates = $StateManager.getState(USER_CONFIG);
+            var keyData = userStates.keys[obj.getSerial()];
+            if (!keyData || !keyData.userKey) {
+                responder.addError("Not an authorized user.");
+                return responder.respondJson({}, done);
+            }
+
+            var userData = userStates.users[keyData.userKey];
+            if (!userData || userData.auth < 1) {
+                responder.addError("Admin level not enough.");
+                return responder.respondJson({}, done);
+            }
+
+            var playersData = this.controller.getSortedPlayers(100);
+            var tag = this.getTag(playersData);
+            if (!requestor.compareTags(tag)) {
+                responder.setCode(304);
+                return responder.respondData(Buffer.alloc(0), safe(done));
+            }
+
+            responder.setTag(tag);
+            responder.respondJson({
+                players: playersData,
             }, done);
         }, this);
     },
