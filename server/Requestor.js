@@ -15,7 +15,7 @@ Base.extends("Requestor", {
         this.parsedUrl = parsedUrl;
         this.parsedPath = parsedPath;
         this.cmd = (parsedPath.dir == "/" && parsedPath.ext == "" ? parsedPath.name : null);
-        console.log("\nurl:", req.url, "pathname:", parsedUrl.pathname, "cmd:", this.cmd);
+        console.log("\n==>url:", req.url, "pathname:", parsedUrl.pathname, "cmd:", this.cmd);
 
         this.req = req;
         this.parsedQuery = null;

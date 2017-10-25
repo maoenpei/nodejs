@@ -70,7 +70,14 @@ var requestPost = function (url, postData, callback) {
 };
 
 var requestGet = function(url, callback) {
-    sendAjaxJSON("GET", urlRoot + "/" + url, null, safe(callback));
+    sendAjaxJSON("GET", urlRoot + "/" + url, null, function(json) {
+        // Due to a safari bug, request twice for correct data.
+        if (JSON.stringify(json) == "{}") {
+            sendAjaxJSON("GET", urlRoot + "/" + url, null, safe(callback));
+        } else {
+            safe(callback)(json);
+        }
+    });
 };
 
 // template parser

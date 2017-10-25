@@ -88,13 +88,11 @@ Base.extends("HttpServer", {
 
             //main
             if (requestor.getPath() == "/") {
-                console.log("==>main");
                 yield this.mainPage(requestor, responder, next);
             }
 
             // execute command
             if (!responder.Ended()) {
-                console.log("==>command");
                 var cmd = requestor.getCommand();
                 var model = this.commands[cmd];
                 if (model) {
@@ -105,12 +103,10 @@ Base.extends("HttpServer", {
 
             // visit raw file
             if (!responder.Ended()) {
-                console.log("==>file");
                 yield this.commonPage(requestor, responder, next);
             }
 
             if (!responder.Ended()) {
-                console.log("==>error");
                 this.errorPage(requestor, responder, safe(done));
             }
         }, this);
