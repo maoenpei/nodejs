@@ -728,6 +728,16 @@ Base.extends("GameConnection", {
             if (data.reward == 0) {
                 var data_reward = yield this.sendMsg("Ladder", "reward", null, next);
             }
+            // auto events
+            for (var i = 0; i < data.events.length; ++i) {
+                var event = data.events[i];
+                if (event.cardid == 1) {
+                    if (event.done == 0) {
+                        var data_res = yield this.sendMsg("Ladder", "getEventRes", {id:event.id}, next);
+                    }
+                    var data_res = yield this.sendMsg("Ladder", "delEvent", {id:event.id}, next);
+                }
+            }
             // auto use cards
             if (data.cards.length > 0) {
                 for (var i = 0; i < data.cards.length; ++i) {
@@ -795,6 +805,8 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("ActGoblin", "getinfo", null, next);
             //var data = yield this.sendMsg("ActGoblin", "buy", {id:"2120004"}, next);
             //var data = yield this.sendMsg("ActGoblin", "refresh", null, next);
+
+            var data = yield this.sendMsg("Ladder", "getinfo", null, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
