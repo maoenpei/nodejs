@@ -23,7 +23,7 @@ var safe = function(callback) {
 var protToken = null;
 var prot = function(callback) {
     if (protToken) {
-        console.log("break some operation!", protToken.callback);
+        console.log("break some operation!");
     }
     var token = { callback: callback };
     protToken = token;
@@ -285,12 +285,19 @@ function displayFuncs() {
 }
 
 function clickRefresh() {
+    var refreshState = function() {
+        requestPost("checkrefresh", {nexus:true}, function(json) {
+            if (json.isRefresh) {
+                setTimeout(refreshState, 2000);
+            } else {
+                window.location.reload();
+            }
+        });
+    };
     requestPost("manrefresh", {integrity:true}, function(json) {
         if (json.success) {
-            setTimeout(prot(function() {
-                window.location.reload();
-            }), 30 * 1000);
-            alert("后台开始更新数据，30秒后刷新页面!");
+            setTimeout(refreshState, 1000);
+            alert("后台开始更新数据，完成后将会自动刷新!");
         }
     });
 }

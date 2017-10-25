@@ -30,8 +30,9 @@ $HttpModel.addClass({
 
         this.playersMd5 = "";
         this.unionMd5 = "";
-        this.delayRefresh = false;
+        this.onRefreshEnd = [];
 
+        httpServer.registerCommand("checkrefresh", this);
         httpServer.registerCommand("manrefresh", this);
         httpServer.registerCommand("playersinfo", this);
         httpServer.registerCommand("kingwarinfo", this);
@@ -119,9 +120,11 @@ $HttpModel.addClass({
                     }
                     yield $StateManager.commitState(GAME_UNIONS_CONFIG, next);
                 }
-                if (this.delayRefresh) {
-                    this.delayRefresh = false;
-                    this.doRefresh();
+                if (this.onRefreshEnd.length > 0) {
+                    for (var i = 0; i < this.onRefreshEnd.length; ++i) {
+                        this.onRefreshEnd[i](true);
+                    }
+                    this.onRefreshEnd = [];
                 }
                 safe(done)();
             }, this);
@@ -129,7 +132,54 @@ $HttpModel.addClass({
         this.controller.cancelRefresh();
         this.controller.startRefresh(RefreshInterval, refreshCallback);
     },
+    noConfliction:function(fun) {
+        if (this.controller.isRefreshing()) {
+            this.onRefreshEnd.push(fun);
+            return true;
+        } else {
+            fun(false);
+            return false;
+        }
+    },
 
+    checkrefresh:function(requestor, responder, done) {
+        var next = coroutine(function*() {
+            if (requestor.getMethod() == "GET") {
+                responder.addError("Not valid for 'GET' method.");
+                return responder.respondJson({}, done);
+            }
+
+            var obj = yield this.httpServer.tokenValid(requestor, next);
+            if (!obj) {
+                responder.addError("Not valid token for logout.");
+                return responder.respondJson({}, done);
+            }
+
+            var userStates = $StateManager.getState(USER_CONFIG);
+            var keyData = userStates.keys[obj.getSerial()];
+            if (!keyData || !keyData.userKey) {
+                responder.addError("Not an authorized user.");
+                return responder.respondJson({}, done);
+            }
+
+            var userData = userStates.users[keyData.userKey];
+            if (!userData || userData.auth < 2) {
+                responder.addError("Admin level not enough.");
+                return responder.respondJson({}, done);
+            }
+
+            var json = yield requestor.visitBodyJson(next);
+            if (!json || !json.nexus) {
+                responder.addError("Parameter data not correct.");
+                return responder.respondJson({}, done);
+            }
+
+            responder.respondJson({
+                success: true,
+                isRefresh: this.controller.isRefreshing(),
+            }, done);
+        }, this);
+    },
     manrefresh:function(requestor, responder, done) {
         var next = coroutine(function*() {
             if (requestor.getMethod() == "GET") {
@@ -162,14 +212,13 @@ $HttpModel.addClass({
                 return responder.respondJson({}, done);
             }
 
-            if (this.controller.isRefreshing()) {
-                this.delayRefresh = true;
-            } else {
+            var delay = this.noConfliction((delayed) => {
                 this.doRefresh();
-            }
+            });
+
             responder.respondJson({
                 success: true,
-                isDelay: this.delayRefresh,
+                isDelay: delay,
             }, done);
         }, this);
     },

@@ -770,11 +770,20 @@ Base.extends("GameConnection", {
                 }
             }
             // auto fight
-            for (var i = 0; i < data.members.length; ++i) {
-                var member = data.members[i];
-                if (member.pc == 1 || (config.fightPlayer && member.cpi < this.gameInfo.power)) {
-                    var data_fight = yield this.sendMsg("Ladder", "fight", {id:member.id}, next);
-                    break;
+            var canFight = true;
+            if (data.cd != 0) {
+                canFight = ((data.cd * 1000 - new Date().getTime()) / 1000 / 60) <= 29;
+            }
+            if (canFight) {
+                for (var i = 0; i < data.members.length; ++i) {
+                    var member = data.members[i];
+                    if (member.id == this.gameInfo.playerId) {
+                        break;
+                    }
+                    if (member.pc == 1 || (config.fightPlayer && member.cpi < this.gameInfo.power)) {
+                        var data_fight = yield this.sendMsg("Ladder", "fight", {id:member.id}, next);
+                        break;
+                    }
                 }
             }
             return safe(done)({
