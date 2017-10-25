@@ -53,8 +53,45 @@ Base.extends("GameController", {
     },
 
     // API
+    setPlayerAutomation:function(accountKey, serverDesc, intervalCount, autoConfigs) {
+        return this.appendRefresh(accountKey, serverDesc, intervalCount, (conn, done) => {
+            this.refreshAutomation(conn, autoConfigs, done);
+        });
+    },
+    // API
+    manualPlayerAutomation:function(accountKey, serverDesc, autoConfigs, done) {
+        var next = coroutine(function*() {
+            var conn = this.accountManager.connectAccount(accountKey);
+            var data = yield conn.loginAccount(next);
+            if (!data.success) {
+                return safe(done)({});
+            }
+            var data = yield conn.loginGame(serverDesc, next);
+            if (!data.success) {
+                return safe(done)({});
+            }
+            yield this.refreshAutomation(conn, autoConfigs, next);
+            conn.quit();
+            safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    refreshAutomation:function(conn, autoConfigs, done) {
+        var next = coroutine(function*() {
+            console.log("refreshAutomation..");
+            for (var op in autoConfigs) {
+                var config = autoConfigs[op];
+                console.log("auto", op, config);
+                yield conn[op].call(conn, config, next);
+            }
+            safe(done)();
+        }, this);
+    },
+
+    // API
     setPlayerListAccount:function(accountKey, serverDesc, intervalCount, unionCount, minPower, limitPower, limitDay) {
-        this.appendRefresh(accountKey, serverDesc, intervalCount, (conn, done) => {
+        return this.appendRefresh(accountKey, serverDesc, intervalCount, (conn, done) => {
             this.refreshPlayers(conn, {
                 server: serverDesc,
                 minPower: minPower,
@@ -206,7 +243,7 @@ Base.extends("GameController", {
 
             refData:this.kingwarRefs[key],
         };
-        this.appendRefresh(accountKey, serverDesc, intervalCount, (conn, done) => {
+        return this.appendRefresh(accountKey, serverDesc, intervalCount, (conn, done) => {
             this.refreshKingwar(conn, refreshData, done);
         });
     },
@@ -294,6 +331,7 @@ Base.extends("GameController", {
         }, this);
     },
 
+    // API
     startRefresh:function(interval, callback) {
         if (this.refreshUnique) {
             return;
@@ -331,7 +369,6 @@ Base.extends("GameController", {
                             this.errLog("loginGame", "account({0}), server({1})".format(conn.getUsername(), refreshInfo.server));
                             continue;
                         }
-                        yield conn.autoSign(next);
                         for (var i = 0; i < executables.length; ++i) {
                             yield executables[i](conn, next);
                         }
@@ -366,15 +403,29 @@ Base.extends("GameController", {
             server: server,
             funcs: [],
         });
-        refreshInfo.funcs.push({
+        var funcObj = {
             func:func,
             count: count,
             index: 0,
-        });
+        };
+        refreshInfo.funcs.push(funcObj);
         this.refreshData[accountGameKey] = refreshInfo;
+        return {
+            key: accountGameKey,
+            obj: funcObj,
+        };
     },
-    stopRefresh:function(accountKey, server) {
-        var accountGameKey = accountKey + "$" + server;
-        this.refreshData[accountGameKey] = null;
+    // API
+    stopRefresh:function(key) {
+        var refreshInfo = this.refreshData[key.key];
+        if (refreshInfo && refreshInfo.funcs && refreshInfo.funcs.length > 0) {
+            for (var i = 0; i < refreshInfo.funcs.length; ++i) {
+                if (refreshInfo.funcs[i] === key.obj) {
+                    refreshInfo.funcs.splice(i, 1);
+                    return true;
+                }
+            }
+        }
+        return false;
     },
 });

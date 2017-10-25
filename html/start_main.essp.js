@@ -190,7 +190,7 @@ var displayFuncsModel = {
         kingwar:{name:"帝国战", show:displayKingWar, },
         playerlist:{name:"玩家", show:displayPlayerList, },
         //serverInfo:{name:"信息", },
-        //automation:{name:"自动化", },
+        automation:{name:"配置", show:displayAutomation, },
         //setting:{name:"设置", },
         users:{name:"用户", show:displayUsers, },
     },
@@ -358,6 +358,12 @@ playerCommon.duration = function(lasttime) {
     }
 
     return {color:color, desc:desc, quit:quit};
+}
+
+function displayAutomation() {
+    var divContentPanel = $(".div_content_panel");
+    var waitingTemplate = templates.read(".hd_display_loading");
+    divContentPanel.html(waitingTemplate({refreshing_data: true}));
 }
 
 var displayPlayerListModel = {

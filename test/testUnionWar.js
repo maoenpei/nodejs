@@ -4,25 +4,26 @@ require("../server/yzdzz/GameController");
 
 $FileManager.RootDirectory = __dirname;
 
+var isWeekend = true;
+
+var throwCard = true;
+var occupyGem = true;
+
 var accounts = [
     {u:"eyexiaohao001", p:"123456"},
     {u:"eyexiaohao002", p:"123456"},
     {u:"eyexiaohao003", p:"123456"},
     {u:"eyexiaohao004", p:"123456"},
+    {u:"eyexiaohao005", p:"123456"},
     {u:"lv35679183", p:"zhangpeng1989"},
     {u:"13719987234", p:"xwWZT123"},
     {u:"13801890722", p:"Q950318my"},
 ];
 
-var servers = [
-    "s93", "s94", "s95", "s96", 
-];
+var servers = (isWeekend ? ["s95", "s96", "s93", "s94", ] : [ "s96", ]);
 
-var friendUnion = ["b275705814a85d98", "b3b459f1b6a85a2a", "b3b455b0e2a85cc1"];
-var enemyUnion = ["b26d0533bba85c43"];
-
-var throwCard = true;
-var occupyGem = false;
+var friendUnion = (isWeekend ? ["b275705814a85d98", "b3b459f1b6a85a2a", "b3b455b0e2a85cc1"] : ["b275705814a85d98"]);
+var enemyUnion = (isWeekend ? ["b26d0533bba85c43"] : ["b3bdc946b8285de7", "b3b4461918285dc2"]);
 
 var next = coroutine(function*() {
 
@@ -37,7 +38,7 @@ var next = coroutine(function*() {
             console.log("account", data.success);
             if (!data.success) {continue;}
             for (var m = 0; m < servers.length; ++m) {
-                yield setTimeout(next, 1000);
+                yield setTimeout(next, 300);
                 var data = yield conn.loginGame(servers[m], next);
                 console.log("game", data.success);
                 if (!data.success) {continue;}
@@ -68,13 +69,18 @@ var next = coroutine(function*() {
                     }
                 }
                 if (occupyGem) {
-                    for (var j = 9; j >= 1; --j) {
+                    for (var j = 1; j < 3; ++j) {
+                    //for (var j = 9; j >= 1; --j) {
                         var occupied = false;
                         var data = yield conn.enterUnionWar(j, next);
                         if (data.mineArray) {
                             var minCount = data.mineArray.length;
                             for (var k = minCount; k >=1; --k) {
                                 var item = data.mineArray[k-1];
+                                if (item.playerId && item.playerId == conn.getGameInfo().playerId) {
+                                    occupied = true;
+                                    break;
+                                }
                                 if (!item.playerId && item.mineLife > 0) {
                                     var data = yield conn.occupy(j, k, next);
                                     console.log("occupy", j, k, data);

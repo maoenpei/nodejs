@@ -41,24 +41,17 @@ $HttpModel.addClass({
         var next = coroutine(function*() {
             yield $StateManager.openState(GAME_ACCOUNTS_CONFIG, null, next);
             var accountStates = $StateManager.getState(GAME_ACCOUNTS_CONFIG);
-            for (var key in accountStates) {
-                var accountInfo = accountStates[key];
+            for (var key in accountStates.players) {
+                var playerInfo = accountStates.players[key];
+                var accountInfo = accountStates.accounts[playerInfo.account];
                 this.accounts[key] = {
                     username:accountInfo.username,
                     accountKey:this.accountManager.add(accountInfo.username, accountInfo.password),
+                    server: playerInfo.server,
                 };
             }
             yield $StateManager.openState(GAME_POWER_MAX_CONFIG, null, next);
             var allPowerMax = $StateManager.getState(GAME_POWER_MAX_CONFIG);
-            for (var playerId in allPowerMax) {
-                var maxPower = allPowerMax[playerId];
-                // compatible code
-                if (typeof(maxPower) == "number") {
-                    allPowerMax[playerId] = {
-                        maxPower: maxPower,
-                    };
-                }
-            }
             this.controller.setMaxPowers(allPowerMax);
             yield $StateManager.openState(GAME_UNIONS_CONFIG, null, next);
 
@@ -70,15 +63,31 @@ $HttpModel.addClass({
         var next = coroutine(function*() {
             yield $StateManager.openState(GAME_SETTING_CONFIG, null, next);
             var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
+            for (var player in settingStates.automation.configs) {
+                var automationConfig = settingStates.automation.configs[player];
+                var playerInfo = this.accounts[player];
+                var autoConfigs = {};
+                for (var configType in settingStates.automation.defaults) {
+                    if (automationConfig[configType]) {
+                        autoConfigs[configType] = automationConfig[configType];
+                    } else {
+                        autoConfigs[configType] = settingStates.automation.defaults[configType];
+                    }
+                }
+                playerInfo.refreshAutomationKey =
+                    this.controller.setPlayerAutomation(playerInfo.accountKey, playerInfo.server, 3, autoConfigs);
+            }
             for (var i = 0; i < settingStates.players.length; ++i) {
                 var playerConfig = settingStates.players[i];
-                var accountInfo = this.accounts[playerConfig.account];
-                this.controller.setPlayerListAccount(accountInfo.accountKey, playerConfig.server, 1, 10, 3000000, 8000000, 20);
+                var playerInfo = this.accounts[playerConfig.player];
+                playerInfo.refreshPlayerKey =
+                    this.controller.setPlayerListAccount(playerInfo.accountKey, playerInfo.server, 1, 10, 3000000, 8000000, 20);
             }
             for (var i = 0; i < settingStates.kingwar.length; ++i) {
                 var kingwarConfig = settingStates.kingwar[i];
-                var accountInfo = this.accounts[kingwarConfig.account];
-                this.controller.setKingwarAccount(accountInfo.accountKey, kingwarConfig.server, 1, kingwarConfig.area, kingwarConfig.star);
+                var playerInfo = this.accounts[kingwarConfig.player];
+                playerInfo.refreshKingwarKey =
+                    this.controller.setKingwarAccount(playerInfo.accountKey, playerInfo.server, 1, kingwarConfig.area, kingwarConfig.star);
             }
             this.doRefresh();
             safe(done)();
