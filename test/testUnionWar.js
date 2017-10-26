@@ -4,7 +4,7 @@ require("../server/yzdzz/GameController");
 
 $FileManager.RootDirectory = __dirname;
 
-var isWeekend = true;
+var isWeekend = false;
 
 var throwCard = true;
 var occupyGem = true;
@@ -15,10 +15,13 @@ var accounts = [
     {u:"eyexiaohao003", p:"123456"},
     {u:"eyexiaohao004", p:"123456"},
     {u:"eyexiaohao005", p:"123456"},
-    {u:"lv35679183", p:"zhangpeng1989"},
-    {u:"13719987234", p:"xwWZT123"},
-    {u:"13801890722", p:"Q950318my"},
 ];
+
+if (isWeekend) {
+    accounts.push({u:"lv35679183", p:"zhangpeng1989"});
+    accounts.push({u:"13719987234", p:"xwWZT123"});
+    accounts.push({u:"13801890722", p:"Q950318my"});
+}
 
 var servers = (isWeekend ? ["s95", "s96", "s93", "s94", ] : [ "s96", ]);
 
@@ -69,28 +72,53 @@ var next = coroutine(function*() {
                     }
                 }
                 if (occupyGem) {
-                    for (var j = 1; j < 3; ++j) {
-                    //for (var j = 9; j >= 1; --j) {
-                        var occupied = false;
-                        var data = yield conn.enterUnionWar(j, next);
-                        if (data.mineArray) {
-                            var minCount = data.mineArray.length;
-                            for (var k = minCount; k >=1; --k) {
-                                var item = data.mineArray[k-1];
-                                if (item.playerId && item.playerId == conn.getGameInfo().playerId) {
-                                    occupied = true;
-                                    break;
-                                }
-                                if (!item.playerId && item.mineLife > 0) {
-                                    var data = yield conn.occupy(j, k, next);
-                                    console.log("occupy", j, k, data);
-                                    occupied = true;
-                                    break;
+                    if (isWeekend) {
+                        for (var j = 1; j < 3; ++j) {
+                            var occupied = false;
+                            var data = yield conn.enterUnionWar(j, next);
+                            if (data.mineArray) {
+                                var minCount = data.mineArray.length;
+                                for (var k = minCount; k >=1; --k) {
+                                    var item = data.mineArray[k-1];
+                                    if (item.playerId && item.playerId == conn.getGameInfo().playerId) {
+                                        occupied = true;
+                                        break;
+                                    }
+                                    if (!item.playerId && item.mineLife > 0) {
+                                        var data = yield conn.occupy(j, k, next);
+                                        console.log("occupy", j, k, data);
+                                        occupied = true;
+                                        break;
+                                    }
                                 }
                             }
+                            if (occupied) {
+                                break;
+                            }
                         }
-                        if (occupied) {
-                            break;
+                    } else {
+                        for (var j = 9; j >= 1; --j) {
+                            var occupied = false;
+                            var data = yield conn.enterUnionWar(j, next);
+                            if (data.mineArray) {
+                                var minCount = data.mineArray.length;
+                                for (var k = minCount; k >=1; --k) {
+                                    var item = data.mineArray[k-1];
+                                    if (item.playerId && item.playerId == conn.getGameInfo().playerId) {
+                                        occupied = true;
+                                        break;
+                                    }
+                                    if (!item.playerId && item.mineLife > 0) {
+                                        var data = yield conn.occupy(j, k, next);
+                                        console.log("occupy", j, k, data);
+                                        occupied = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (occupied) {
+                                break;
+                            }
                         }
                     }
                 }
