@@ -498,8 +498,8 @@ $HttpModel.addClass({
                 for (var i = 0; i < userData.players.length; ++i) {
                     var playerKey = userData.players[i];
                     var playerData = this.players[playerKey];
-                    if (playerData.server == server) {
-                        responder.addError("Account doesn't belong to user.");
+                    if (playerData.accountKey == accountKey && playerData.server == server) {
+                        responder.addError("Player already added.");
                         return responder.respondJson({}, done);
                     }
                 }
