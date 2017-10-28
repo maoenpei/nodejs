@@ -78,7 +78,7 @@ var next = coroutine(function*() {
                             var data = yield conn.enterUnionWar(j, next);
                             if (data.mineArray) {
                                 if (!data.hasSpeed) {
-                                    yield conn.buySpeed(200, next);
+                                    yield conn.buySpeed(500, next);
                                     yield conn.setSpeed(true, next);
                                 }
                                 var minCount = data.mineArray.length;
