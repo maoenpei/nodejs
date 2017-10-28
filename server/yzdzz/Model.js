@@ -105,6 +105,14 @@ $HttpModel.addClass({
         }, this);
     },
     doRefresh:function() {
+        var invokeNoConflictions = () => {
+            if (this.onRefreshEnd.length > 0) {
+                for (var i = 0; i < this.onRefreshEnd.length; ++i) {
+                    this.onRefreshEnd[i](true);
+                }
+                this.onRefreshEnd = [];
+            }
+        }
         var refreshCallback = (done) => {
             var next = coroutine(function*() {
                 var players = this.controller.getPlayers();
@@ -130,12 +138,7 @@ $HttpModel.addClass({
                     }
                     yield $StateManager.commitState(GAME_UNIONS_CONFIG, next);
                 }
-                if (this.onRefreshEnd.length > 0) {
-                    for (var i = 0; i < this.onRefreshEnd.length; ++i) {
-                        this.onRefreshEnd[i](true);
-                    }
-                    this.onRefreshEnd = [];
-                }
+                invokeNoConflictions();
                 safe(done)();
             }, this);
         };
@@ -431,6 +434,8 @@ $HttpModel.addClass({
             var settingsChanged = false;
             for (var playerKey in playerKeys) {
                 settingsChanged = settingsChanged || this.erasePlayerSettings(playerKey);
+                var playerBelong = this.getPlayerIndex(userData, playerKey);
+                userData.players.splice(playerBelong, 1);
                 delete accountStates.players[playerKey];
             }
 

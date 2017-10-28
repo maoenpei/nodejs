@@ -400,7 +400,7 @@ playerCommon.duration = function(lasttime) {
 
 var displayAutomationModel = {
     servers: ["s96", "s95", "s94", "s93", ],
-    levels: ["所有账号"],
+    levels: ["账号"],
     configProps: [
         {name: "autoSign", desc: "打卡", props: [], },
         {name: "autoVipReward", desc: "三卡", props: [], },
@@ -536,10 +536,11 @@ displayAutomationModel.save = function(player, callback) {
     requestPost("playerautomation", { key: player.key, configs: player.copy_configs }, function(json) {
         if (json.success) {
             player.configs = deep_clone(player.copy_configs);
+            callback(true);
         } else {
             player.copy_configs = deep_clone(player.configs);
+            callback(false);
         }
-        callback();
     });
 }
 
@@ -713,12 +714,15 @@ function displayAutomation() {
             displayAutomationModel.toPlayer(player ? player.server : null);
             lastPlayer = (player ? player : lastPlayer);
 
-            displayCommands({name: "保存配置", func: function() {
-                if (confirm("确认保存设置？")) {
-                    displayAutomationModel.save(lastPlayer, function() {
-                        displayConfig();
-                    });
-                }
+            displayCommands({name: "保存", func: function() {
+                displayAutomationModel.save(lastPlayer, function(success) {
+                    if (success) {
+                        alert("保存成功!");
+                    } else {
+                        alert("保存失败!");
+                    }
+                    displayConfig();
+                });
             }});
 
             divAutomationContent.html("");

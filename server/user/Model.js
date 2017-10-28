@@ -135,7 +135,7 @@ $HttpModel.addClass({
             }
 
             var targetSerial = json.target;
-            var targetAuth = json.auth;
+            var targetAuth = Number(json.auth);
             var targetKeyData = userStates.keys[targetSerial];
             if (!targetKeyData || !targetKeyData.userKey) {
                 responder.addError("Not an valid user.");
