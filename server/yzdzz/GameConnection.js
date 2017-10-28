@@ -592,6 +592,26 @@ Base.extends("GameConnection", {
             });
         }, this);
     },
+    autoEmail:function(config, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("RoleEmail", "getlist", null, next);
+            if (!data || !data.list) {
+                return safe(done)({});
+            }
+            for (var i = 0; i < data.list.length; ++i) {
+                var email = data.list[i];
+                if (email.state == 0) {
+                    var data_read = yield this.sendMsg("RoleEmail", "read", {id: email.id}, next);
+                }
+                if (email.attachment && email.state != 2) {
+                    var data_fetch = yield this.sendMsg("RoleEmail", "fetch", {id: email.id}, next);
+                }
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
     getMaze:function(done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("Maze", "getinfo", null, next);
@@ -850,6 +870,9 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("ActGoblin", "refresh", null, next);
 
             //var data = yield this.sendMsg("UnionWar", "buyspeed", {num: 100}, next);
+            var data = yield this.sendMsg("RoleEmail", "getlist", null, next);
+            //var data = yield this.sendMsg("RoleEmail", "read", {id: 114223}, next);
+            //var data = yield this.sendMsg("RoleEmail", "fetch", {id: 114223}, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);

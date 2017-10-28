@@ -7,6 +7,7 @@ require("./GameController");
 var RefreshInterval = 60 * 6;
 
 GAME_ACCOUNTS_CONFIG = "GameAcounts.d";
+GAME_DEFAULTS_CONFIG = "GameDefaults.d";
 GAME_SETTING_CONFIG = "GameSetting.d";
 GAME_POWER_MAX_CONFIG = "GamePowerMax.d";
 GAME_UNIONS_CONFIG = "GameUnions.d";
@@ -59,6 +60,7 @@ $HttpModel.addClass({
                 this.addPlayer(playerKey, playerInfo.account, playerInfo.server);
             }
             yield $StateManager.openState(GAME_SETTING_CONFIG, null, next);
+            yield $StateManager.openState(GAME_DEFAULTS_CONFIG, null, next);
             yield $StateManager.openState(GAME_POWER_MAX_CONFIG, null, next);
             var allPowerMax = $StateManager.getState(GAME_POWER_MAX_CONFIG);
             this.controller.setMaxPowers(allPowerMax);
@@ -71,8 +73,8 @@ $HttpModel.addClass({
     erasePlayerSettings:function(playerKey) {
         var changed = false;
         var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
-        if (settingStates.automation.configs[playerKey]) {
-            delete settingStates.automation.configs[playerKey];
+        if (settingStates.automation[playerKey]) {
+            delete settingStates.automation[playerKey];
             changed = true;
         }
         if (settingStates.playerinfo[playerKey]) {
@@ -88,8 +90,8 @@ $HttpModel.addClass({
     startRefreshSettings:function(done) {
         var next = coroutine(function*() {
             var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
-            for (var playerKey in settingStates.automation.configs) {
-                var automationConfig = settingStates.automation.configs[playerKey];
+            for (var playerKey in settingStates.automation) {
+                var automationConfig = settingStates.automation[playerKey];
                 this.startRefreshAutomation(playerKey, automationConfig);
             }
             for (var playerKey in settingStates.playerinfo) {
@@ -220,32 +222,32 @@ $HttpModel.addClass({
         if (automationConfig.disabled && !needDisabled) {
             return null;
         }
-        var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
+        var defaultsStates = $StateManager.getState(GAME_DEFAULTS_CONFIG);
         var autoConfigs = {};
         if (needDisabled) {
             autoConfigs.disabled = automationConfig.disabled;
         }
-        for (var configType in settingStates.automation.defaults) {
+        for (var configType in defaultsStates.automation) {
             var config = automationConfig[configType];
             if (config) {
                 autoConfigs[configType] = config;
             } else {
-                autoConfigs[configType] = settingStates.automation.defaults[configType];
+                autoConfigs[configType] = defaultsStates.automation[configType];
             }
         }
         return autoConfigs;
     },
     validateConfig:function(autoConfigs) {
-        var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
+        var defaultsStates = $StateManager.getState(GAME_DEFAULTS_CONFIG);
         var automationConfig = {};
         automationConfig.disabled = (autoConfigs.disabled ? true : undefined);
-        for (var configType in settingStates.automation.defaults) {
+        for (var configType in defaultsStates.automation) {
             var config = autoConfigs[configType];
             if (config) {
                 var newConfig = {
                     disabled: (config.disabled ? true : undefined),
                 };
-                var baseConfig = settingStates.automation.defaults[configType];
+                var baseConfig = defaultsStates.automation[configType];
                 for (var key in baseConfig) {
                     if (typeof(baseConfig[key]) != typeof(config[key])) {
                         return null;
@@ -629,7 +631,7 @@ $HttpModel.addClass({
                 return responder.respondJson({}, done);
             }
 
-            settingStates.automation.configs[playerKey] = automationConfig;
+            settingStates.automation[playerKey] = automationConfig;
             this.startRefreshAutomation(playerKey, automationConfig);
             yield $StateManager.commitState(GAME_SETTING_CONFIG, next);
 
@@ -678,7 +680,7 @@ $HttpModel.addClass({
                     var playerData = this.players[playerKey];
                     for (var j = 0; j < accounts.length; ++j) {
                         if (playerData.accountKey == accounts[j].key) {
-                            var automationConfig = settingStates.automation.configs[playerKey];
+                            var automationConfig = settingStates.automation[playerKey];
                             automationConfig = (automationConfig ? automationConfig : { disabled: true, });
                             accounts[j].players.push({
                                 server: playerData.server,

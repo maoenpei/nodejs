@@ -405,6 +405,7 @@ var displayAutomationModel = {
         {name: "autoSign", desc: "打卡", props: [], },
         {name: "autoVipReward", desc: "三卡", props: [], },
         {name: "autoFriendReward", desc: "好友", props: [], },
+        {name: "autoEmail", desc: "邮件", props[], },
         {name: "autoMaze", desc: "迷宫", props: [
             {name: "searchNumber", desc: "单个迷宫搜索次数", type: "number", limit: [0, 13], },
         ], },
