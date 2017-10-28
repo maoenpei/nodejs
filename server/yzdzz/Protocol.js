@@ -19,7 +19,7 @@ var SendHTTP = function(options, postData, done) {
     });
 
     req.on('error', function(err) {
-        console.log('HTTP error:', err);
+        console.log('>> - HTTP error:', err);
         return safe(done)(null);
     });
 
@@ -51,7 +51,7 @@ GameSock = {};
 GameSock.connect = function(ip, port, done) {
     var sock = new net.Socket();
     var socketError = (err) => {
-        console.log("Socket error:", err);
+        console.log(">> - Socket error:", err);
     };
     var connectError = (err) => {
         socketError(err);
@@ -79,7 +79,7 @@ GameSock.receive = function(sock, callback) {
             zlib.gunzip(package, (err, decoded) => {
                 var obj = JSON.parse(decoded.toString());
                 if (!obj.data) {
-                    console.log("Error on c({0}) m({1}):".format(obj.c, obj.m), obj.error);
+                    console.log(">> - Protocol error on c({0}) m({1}):".format(obj.c, obj.m), obj.error);
                 }
                 safe(callback)(obj.c, obj.m, obj.data);
             });

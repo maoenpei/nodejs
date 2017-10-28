@@ -203,6 +203,16 @@ Global.clone = function(obj) {
 	return t;
 }
 
+Global.deep_clone = function(obj) {
+	var t = clone(obj);
+	for (var k in obj) {
+		if (typeof(obj[k]) == "object") {
+			t[k] = deep_clone(obj[k]);
+		}
+	}
+	return t;
+}
+
 String.prototype.format = function(args) {
     var result = this;
     if (arguments.length > 0) {

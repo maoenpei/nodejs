@@ -59,6 +59,12 @@ Base.extends("GameController", {
         });
     },
     // API
+    modifyPlayerAutomation:function(key, intervalCount, autoConfigs) {
+        return this.modifyRefresh(key, intervalCount, (conn, done) => {
+            this.refreshAutomation(conn, autoConfigs, done);
+        });
+    },
+    // API
     manualPlayerAutomation:function(accountKey, serverDesc, autoConfigs, done) {
         var next = coroutine(function*() {
             var conn = this.accountManager.connectAccount(accountKey);
@@ -82,8 +88,10 @@ Base.extends("GameController", {
             console.log("refreshAutomation..");
             for (var op in autoConfigs) {
                 var config = autoConfigs[op];
-                console.log("auto", op, config);
-                yield conn[op].call(conn, config, next);
+                if (!config.disabled) {
+                    console.log("auto", op, config);
+                    yield conn[op].call(conn, config, next);
+                }
             }
             safe(done)();
         }, this);
@@ -414,6 +422,22 @@ Base.extends("GameController", {
             key: accountGameKey,
             obj: funcObj,
         };
+    },
+    modifyRefresh:function(key, count, func) {
+        var refreshInfo = this.refreshData[key.key];
+        if (refreshInfo && refreshInfo.funcs && refreshInfo.funcs.length > 0) {
+            for (var i = 0; i < refreshInfo.funcs.length; ++i) {
+                if (refreshInfo.funcs[i] === key.obj) {
+                    refreshInfo.funcs.splice(i, 1, {
+                        func: func,
+                        count: count,
+                        index: 0,
+                    });
+                    return true;
+                }
+            }
+        }
+        return false;
     },
     // API
     stopRefresh:function(key) {

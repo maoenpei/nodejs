@@ -53,6 +53,7 @@ Base.extends("GameConnection", {
             if (!obj || obj.code != 'SUCCESS') {
                 return safe(done)({});
             }
+            console.log("Login success with account {0}".format(this.username));
             this.accountInfo = {
                 accessToken : obj.value.accessToken,
                 accountId : obj.value.channelUid,
@@ -152,6 +153,10 @@ Base.extends("GameConnection", {
                 "channelUid":this.accountInfo.accountId,
                 "productId":182,
             }, next);
+            if (!data || !data.uid) {
+                this.quit();
+                return safe(done)({});
+            }
             this.gameInfo = {
                 playerId : data.uid,
                 name : data.role_name,
@@ -725,7 +730,7 @@ Base.extends("GameConnection", {
                 return safe(done)({});
             }
             // auto reward
-            if (data.reward == 0) {
+            if (data.reward == 0 && data.last_rank != 0) {
                 var data_reward = yield this.sendMsg("Ladder", "reward", null, next);
             }
             // auto events
@@ -745,6 +750,9 @@ Base.extends("GameConnection", {
                     var used = false;
                     for (var j = 0; j < data.members.length; ++j) {
                         var member = data.members[j];
+                        if (member.id == this.gameInfo.playerId) {
+                            continue;
+                        }
                         var data_card = null;
                         if (member.pc != 1 && (card == 1 || card == 4)) {
                             data_card = yield this.sendMsg("Ladder", "card", {id:member.id, evid:0}, next);
@@ -761,6 +769,9 @@ Base.extends("GameConnection", {
                     if (!used) {
                         for (var j = data.members.length - 1; j >= 0; --j) {
                             var member = data.members[j];
+                            if (member.id == this.gameInfo.playerId) {
+                                continue;
+                            }
                             var data_card = yield this.sendMsg("Ladder", "card", {id:member.id, evid:0}, next);
                             if (data_card) {
                                 break;

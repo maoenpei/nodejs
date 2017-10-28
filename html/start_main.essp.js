@@ -35,6 +35,24 @@ var prot = function(callback) {
     };
 };
 
+var clone = function(obj) {
+    var t = (obj instanceof Array ? [] : {});
+    for (var k in obj) {
+        t[k] = obj[k];
+    }
+    return t;
+}
+
+var deep_clone = function(obj) {
+    var t = clone(obj);
+    for (var k in obj) {
+        if (typeof(obj[k]) == "object") {
+            t[k] = deep_clone(obj[k]);
+        }
+    }
+    return t;
+}
+
 var sendAjax = function(method, url, postData, callback) {
     var protCallback = prot(callback);
     $.ajax({
@@ -129,6 +147,11 @@ var unique_click = function(control, callback) {
 // auto adjust size
 var adjustPageLayout = function() {
     var topHeight = $(".div_title_bar").innerHeight();
+    var subTitle = $(".div_sub_title_bar");
+    if (subTitle.length > 0) {
+        subTitle.css("top", topHeight);
+        topHeight += subTitle.innerHeight();
+    }
     $(".div_content_panel").css("top", topHeight);
 };
 
@@ -145,7 +168,7 @@ var usedKeys = {
 };
 
 // login
-$(function() {
+function displayLogin() {
     // delete unused old data.
     var storage = StorageItem();
     for (var key in storage) {
@@ -188,7 +211,7 @@ $(function() {
         }
         showLoginState(json);
     });
-});
+}
 
 // supported funcs
 var displayFuncsModel = {
@@ -219,6 +242,7 @@ displayFuncsModel.show = function(funcKey) {
     if (support && support.show) {
         templates.cancel();
         support.show();
+        adjustPageLayout();
         return true;
     }
     return false;
@@ -374,10 +398,393 @@ playerCommon.duration = function(lasttime) {
     return {color:color, desc:desc, quit:quit};
 }
 
+var displayAutomationModel = {
+    servers: ["s96", "s95", "s94", "s93", ],
+    levels: ["所有账号"],
+    configProps: [
+        {name: "autoSign", desc: "打卡", props: [], },
+        {name: "autoVipReward", desc: "三卡", props: [], },
+        {name: "autoFriendReward", desc: "好友", props: [], },
+        {name: "autoMaze", desc: "迷宫", props: [
+            {name: "searchNumber", desc: "单个迷宫搜索次数", type: "number", limit: [0, 13], },
+        ], },
+        {name: "autoFriendWar", desc: "友谊战", props: [
+            {name: "baseInspire", desc: "基础加成", type: "number", limit: [0, 6], },
+            {name: "advanceInspire", desc: "补充加成", type: "number", limit: [0, 6], },
+        ], },
+        {name: "autoLadder", desc: "晋级赛", props: [
+            {name: "fightPlayer", desc: "是否攻击战力低的玩家", type: "check", },
+        ], },
+    ],
+};
+
+displayAutomationModel.get = function(callback) {
+    $this = this;
+    requestPost("listautomation", {}, function(json) {
+        $this.accounts = json.accounts;
+        callback(json);
+    });
+}
+displayAutomationModel.getValidServers = function(account) {
+    var usedServers = {};
+    for (var i = 0; i < account.players.length; ++i) {
+        var player = account.players[i];
+        usedServers[player.server] = true;
+    }
+    var servers = [];
+    for (var i = 0; i < this.servers.length; ++i) {
+        var server = this.servers[i];
+        if (!usedServers[server]) {
+            servers.push({
+                name: server,
+                desc: server + "服",
+            });
+        }
+    }
+    return servers;
+}
+displayAutomationModel.getConfigProps = function() {
+    return this.configProps;
+}
+displayAutomationModel.getLevels = function() {
+    return this.levels;
+}
+displayAutomationModel.toRoot = function() {
+    this.levels.splice(1, this.levels.length - 1);
+}
+displayAutomationModel.toAccount = function(username) {
+    this.levels.splice(2, this.levels.length - 2);
+    if (username) {
+        this.levels[1] = username;
+    }
+}
+displayAutomationModel.toPlayer = function(server) {
+    this.levels.splice(3, this.levels.length - 3);
+    if (server) {
+        this.levels[2] = server;
+    }
+}
+displayAutomationModel.addAccount = function(username, password, callback) {
+    $this = this;
+    requestPost("addaccount", { un: username, pd: password }, function(json) {
+        if (json.fail) {
+            if (json.fail == "user_exists"){
+                callback("此账户已被添加!");
+            } else if (json.fail == "account_fault") {
+                callback("用户名或密码错误!");
+            } else {
+                callback("未知错误!");
+            }
+            return;
+        }
+        if (json.success) {
+            $this.accounts.push({
+                key: json.key,
+                players: [],
+                username: username,
+            });
+            callback();
+        }
+    });
+}
+displayAutomationModel.delAccount = function(account, callback) {
+    $this = this;
+    requestPost("delaccount", { key: account.key }, function(json) {
+        if (json.success) {
+            var accounts = $this.accounts;
+            for (var i = 0; i < accounts.length; ++i) {
+                if (accounts[i] === account) {
+                    accounts.splice(i, 1);
+                    return callback();
+                }
+            }
+        }
+    });
+}
+displayAutomationModel.addPlayer = function(account, server, callback) {
+    $this = this;
+    requestPost("addplayer", { key: account.key, server: server }, function(json) {
+        if (json.success) {
+            account.players.push({
+                server: server,
+                key: json.key,
+                configs: json.configs,
+            });
+            callback();
+        }
+    });
+}
+displayAutomationModel.delPlayer = function(account, player, callback) {
+    $this = this;
+    requestPost("delplayer", { key: player.key }, function(json) {
+        if (json.success) {
+            var players = account.players;
+            for (var j = 0; j < players.length; ++j) {
+                if (players[j] === player) {
+                    players.splice(j, 1);
+                    return callback();
+                }
+            }
+        }
+    });
+}
+displayAutomationModel.copyConfigs = function(player) {
+    player.copy_configs = deep_clone(player.configs);
+}
+displayAutomationModel.save = function(player, callback) {
+    $this = this;
+    requestPost("playerautomation", { key: player.key, configs: player.copy_configs }, function(json) {
+        if (json.success) {
+            player.configs = deep_clone(player.copy_configs);
+        } else {
+            player.copy_configs = deep_clone(player.configs);
+        }
+        callback();
+    });
+}
+
 function displayAutomation() {
     var divContentPanel = $(".div_content_panel");
     var waitingTemplate = templates.read(".hd_display_loading");
     divContentPanel.html(waitingTemplate({refreshing_data: true}));
+
+    displayAutomationModel.get(function(data) {
+        divContentPanel.html($(".hd_automation_all").html());
+
+        var lastAccount = null;
+        var lastPlayer = null;
+
+        // add accounts
+        var divAccountAddMask = divContentPanel.find(".div_automation_account_add_mask");
+        var inputAccountUsername = divAccountAddMask.find(".input_automation_username");
+        var inputAccountPassword = divAccountAddMask.find(".input_automation_password");
+        divAccountAddMask.find(".div_auto_add_cancel").click(function() {
+            divAccountAddMask.hide();
+        });
+        divAccountAddMask.find(".div_auto_add_confirm").click(function() {
+            var username = inputAccountUsername.val();
+            var password = inputAccountPassword.val();
+            if (username == "") {
+                alert("用户名不能为空");
+                inputAccountUsername.focus();
+                inputAccountUsername.select();
+                return;
+            }
+            if (password == "") {
+                alert("密码不能为空");
+                inputAccountPassword.focus();
+                inputAccountPassword.select();
+                return;
+            }
+            divAccountAddMask.hide();
+            displayAutomationModel.addAccount(username, password, function(failMsg) {
+                if (failMsg) {
+                    alert("添加账户失败，错误：" + failMsg);
+                } else {
+                    displayAccounts();
+                }
+            });
+        });
+
+        // add players
+        var divPlayerAddMask = divContentPanel.find(".div_automation_player_add_mask");
+        var divPlayerServers = divPlayerAddMask.find(".div_auto_choose_server");
+        divPlayerAddMask.find(".div_auto_add_cancel").click(function() {
+            divPlayerAddMask.hide();
+        });
+        divPlayerAddMask.find(".div_auto_add_confirm").click(function() {
+            var selectPlayerServers = divPlayerAddMask.find(".select_player_servers");
+            var server = selectPlayerServers.val();
+            divPlayerAddMask.hide();
+            displayAutomationModel.addPlayer(lastAccount, server, function() {
+                displayPlayers();
+            });
+        });
+
+        // display contents
+        var divSubtitleBar = divContentPanel.find(".div_sub_title_bar");
+        var divAutomationContent = divContentPanel.find(".div_automation_content");
+        var autoNavigateTemplate = templates.read(".hd_automation_navigate_item");
+        var autoItemTemplate = templates.read(".hd_automation_item");
+        var autoConfigPropTemplate = templates.read(".hd_automation_config_item");
+        var autoPlayerServersTemplate = templates.read(".hd_automation_player_servers");
+
+        var allCommands = [displayAccounts, displayPlayers, displayConfig];
+        var displayCommands = function(extraCommand) {
+            var levels = displayAutomationModel.getLevels();
+            divSubtitleBar.html("");
+            for (var i = 0; i < levels.length; ++i) {
+                (function() {
+                    var divAutoNavigateBlock = $(autoNavigateTemplate({
+                        name: levels[i],
+                        hasNext: i < levels.length - 1,
+                    }));
+                    divAutoNavigateBlock.appendTo(divSubtitleBar);
+
+                    var commandFunc = allCommands[i];
+                    if (commandFunc) {
+                        divAutoNavigateBlock.find(".clickable").click(function() {
+                            commandFunc();
+                        });
+                    }
+                })();
+            }
+            if (extraCommand) {
+                var divAutoNavigateExtraBlock = $(autoNavigateTemplate({name: extraCommand.name}));
+                divAutoNavigateExtraBlock.appendTo(divSubtitleBar);
+                divAutoNavigateExtraBlock.addClass("div_auto_navigate_extra");
+                divAutoNavigateExtraBlock.find(".clickable").click(extraCommand.func);
+            }
+            adjustPageLayout();
+        }
+        function displayAccounts() {
+            displayAutomationModel.toRoot();
+
+            displayCommands({name: "添加账号", func: function() {
+                inputAccountUsername.val("");
+                inputAccountPassword.val("");
+                divAccountAddMask.show();
+            }});
+
+            divAutomationContent.html("");
+            for (var i = 0; i < data.accounts.length; ++i) {
+                (function() {
+                    var account = data.accounts[i];
+                    var divAutoAccountBlock = $(autoItemTemplate({name: account.username}));
+                    divAutoAccountBlock.appendTo(divAutomationContent);
+
+                    divAutoAccountBlock.find(".div_auto_item_delete").click(function() {
+                        if (confirm("确定删除账号'" + account.username + "'？")) {
+                            displayAutomationModel.delAccount(account, function() {
+                                displayAccounts();
+                            });
+                        }
+                    });
+                    divAutoAccountBlock.find(".clickable").click(function() {
+                        displayPlayers(account);
+                    });
+                })();
+            }
+        }
+        function displayPlayers(account) {
+            displayAutomationModel.toAccount(account ? account.username : null);
+            lastAccount = (account ? account : lastAccount);
+
+            var servers = displayAutomationModel.getValidServers(lastAccount);
+            var addOption = (servers.length == 0 ? null : {name: "添加角色", func:function() {
+                divPlayerServers.html(autoPlayerServersTemplate({servers:servers}));
+                divPlayerAddMask.show();
+            }});
+            displayCommands(addOption);
+
+            divAutomationContent.html("");
+            for (var i = 0; i < lastAccount.players.length; ++i) {
+                (function() {
+                    var player = lastAccount.players[i];
+                    displayAutomationModel.copyConfigs(player);
+                    var divAutoPlayerBlock = $(autoItemTemplate({
+                        name: player.server,
+                        hasCheck:true,
+                        enabled: !player.copy_configs.disabled,
+                    }));
+                    divAutoPlayerBlock.appendTo(divAutomationContent);
+
+                    divAutoPlayerBlock.find(".div_auto_item_delete").click(function() {
+                        if (confirm("确认删除'" + player.server + "'的角色？")) {
+                            displayAutomationModel.delPlayer(lastAccount, player, function() {
+                                displayPlayers();
+                            });
+                        }
+                    });
+                    divAutoPlayerBlock.find(".clickable").click(function() {
+                        displayConfig(player);
+                    });
+                    var inputEnablePlayer = divAutoPlayerBlock.find(".input_check_auto_item");
+                    inputEnablePlayer.change(function() {
+                        player.copy_configs.disabled = (inputEnablePlayer.is(":checked") ? undefined : true);
+                        displayAutomationModel.save(player, function() {
+                            displayPlayers();
+                        });
+                    });
+                })();
+            }
+        }
+        function displayConfig(player) {
+            displayAutomationModel.toPlayer(player ? player.server : null);
+            lastPlayer = (player ? player : lastPlayer);
+
+            displayCommands({name: "保存配置", func: function() {
+                if (confirm("确认保存设置？")) {
+                    displayAutomationModel.save(lastPlayer, function() {
+                        displayConfig();
+                    });
+                }
+            }});
+
+            divAutomationContent.html("");
+
+            var configProps = displayAutomationModel.getConfigProps();
+            for (var i = 0; i < configProps.length; ++i) {
+                (function() {
+                    var configInfo = configProps[i];
+                    var configValues = lastPlayer.copy_configs[configInfo.name];
+                    if (!configValues) {
+                        return;
+                    }
+                    var properties = [];
+                    for (var j = 0; j < configInfo.props.length; ++j) {
+                        var prop = configInfo.props[j];
+                        var value = configValues[prop.name];
+                        var property = {
+                            name: prop.desc,
+                            value: value,
+                        };
+                        if (prop.type == "check") {
+                            property.type_check = true;
+                        } else if (prop.type == "number") {
+                            property.type_options = true;
+                            property.options = [];
+                            for (var k = prop.limit[0]; k <= prop.limit[1]; ++k) {
+                                property.options.push({
+                                    val: k,
+                                    selected: k == value,
+                                });
+                            }
+                        }
+                        properties.push(property);
+                    }
+                    var divConfigPropBlock = $(autoConfigPropTemplate({
+                        name: configInfo.desc,
+                        enabled: !configValues.disabled,
+                        properties: properties,
+                    }));
+                    divConfigPropBlock.appendTo(divAutomationContent);
+
+                    var inputEnableConfig = divConfigPropBlock.find(".input_check_auto_config");
+                    inputEnableConfig.change(function() {
+                        configValues.disabled = (inputEnableConfig.is(":checked") ? undefined : true);
+                    });
+                    var controls = divConfigPropBlock.find(".ctrl_auto_config_prop");
+                    for (var j = 0; j < configInfo.props.length; ++j) {
+                        (function() {
+                            var prop = configInfo.props[j];
+                            var inputPropertyBlock = $(controls[j]);
+                            if (prop.type == "number") {
+                                inputPropertyBlock.change(function() {
+                                    configValues[prop.name] = Number(inputPropertyBlock.val());
+                                });
+                            } else if (prop.type == "check") {
+                                inputPropertyBlock.change(function() {
+                                    configValues[prop.name] = inputPropertyBlock.is(":checked");
+                                });
+                            }
+                        })();
+                    }
+                })();
+            }
+        }
+        displayAccounts();
+    });
 }
 
 var displayPlayerListModel = {
@@ -385,7 +792,7 @@ var displayPlayerListModel = {
 
 displayPlayerListModel.get = function(callback) {
     $this = this;
-    requestGet("playersinfo", function(json) {
+    requestGet("listplayers", function(json) {
         $this.players = json.players;
         callback(json);
     });
@@ -472,7 +879,7 @@ var displayKingWarModel = {
 };
 displayKingWarModel.get = function(callback) {
     $this = this;
-    requestGet("kingwarinfo", function(json) {
+    requestGet("listkingwars", function(json) {
         $this.kingwar = json.areastars;
         for (var key in json.areastars) {
             var areastarData = json.areastars[key];
@@ -838,3 +1245,5 @@ function displayUsers() {
         }
     });
 }
+
+$(displayLogin);

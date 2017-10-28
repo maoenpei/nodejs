@@ -14,10 +14,107 @@
     </div>
     <div class="div_content_panel">
     </div>
+<script type="text/x-handlebars-template" class="hd_automation_all">
+    <div class="div_sub_title_bar"></div>
+    <div class="div_automation_content"></div>
+    <div class="div_automation_account_add_mask common_mask" style="display: none;">
+        <div class="common_mask_content">
+            <div class="div_auto_add_field">
+                <div class="div_auto_field_left">输入用户名：</div>
+                <div class="div_auto_field_right">
+                    <input type="text" class="input_automation_username">
+                </div>
+            </div>
+            <div class="div_auto_add_field">
+                <div class="div_auto_field_left">输入密码：</div>
+                <div class="div_auto_field_right">
+                    <input type="password" class="input_automation_password">
+                </div>
+            </div>
+            <div class="div_auto_add_field">
+                <div class="div_auto_add_cancel visit_label">取消</div>
+                <div class="div_auto_add_confirm visit_label">确定</div>
+            </div>
+        </div>
+    </div>
+    <div class="div_automation_player_add_mask common_mask" style="display: none;">
+        <div class="common_mask_content">
+            <div class="div_auto_choose_server div_auto_add_field"></div>
+            <div class="div_auto_add_field">
+                <div class="div_auto_add_cancel visit_label">取消</div>
+                <div class="div_auto_add_confirm visit_label">确定</div>
+            </div>
+        </div>
+    </div>
+</script>
+<script type="text/x-handlebars-template" class="hd_automation_player_servers">
+        <select class="select_player_servers">
+            {{#each servers}}
+            <option value="{{name}}">{{desc}}</option>
+            {{/each}}
+        </select>
+</script>
+<script type="text/x-handlebars-template" class="hd_automation_navigate_item">
+    <div class="div_auto_navigate_item">
+        <div class="clickable visit_label">{{name}}</div>
+        {{#if hasNext}}
+        <div class="div_auto_navigate_next">&gt;</div>
+        {{/if}}
+    </div>
+</script>
+<script type="text/x-handlebars-template" class="hd_automation_item">
+        <div class="div_auto_item_block common_block">
+            <div class="div_auto_item_delete visit_label">删除</div>
+            <div class="clickable visit_label">{{name}}</div>
+            {{#if hasCheck}}
+            <input type="checkbox" class="input_check_auto_item"
+                {{#if enabled}}
+                checked 
+                {{/if}}
+            >
+            {{/if}}
+        </div>
+</script>
+<script type="text/x-handlebars-template" class="hd_automation_config_item">
+        <div class="div_auto_config_block common_block">
+            <div class="div_auto_config_detail">
+                <div class="div_auto_config_name">{{name}}</div>
+                <input type="checkbox" class="input_check_auto_config"
+                    {{#if enabled}}
+                    checked
+                    {{/if}}
+                >
+            </div>
+            <div class="div_auto_config_props">
+                {{#each properties}}
+                <div class="div_auto_config_detail">
+                    <div class="div_auto_config_prop_name">{{name}}</div>
+                    {{#if type_check}}
+                    <input type="checkbox" class="ctrl_auto_config_prop"
+                        {{#if value}}
+                        checked 
+                        {{/if}}
+                    >
+                    {{else if type_options}}
+                    <select class="ctrl_auto_config_prop">
+                        {{#each options}}
+                        <option value="{{val}}"
+                            {{#if selected}}
+                            selected
+                            {{/if}}
+                        >{{val}}</option>
+                        {{/each}}
+                    </select>
+                    {{/if}}
+                </div>
+                {{/each}}
+            </div>
+        </div>
+</script>
 <script type="text/x-handlebars-template" class="hd_authorize_request">
         <div class="display_input_name">
             <div class="display_submit_name">请提交游戏名(用于管理员识别并授权)</div>
-            <input class="input_name" type="text" />
+            <input class="input_name" type="text">
             <div class="div_submit_name visit_label">提交</div>
         </div>
 </script>
@@ -38,9 +135,6 @@
                 正在加载...
             {{/if}}
         </div>
-</script>
-<script type="text/x-handlebars-template" class="hd_title_content">
-        <div class="visit_label">{{funcName}}</div>
 </script>
 <script type="text/x-handlebars-template" class="hd_player_list_all">
         <div class="div_player_list_title">
@@ -68,7 +162,7 @@
 <script type="text/x-handlebars-template" class="hd_kingwar_areastar_all">
         <div class="div_areastar_list"></div>
         <div class="div_navigate_areas"></div>
-        <div class="div_navigate_stars_mask" style="display:none">
+        <div class="div_navigate_stars_mask common_mask" style="display:none">
             <div class="div_navigate_stars"></div>
         </div>
 </script>
@@ -105,8 +199,7 @@
         </div>
 </script>
 <script type="text/x-handlebars-template" class="hd_users_all">
-        <div class="div_users_list common_block">
-        </div>
+        <div class="div_users_list common_block"></div>
 </script>
 <script type="text/x-handlebars-template" class="hd_user_item">
         <div class="div_user_item common_item_divider">
@@ -115,7 +208,7 @@
             {{else}}
             <div class="div_user_delete visit_label">删除</div>
             {{/if}}
-            <input class="input_user_name" value="{{name}}" type="text"/>
+            <input class="input_user_name" value="{{name}}" type="text">
             <div class="div_user_operations">
                 {{#if superAdmin}}
                 <div class="display_label">超级用户</div>
@@ -133,6 +226,9 @@
                 {{/if}}
             </div>
         </div>
+</script>
+<script type="text/x-handlebars-template" class="hd_title_content">
+        <div class="visit_label">{{funcName}}</div>
 </script>
 </body>
 </html>
