@@ -845,6 +845,79 @@ Base.extends("GameConnection", {
             });
         }, this);
     },
+    autoLeague:function(config, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("League", "getinfo", null, next);
+            if (!data || !data.info) {
+                return safe(done)({});
+            }
+            // auto pray
+            var prayLimit = (config.prayNumber > 23 ? 23 : config.prayNumber);
+            prayLimit = 3 - prayLimit;
+            if (data.pray_num > prayLimit) {
+                for (var i = data.pray_num; i > prayLimit; --i) {
+                    var data_pray = yield this.sendMsg("League", "pray", null, next);
+                    if (!data_pray) {
+                        break;
+                    }
+                }
+            }
+            // auto donate
+            var donate_num = (data.donate_role_max < data.donate_max ? data.donate_role_max : data.donate_max) / 1000000;
+            if (donate_num > 0) {
+                var data_goddess = yield this.sendMsg("League", "getGoddess", null, next);
+                if (!data_goddess || !data_goddess.list) {
+                    return safe(done)({});
+                }
+                var goddessData = {};
+                for (var i in data_goddess.list) {
+                    var goddess = data_goddess.list[i];
+                    goddessData[goddess.id] = goddess;
+                }
+                var donateOrder = [1, 4, 2, 5, 6, 3];
+                for (var i = 0; i < donateOrder.length; ++i) {
+                    var id = donateOrder[i];
+                    var goddess = goddessData[id];
+                    if (goddess.level < 120) {
+                        if (donate_num == 10) {
+                            var data_donate = yield this.sendMsg("League", "donate", {id:id, type:2}, next);
+                        } else {
+                            for (var j = 0; j < donate_num; ++j) {
+                                var data_donate = yield this.sendMsg("League", "donate", {id:id, type:1}, next);
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+            // auto gift
+            if (data.is_gift == 0) {
+                var data_gift = yield this.sendMsg("League", "gift", null, next);
+            }
+            // auto golory
+            var data_glory = yield this.sendMsg("League", "gloryDaily", null, next);
+            // auto city reward
+            var data_city = yield this.sendMsg("League", "getCityInfo", null, next);
+            if (data_city.award_1 == 1 && data_city.get_1 != 1) {
+                var data_award = yield this.sendMsg("League", "cityAward", {h:1}, next);
+            }
+            if (data_city.award_2 == 1 && data_city.get_2 != 1) {
+                var data_award = yield this.sendMsg("League", "cityAward", {h:2}, next);
+            }
+            // auto boss
+            if (data.boss_id <= data.boss_max) {
+                for (var boss_id = data.boss_id; boss_id <= data.boss_max; ++boss_id) {
+                    var data_boss = yield this.sendMsg("League", "boss", null, next);
+                    if (data_boss.succ != 1) {
+                        break;
+                    }
+                }
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
     testProtocol:function(done) {
         var next = coroutine(function*() {
             console.log(new Date().getTime() / 1000);
@@ -859,6 +932,7 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("ActCatchup", "info", null, next); // 后来居上
             //var data = yield this.sendMsg("KingWar", "areaRank", {areaid:1}, next); // 帝国战团队排行
             //var data = yield this.sendMsg("ActRank", "getinfo", null, next); // 排名
+            //var data = yield this.sendMsg("League", "getPosList", null, next); // 国家玩家列表
 
             //var data = yield this.sendMsg("UnionWar", "cardlog", null, next); // 查看卡牌列表
             //var data = yield this.sendMsg("UnionWar", "ahead", null, next); // 查看名次信息
@@ -868,11 +942,7 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("ActGoblin", "getinfo", null, next);
             //var data = yield this.sendMsg("ActGoblin", "buy", {id:"2120004"}, next);
             //var data = yield this.sendMsg("ActGoblin", "refresh", null, next);
-
-            //var data = yield this.sendMsg("UnionWar", "buyspeed", {num: 100}, next);
-            var data = yield this.sendMsg("RoleEmail", "getlist", null, next);
-            //var data = yield this.sendMsg("RoleEmail", "read", {id: 114223}, next);
-            //var data = yield this.sendMsg("RoleEmail", "fetch", {id: 114223}, next);
+            //var data = yield this.sendMsg("League", "getWarInfo", null, next); // 国战信息
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
