@@ -367,6 +367,7 @@ Base.extends("GameConnection", {
                 cardType: data.card_id,
                 isGoodCard: data.card_id <= 4,
                 mineArray: mineArray,
+                hasSpeed: (data.speed == 0 ? false : true),
             });
         }, this);
     },
@@ -415,6 +416,28 @@ Base.extends("GameConnection", {
     useCard:function(unionId, done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("UnionWar", "usecard", {id:unionId}, next);
+            if (!data) {
+                return safe(done)({});
+            }
+            return safe(done)({
+                success:true,
+            });
+        }, this);
+    },
+    buySpeed:function(num, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("UnionWar", "buyspeed", {num: num}, next);
+            if (!data) {
+                return safe(done)({});
+            }
+            return safe(done)({
+                success:true,
+            });
+        }, this);
+    },
+    setSpeed:function(enabled, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("UnionWar", "speed", {type: (enabled ? 1 : 0)}, next);
             if (!data) {
                 return safe(done)({});
             }
@@ -826,7 +849,7 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("ActGoblin", "buy", {id:"2120004"}, next);
             //var data = yield this.sendMsg("ActGoblin", "refresh", null, next);
 
-            var data = yield this.sendMsg("Ladder", "getinfo", null, next);
+            //var data = yield this.sendMsg("UnionWar", "buyspeed", {num: 100}, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);

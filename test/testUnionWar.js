@@ -60,11 +60,11 @@ var next = coroutine(function*() {
                             }
                             if (data.isGoodCard) {
                                 for (var k = 0; k < friendUnion.length; ++k) {
-                                    var data = yield conn.useCard(friendUnion[k], next);
+                                    var data_usecard = yield conn.useCard(friendUnion[k], next);
                                 }
                             } else {
                                 for (var k = 0; k < enemyUnion.length; ++k) {
-                                    var data = yield conn.useCard(enemyUnion[k], next);
+                                    var data_usecard = yield conn.useCard(enemyUnion[k], next);
                                 }
                             }
                             break;
@@ -77,6 +77,10 @@ var next = coroutine(function*() {
                             var occupied = false;
                             var data = yield conn.enterUnionWar(j, next);
                             if (data.mineArray) {
+                                if (!data.hasSpeed) {
+                                    yield conn.buySpeed(200, next);
+                                    yield conn.setSpeed(true, next);
+                                }
                                 var minCount = data.mineArray.length;
                                 for (var k = minCount; k >=1; --k) {
                                     var item = data.mineArray[k-1];
@@ -85,8 +89,8 @@ var next = coroutine(function*() {
                                         break;
                                     }
                                     if (!item.playerId && item.mineLife > 0) {
-                                        var data = yield conn.occupy(j, k, next);
-                                        console.log("occupy", j, k, data);
+                                        var data_occupy = yield conn.occupy(j, k, next);
+                                        console.log("occupy", j, k, data_occupy);
                                         occupied = true;
                                         break;
                                     }
@@ -101,6 +105,10 @@ var next = coroutine(function*() {
                             var occupied = false;
                             var data = yield conn.enterUnionWar(j, next);
                             if (data.mineArray) {
+                                if (!data.hasSpeed) {
+                                    yield conn.buySpeed(200, next);
+                                    yield conn.setSpeed(true, next);
+                                }
                                 var minCount = data.mineArray.length;
                                 for (var k = minCount; k >=1; --k) {
                                     var item = data.mineArray[k-1];
@@ -109,8 +117,8 @@ var next = coroutine(function*() {
                                         break;
                                     }
                                     if (!item.playerId && item.mineLife > 0) {
-                                        var data = yield conn.occupy(j, k, next);
-                                        console.log("occupy", j, k, data);
+                                        var data_occupy = yield conn.occupy(j, k, next);
+                                        console.log("occupy", j, k, data_occupy);
                                         occupied = true;
                                         break;
                                     }
