@@ -402,24 +402,29 @@ var displayAutomationModel = {
     servers: ["s96", "s95", "s94", "s93", ],
     levels: ["账号"],
     configProps: [
-        {name: "autoSign", desc: "打卡", props: [], },
-        {name: "autoForward", desc: "战斗，下一关", props: [], },
-        {name: "autoVipReward", desc: "三卡", props: [], },
-        {name: "autoFriendReward", desc: "好友", props: [], },
-        {name: "autoEmail", desc: "邮件", props: [], },
+        {name: "autoSign", desc: "打卡", props: []},
+        {name: "autoForward", desc: "战斗，下一关", props: []},
+        {name: "autoVipReward", desc: "三卡", props: []},
+        {name: "autoFriendReward", desc: "好友", props: []},
+        {name: "autoEmail", desc: "邮件", props: []},
         {name: "autoMaze", desc: "迷宫", props: [
-            {name: "searchNumber", desc: "单个迷宫搜索次数", type: "number", limit: [0, 13], },
-        ], },
+            {name: "searchNumber", desc: "单个迷宫搜索次数", type: "number", limit: [0, 13]},
+        ]},
         {name: "autoFriendWar", desc: "友谊战", props: [
-            {name: "baseInspire", desc: "基础加成", type: "number", limit: [0, 6], },
-            {name: "advanceInspire", desc: "补充加成", type: "number", limit: [0, 6], },
-        ], },
+            {name: "baseInspire", desc: "基础加成", type: "number", limit: [0, 6]},
+            {name: "advanceInspire", desc: "补充加成", type: "number", limit: [0, 6]},
+        ]},
         {name: "autoLadder", desc: "晋级赛", props: [
-            {name: "fightPlayer", desc: "是否攻击战力低的玩家", type: "check", },
-        ], },
+            {name: "fightPlayer", desc: "是否攻击战力低的玩家", type: "check"},
+        ]},
         {name: "autoLeague", desc: "国家(福利，狩猎，国土奖励...)", props: [
-            {name: "prayNumber", desc: "国家福利次数", type: "number", limit: [3, 23], },
-        ], },
+            {name: "prayNumber", desc: "国家福利次数", type: "number", limit: [3, 23]},
+            {name: "donateMax", desc: "女神捐献次数", type: "number", limit: [0, 10]},
+        ]},
+        {name: "autoKingWar", desc: "帝国战奖励", props: []},
+        {name: "autoUnion", desc: "骑士团", props: [
+            {name: "donateMax", desc: "贡献次数", type: "number", limit: [0, 10]},
+        ]},
     ],
 };
 

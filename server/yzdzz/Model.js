@@ -227,10 +227,16 @@ $HttpModel.addClass({
         }
         for (var configType in defaultsStates.automation) {
             var config = automationConfig[configType];
+            var baseConfig = defaultsStates.automation[configType];
             if (config) {
+                for (var key in baseConfig) {
+                    if (typeof(config[key]) == "undefined") {
+                        config[key] = baseConfig[key];
+                    }
+                }
                 autoConfigs[configType] = config;
             } else {
-                autoConfigs[configType] = defaultsStates.automation[configType];
+                autoConfigs[configType] = baseConfig;
             }
         }
         return autoConfigs;

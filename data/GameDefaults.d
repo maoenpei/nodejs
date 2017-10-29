@@ -8,7 +8,8 @@
         ,"autoMaze":{"searchNumber":3}
         ,"autoFriendWar":{"baseInspire":3,"advanceInspire":3}
         ,"autoLadder":{"fightPlayer":false}
-        ,"autoLeague":{"prayNumber":10}
+        ,"autoLeague":{"prayNumber":10,"donateMax":10}
         ,"autoKingWar":{}
+        ,"autoUnion":{"donateMax":10}
     }
 }
