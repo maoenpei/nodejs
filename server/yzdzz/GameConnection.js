@@ -3,11 +3,45 @@ require("../Base");
 require("../FileManager");
 require("./Protocol");
 
+var secOfDay = 24 * 3600;
+Base.extends("GameValidator", {
+    _constructor: function() {
+        this.setDay = {}; // day of a week
+        this.setHour = {}; // hour of a day
+    },
+    checkDaily:function(name) {
+        var currTime = new Date();
+        var compareTime = new Date();
+        compareTime.setHours(0, 0, 0, 0);
+        var timeDiff = (currTime.getTime() - compareTime.getTime()) / 1000;
+        if (timeDiff < 10 || timeDiff + 10 > secOfDay) {
+            return false;
+        }
+        var lastDay = (this.setDay[name] ? this.setDay[name] : -1);
+        var currDay = currTime.getDay();
+        if (lastDay == currDay) {
+            return false;
+        }
+        this.setDay[name] = currDay;
+        return true;
+    },
+    checkHourly:function(name) {
+        var lastHour = (this.setHour[name] ? this.setHour[name] : -1);
+        var currHour = new Date().getHours();
+        if (lastHour == currHour) {
+            return false;
+        }
+        this.setHour[name] = currHour;
+        return true;
+    },
+});
+
 var cachedServers = null;
 Base.extends("GameConnection", {
-    _constructor:function(username, password) {
+    _constructor:function(username, password, validator) {
         this.username = username;
         this.password = password;
+        this.validator = validator;
         this.accountInfo = null;
         this.servers = [];
         this.serverInfo = null;
@@ -27,6 +61,9 @@ Base.extends("GameConnection", {
     },
     getUsername:function() {
         return this.username;
+    },
+    getValidator:function() {
+        return this.validator;
     },
     getAccountInfo:function() {
         return this.accountInfo;
@@ -141,8 +178,6 @@ Base.extends("GameConnection", {
                 this.onReceive(c, m, data);
             });
 
-            var data = yield this.sendMsg("Role", "version", null, next);
-            var data = yield this.sendMsg("Role", "getUid", {userName:this.accountInfo.accountId}, next);
             var data = yield this.sendMsg("Role", "logins", {
                 "token":this.accountInfo.accessToken,
                 "client":99,
@@ -534,30 +569,65 @@ Base.extends("GameConnection", {
 
     autoSign:function(config, done) {
         var next = coroutine(function*() {
-            var data = yield this.sendMsg("Sign", "getinfo", null, next);
-            if (!data || !data.list) {
-                return safe(done)({});
-            }
-            var signed = !!(data.list[String(data.count)]);
-            if (!signed) {
-                var data = yield this.sendMsg("Sign", "start", {point:0}, next);
+            if (this.validator.checkDaily("autoSign")) {
+                var data = yield this.sendMsg("Sign", "getinfo", null, next);
+                if (!data || !data.list) {
+                    return safe(done)({});
+                }
+                var signed = !!(data.list[String(data.count)]);
+                if (!signed) {
+                    var data = yield this.sendMsg("Sign", "start", {point:0}, next);
+                }
             }
             return safe(done)({
                 success:true,
-                signed:signed,
+            });
+        }, this);
+    },
+    autoForward:function(config, done) {
+        var next = coroutine(function*() {
+            if (!this.validator.nextLevel || this.validator.nextLevel <= this.gameInfo.level) {
+                var data = yield this.sendMsg("RoleExplore", "getinfo", null, next);
+                if (!data || !data.current) {
+                    return safe(done)({});
+                }
+                var openid = data.openid;
+                var events = (data.current.events ? data.current.events : {});
+                for (var i = 1; i <= 3; ++i) {
+                    if (events[i] != 1) {
+                        var data_event = yield this.sendMsg("RoleExplore", "event", {index:i}, next);
+                        if (!data_event) {
+                            return safe(done)({});
+                        }
+                        if (data_event.openid != 0){
+                            openid = data_event.openid;
+                        }
+                    }
+                }
+                if (openid > data.id) {
+                    var data_start = yield this.sendMsg("RoleExplore", "start", {id:openid}, next);
+                    if (!data_start) {
+                        this.validator.nextLevel = this.gameInfo.level + 1;
+                    }
+                }
+            }
+            return safe(done)({
+                success:true,
             });
         }, this);
     },
     autoVipReward:function(config, done) {
         var next = coroutine(function*() {
-            var data = yield this.sendMsg("Vip", "getinfo", null, next);
-            if (!data || !data.cards) {
-                return safe(done)({});
-            }
-            for (var i = 0; i < data.cards.length; ++i) {
-                var card = data.cards[i];
-                if (card.expire > 0 && card.daily == 1) {
-                    var data_gift = yield this.sendMsg("Vip", "dailyGift", {id:card.id}, next);
+            if (this.validator.checkDaily("autoVipReward")) {
+                var data = yield this.sendMsg("Vip", "getinfo", null, next);
+                if (!data || !data.cards) {
+                    return safe(done)({});
+                }
+                for (var i = 0; i < data.cards.length; ++i) {
+                    var card = data.cards[i];
+                    if (card.expire > 0 && card.daily == 1) {
+                        var data_gift = yield this.sendMsg("Vip", "dailyGift", {id:card.id}, next);
+                    }
                 }
             }
             return safe(done)({
@@ -567,25 +637,27 @@ Base.extends("GameConnection", {
     },
     autoFriendReward:function(config, done) {
         var next = coroutine(function*() {
-            var data = yield this.sendMsg("Friend", "getinfo", null, next);
-            if (!data || !data.friend) {
-                return safe(done)({});
-            }
-            var friends = {};
-            for (var i = 0; i < data.friend.length; ++i) {
-                var playerId = data.friend[i].uid;
-                friends[playerId] = true;
-            }
-            for (var i = 0; i < data.bless_out.length; ++i) {
-                var playerId = data.bless_out[i];
-                delete friends[playerId];
-            }
-            for (var playerId in friends) {
-                var data_bless = yield this.sendMsg("Friend", "bless", {uid:playerId, type:1}, next);
-            }
-            for (var i = 0; i < data.bless_in.length; ++i) {
-                var playerData = data.bless_in[i];
-                var data_bless = yield this.sendMsg("Friend", "bless", {uid:playerData.uid, type:2}, next);
+            if (this.validator.checkHourly("autoFriendReward")) {
+                var data = yield this.sendMsg("Friend", "getinfo", null, next);
+                if (!data || !data.friend) {
+                    return safe(done)({});
+                }
+                var friends = {};
+                for (var i = 0; i < data.friend.length; ++i) {
+                    var playerId = data.friend[i].uid;
+                    friends[playerId] = true;
+                }
+                for (var i = 0; i < data.bless_out.length; ++i) {
+                    var playerId = data.bless_out[i];
+                    delete friends[playerId];
+                }
+                for (var playerId in friends) {
+                    var data_bless = yield this.sendMsg("Friend", "bless", {uid:playerId, type:1}, next);
+                }
+                for (var i = 0; i < data.bless_in.length; ++i) {
+                    var playerData = data.bless_in[i];
+                    var data_bless = yield this.sendMsg("Friend", "bless", {uid:playerData.uid, type:2}, next);
+                }
             }
             return safe(done)({
                 success:true,
@@ -594,17 +666,19 @@ Base.extends("GameConnection", {
     },
     autoEmail:function(config, done) {
         var next = coroutine(function*() {
-            var data = yield this.sendMsg("RoleEmail", "getlist", null, next);
-            if (!data || !data.list) {
-                return safe(done)({});
-            }
-            for (var i = 0; i < data.list.length; ++i) {
-                var email = data.list[i];
-                if (email.state == 0) {
-                    var data_read = yield this.sendMsg("RoleEmail", "read", {id: email.id}, next);
+            if (this.validator.checkHourly("autoEmail")) {
+                var data = yield this.sendMsg("RoleEmail", "getlist", null, next);
+                if (!data || !data.list) {
+                    return safe(done)({});
                 }
-                if (email.attachment && email.state != 2) {
-                    var data_fetch = yield this.sendMsg("RoleEmail", "fetch", {id: email.id}, next);
+                for (var i = 0; i < data.list.length; ++i) {
+                    var email = data.list[i];
+                    if (email.state == 0) {
+                        var data_read = yield this.sendMsg("RoleEmail", "read", {id: email.id}, next);
+                    }
+                    if (email.attachment && email.state != 2) {
+                        var data_fetch = yield this.sendMsg("RoleEmail", "fetch", {id: email.id}, next);
+                    }
                 }
             }
             return safe(done)({
@@ -651,18 +725,20 @@ Base.extends("GameConnection", {
     },
     autoMaze:function(config, done) {
         var next = coroutine(function*() {
-            var data = yield this.sendMsg("Maze", "getinfo", null, next);
-            if (!data || !data.type) {
-                return safe(done)({});
-            }
-            var searched = {};
-            searched[1] = data.search_num_1;
-            searched[2] = data.search_num_2;
-            searched[3] = data.search_num_3;
-            for (var i = 1; i <= 3; ++i) {
-                var data_change = yield this.sendMsg("Maze", "change", {type:i}, next);
-                for (var j = searched[i]; j < config.searchNumber; ++j) {
-                    var data_search = yield this.sendMsg("Maze", "search", null, next);
+            if (this.validator.checkHourly("autoMaze")) {
+                var data = yield this.sendMsg("Maze", "getinfo", null, next);
+                if (!data || !data.type) {
+                    return safe(done)({});
+                }
+                var searched = {};
+                searched[1] = data.search_num_1;
+                searched[2] = data.search_num_2;
+                searched[3] = data.search_num_3;
+                for (var i = 1; i <= 3; ++i) {
+                    var data_change = yield this.sendMsg("Maze", "change", {type:i}, next);
+                    for (var j = searched[i]; j < config.searchNumber; ++j) {
+                        var data_search = yield this.sendMsg("Maze", "search", null, next);
+                    }
                 }
             }
             return safe(done)({
@@ -672,42 +748,43 @@ Base.extends("GameConnection", {
     },
     autoFriendWar:function(config, done) {
         var next = coroutine(function*() {
-            var data = yield this.sendMsg("FriendWar", "getinfo", null, next);
-            if (!data || !data.list) {
-                return safe(done)({});
-            }
-            var current = data.inspire;
-            for (var i = current; i < config.baseInspire; ++i) {
-                var data_inspire = yield this.sendMsg("FriendWar", "inspire", null, next);
-            }
-            var winNumber = data.win_num;
-            for (var i = data.fight_num; i < 7; ++i) {
-                for (var j = 0; j < 6; ++j) {
-                    var dead = data.list[j].died == 1;
-                    if (!dead) {
-                        var data_fight = yield this.sendMsg("FriendWar", "fight", {index:j, auto:0}, next);
-                        if (data_fight && data_fight.succ == 1) {
-                            data.list[j].died = 1;
-                            winNumber++;
-                            break;
-                        } else {
-                            for (var k = 0; k < config.advanceInspire; ++k) {
-                                var data_inspire = yield this.sendMsg("FriendWar", "inspire", null, next);
+            if (this.validator.checkHourly("autoFriendWar")) {
+                var data = yield this.sendMsg("FriendWar", "getinfo", null, next);
+                if (!data || !data.list) {
+                    return safe(done)({});
+                }
+                var current = data.inspire;
+                for (var i = current; i < config.baseInspire; ++i) {
+                    var data_inspire = yield this.sendMsg("FriendWar", "inspire", null, next);
+                }
+                var winNumber = data.win_num;
+                for (var i = data.fight_num; i < 7; ++i) {
+                    for (var j = 0; j < 6; ++j) {
+                        var dead = data.list[j].died == 1;
+                        if (!dead) {
+                            var data_fight = yield this.sendMsg("FriendWar", "fight", {index:j, auto:0}, next);
+                            if (data_fight && data_fight.succ == 1) {
+                                data.list[j].died = 1;
+                                winNumber++;
+                                break;
+                            } else {
+                                for (var k = 0; k < config.advanceInspire; ++k) {
+                                    var data_inspire = yield this.sendMsg("FriendWar", "inspire", null, next);
+                                }
+                                break;
                             }
-                            break;
                         }
                     }
                 }
-            }
-            var neededWin = [1, 3, 6];
-            for (var i = 1; i <= 3; ++i) {
-                if (data.reward[i] != 1 && winNumber >= neededWin[i-1]) {
-                    var data_reward = yield this.sendMsg("FriendWar", "reward", {id:i}, next);
+                var neededWin = [1, 3, 6];
+                for (var i = 1; i <= 3; ++i) {
+                    if (data.reward[i] != 1 && winNumber >= neededWin[i-1]) {
+                        var data_reward = yield this.sendMsg("FriendWar", "reward", {id:i}, next);
+                    }
                 }
             }
             return safe(done)({
                 success: true,
-                allWin: winNumber == 6,
             });
         }, this);
     },
@@ -768,75 +845,77 @@ Base.extends("GameConnection", {
     },
     autoLadder:function(config, done) {
         var next = coroutine(function*() {
-            var data = yield this.sendMsg("Ladder", "getinfo", null, next);
-            if (!data || !data.members) {
-                return safe(done)({});
-            }
-            // auto reward
-            if (data.reward == 0 && data.last_rank != 0) {
-                var data_reward = yield this.sendMsg("Ladder", "reward", null, next);
-            }
-            // auto events
-            for (var i = 0; i < data.events.length; ++i) {
-                var event = data.events[i];
-                if (event.cardid == 1) {
-                    if (event.done == 0) {
-                        var data_res = yield this.sendMsg("Ladder", "getEventRes", {id:event.id}, next);
-                    }
-                    var data_res = yield this.sendMsg("Ladder", "delEvent", {id:event.id}, next);
+            if (this.validator.checkHourly("autoLadder")) {
+                var data = yield this.sendMsg("Ladder", "getinfo", null, next);
+                if (!data || !data.members) {
+                    return safe(done)({});
                 }
-            }
-            // auto use cards
-            if (data.cards.length > 0) {
-                for (var i = 0; i < data.cards.length; ++i) {
-                    var card = data.cards[i];
-                    var used = false;
-                    for (var j = 0; j < data.members.length; ++j) {
-                        var member = data.members[j];
-                        if (member.id == this.gameInfo.playerId) {
-                            continue;
+                // auto reward
+                if (data.reward == 0 && data.last_rank != 0) {
+                    var data_reward = yield this.sendMsg("Ladder", "reward", null, next);
+                }
+                // auto events
+                for (var i = 0; i < data.events.length; ++i) {
+                    var event = data.events[i];
+                    if (event.cardid == 1) {
+                        if (event.done == 0) {
+                            var data_res = yield this.sendMsg("Ladder", "getEventRes", {id:event.id}, next);
                         }
-                        var data_card = null;
-                        if (member.pc != 1 && (card == 1 || card == 4)) {
-                            data_card = yield this.sendMsg("Ladder", "card", {id:member.id, evid:0}, next);
-                        } else if (member.pc != 1 && member.bad > 0 && card == 6) {
-                            data_card = yield this.sendMsg("Ladder", "card", {id:member.id, evid:0}, next);
-                        } else if (member.pc == 1 && (card == 2 || card == 3 || card == 5)) {
-                            data_card = yield this.sendMsg("Ladder", "card", {id:member.id, evid:0}, next);
-                        }
-                        if (data_card) {
-                            used = true;
-                            break;
-                        }
+                        var data_res = yield this.sendMsg("Ladder", "delEvent", {id:event.id}, next);
                     }
-                    if (!used) {
-                        for (var j = data.members.length - 1; j >= 0; --j) {
+                }
+                // auto use cards
+                if (data.cards.length > 0) {
+                    for (var i = 0; i < data.cards.length; ++i) {
+                        var card = data.cards[i];
+                        var used = false;
+                        for (var j = 0; j < data.members.length; ++j) {
                             var member = data.members[j];
                             if (member.id == this.gameInfo.playerId) {
                                 continue;
                             }
-                            var data_card = yield this.sendMsg("Ladder", "card", {id:member.id, evid:0}, next);
+                            var data_card = null;
+                            if (member.pc != 1 && (card == 1 || card == 4)) {
+                                data_card = yield this.sendMsg("Ladder", "card", {id:member.id, evid:0}, next);
+                            } else if (member.pc != 1 && member.bad > 0 && card == 6) {
+                                data_card = yield this.sendMsg("Ladder", "card", {id:member.id, evid:0}, next);
+                            } else if (member.pc == 1 && (card == 2 || card == 3 || card == 5)) {
+                                data_card = yield this.sendMsg("Ladder", "card", {id:member.id, evid:0}, next);
+                            }
                             if (data_card) {
+                                used = true;
                                 break;
+                            }
+                        }
+                        if (!used) {
+                            for (var j = data.members.length - 1; j >= 0; --j) {
+                                var member = data.members[j];
+                                if (member.id == this.gameInfo.playerId) {
+                                    continue;
+                                }
+                                var data_card = yield this.sendMsg("Ladder", "card", {id:member.id, evid:0}, next);
+                                if (data_card) {
+                                    break;
+                                }
                             }
                         }
                     }
                 }
-            }
-            // auto fight
-            var canFight = true;
-            if (data.cd != 0) {
-                canFight = ((data.cd * 1000 - new Date().getTime()) / 1000 / 60) <= 29;
-            }
-            if (canFight) {
-                for (var i = 0; i < data.members.length; ++i) {
-                    var member = data.members[i];
-                    if (member.id == this.gameInfo.playerId) {
-                        break;
-                    }
-                    if (member.pc == 1 || (config.fightPlayer && member.cpi < this.gameInfo.power)) {
-                        var data_fight = yield this.sendMsg("Ladder", "fight", {id:member.id}, next);
-                        break;
+                // auto fight
+                var canFight = true;
+                if (data.cd != 0) {
+                    canFight = ((data.cd * 1000 - new Date().getTime()) / 1000 / 60) <= 29;
+                }
+                if (canFight) {
+                    for (var i = 0; i < data.members.length; ++i) {
+                        var member = data.members[i];
+                        if (member.id == this.gameInfo.playerId) {
+                            break;
+                        }
+                        if (member.pc == 1 || (config.fightPlayer && member.cpi < this.gameInfo.power)) {
+                            var data_fight = yield this.sendMsg("Ladder", "fight", {id:member.id}, next);
+                            break;
+                        }
                     }
                 }
             }
@@ -847,70 +926,108 @@ Base.extends("GameConnection", {
     },
     autoLeague:function(config, done) {
         var next = coroutine(function*() {
-            var data = yield this.sendMsg("League", "getinfo", null, next);
-            if (!data || !data.info) {
-                return safe(done)({});
-            }
-            // auto pray
-            var prayLimit = (config.prayNumber > 23 ? 23 : config.prayNumber);
-            prayLimit = 3 - prayLimit;
-            if (data.pray_num > prayLimit) {
-                for (var i = data.pray_num; i > prayLimit; --i) {
-                    var data_pray = yield this.sendMsg("League", "pray", null, next);
-                    if (!data_pray) {
-                        break;
-                    }
-                }
-            }
-            // auto donate
-            var donate_num = (data.donate_role_max < data.donate_max ? data.donate_role_max : data.donate_max) / 1000000;
-            if (donate_num > 0) {
-                var data_goddess = yield this.sendMsg("League", "getGoddess", null, next);
-                if (!data_goddess || !data_goddess.list) {
+            if (this.validator.checkHourly("autoLeague")) {
+                var data = yield this.sendMsg("League", "getinfo", null, next);
+                if (!data || !data.info) {
                     return safe(done)({});
                 }
-                var goddessData = {};
-                for (var i in data_goddess.list) {
-                    var goddess = data_goddess.list[i];
-                    goddessData[goddess.id] = goddess;
+                // auto pray
+                var prayLimit = (config.prayNumber > 23 ? 23 : config.prayNumber);
+                prayLimit = 3 - prayLimit;
+                if (data.pray_num > prayLimit) {
+                    for (var i = data.pray_num; i > prayLimit; --i) {
+                        var data_pray = yield this.sendMsg("League", "pray", null, next);
+                        if (!data_pray) {
+                            break;
+                        }
+                    }
                 }
-                var donateOrder = [1, 4, 2, 5, 6, 3];
-                for (var i = 0; i < donateOrder.length; ++i) {
-                    var id = donateOrder[i];
-                    var goddess = goddessData[id];
-                    if (goddess.level < 120) {
-                        if (donate_num == 10) {
-                            var data_donate = yield this.sendMsg("League", "donate", {id:id, type:2}, next);
-                        } else {
-                            for (var j = 0; j < donate_num; ++j) {
-                                var data_donate = yield this.sendMsg("League", "donate", {id:id, type:1}, next);
+                // auto city reward
+                var data_city = yield this.sendMsg("League", "getCityInfo", null, next);
+                if (data_city.award_1 == 1 && data_city.get_1 != 1) {
+                    var data_award = yield this.sendMsg("League", "cityAward", {h:1}, next);
+                }
+                if (data_city.award_2 == 1 && data_city.get_2 != 1) {
+                    var data_award = yield this.sendMsg("League", "cityAward", {h:2}, next);
+                }
+                // auto boss
+                if (data.boss_id <= data.boss_max) {
+                    for (var boss_id = data.boss_id; boss_id <= data.boss_max; ++boss_id) {
+                        var data_boss = yield this.sendMsg("League", "boss", null, next);
+                        if (data_boss.succ != 1) {
+                            break;
+                        }
+                    }
+                }
+                if (this.validator.checkDaily("autoLeague_day")) {
+                    // auto donate
+                    var donate_num = (data.donate_role_max < data.donate_max ? data.donate_role_max : data.donate_max) / 1000000;
+                    if (donate_num > 0) {
+                        var data_goddess = yield this.sendMsg("League", "getGoddess", null, next);
+                        if (!data_goddess || !data_goddess.list) {
+                            return safe(done)({});
+                        }
+                        var goddessData = {};
+                        for (var i in data_goddess.list) {
+                            var goddess = data_goddess.list[i];
+                            goddessData[goddess.id] = goddess;
+                        }
+                        var donateOrder = [1, 4, 2, 5, 6, 3];
+                        for (var i = 0; i < donateOrder.length; ++i) {
+                            var id = donateOrder[i];
+                            var goddess = goddessData[id];
+                            if (goddess.level < 120) {
+                                if (donate_num == 10) {
+                                    var data_donate = yield this.sendMsg("League", "donate", {id:id, type:2}, next);
+                                } else {
+                                    for (var j = 0; j < donate_num; ++j) {
+                                        var data_donate = yield this.sendMsg("League", "donate", {id:id, type:1}, next);
+                                    }
+                                }
+                                break;
                             }
                         }
-                        break;
                     }
+                    // auto gift
+                    if (data.is_gift == 0) {
+                        var data_gift = yield this.sendMsg("League", "gift", null, next);
+                    }
+                    // auto golory
+                    var data_glory = yield this.sendMsg("League", "gloryDaily", null, next);
                 }
             }
-            // auto gift
-            if (data.is_gift == 0) {
-                var data_gift = yield this.sendMsg("League", "gift", null, next);
-            }
-            // auto golory
-            var data_glory = yield this.sendMsg("League", "gloryDaily", null, next);
-            // auto city reward
-            var data_city = yield this.sendMsg("League", "getCityInfo", null, next);
-            if (data_city.award_1 == 1 && data_city.get_1 != 1) {
-                var data_award = yield this.sendMsg("League", "cityAward", {h:1}, next);
-            }
-            if (data_city.award_2 == 1 && data_city.get_2 != 1) {
-                var data_award = yield this.sendMsg("League", "cityAward", {h:2}, next);
-            }
-            // auto boss
-            if (data.boss_id <= data.boss_max) {
-                for (var boss_id = data.boss_id; boss_id <= data.boss_max; ++boss_id) {
-                    var data_boss = yield this.sendMsg("League", "boss", null, next);
-                    if (data_boss.succ != 1) {
-                        break;
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    autoKingWar:function(config, done) {
+        var next = coroutine(function*() {
+            if (this.validator.checkDaily("autoKingWar")) {
+                var data = yield this.sendMsg("KingWar", "gift", null, next);
+                if (!data || !data.daily) {
+                    return safe(done)({});
+                }
+                // auto daily
+                if (data.done == 0) {
+                    var data_daily = yield this.sendMsg("KingWar", "dailyGift", null, next);
+                }
+                for (var i = 0; i < data.luckcard.length; ++i) {
+                    var card = data.luckcard[i];
+                    if (card.state == 1) {
+                        // card.id
                     }
+                }
+                // auto rank reward
+                for (var i = 1; i <= 3; ++i) {
+                    var data_rank = yield this.sendMsg("KingWar", "areaRank", {areaid:i}, next);
+                    if (data_rank.state == 1) {
+                        var data_fetch = yield this.sendMsg("KingWar", "fetchAreaRes", {areaid:i}, next);
+                    }
+                }
+                var data_emperor = yield this.sendMsg("KingWar", "emperorRank", null, next);
+                if (data_emperor.state == 1) {
+                    var data_fetch = yield this.sendMsg("KingWar", "fetchEmperorRes", null, next);
                 }
             }
             return safe(done)({
@@ -922,6 +1039,9 @@ Base.extends("GameConnection", {
         var next = coroutine(function*() {
             console.log(new Date().getTime() / 1000);
             var data = null;
+            //var data = yield this.sendMsg("Role", "version", null, next); // 登陆之前
+            //var data = yield this.sendMsg("Role", "getUid", {userName:this.accountInfo.accountId}, next); // 登录之前
+            //var data = yield this.sendMsg("Role", "getInfo", null, next); // 登录之后第一条消息，因为太大不发送
             //var data = yield this.sendMsg("Collect", "getinfo", null, next);
             //var data = yield this.sendMsg("Chat", "all", null, next); // 聊天信息
             //var data = yield this.sendMsg("Chat", "logs", null, next); // 聊天信息
@@ -930,9 +1050,9 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("ActLevelGift", "getinfo", null, next); // 新手等级奖励
             //var data = yield this.sendMsg("ActGoldenHero", "getinfo", null, next); // 金币魔女
             //var data = yield this.sendMsg("ActCatchup", "info", null, next); // 后来居上
-            //var data = yield this.sendMsg("KingWar", "areaRank", {areaid:1}, next); // 帝国战团队排行
             //var data = yield this.sendMsg("ActRank", "getinfo", null, next); // 排名
             //var data = yield this.sendMsg("League", "getPosList", null, next); // 国家玩家列表
+            //var data = yield this.sendMsg("KingWar", "getAreaRes", null, next); // 帝国战获取奖励列表
 
             //var data = yield this.sendMsg("UnionWar", "cardlog", null, next); // 查看卡牌列表
             //var data = yield this.sendMsg("UnionWar", "ahead", null, next); // 查看名次信息
@@ -1028,7 +1148,8 @@ Base.extends("GameConnection", {
         this.regMsg("UnionWar", "sync", (data) => {});
         this.regMsg("UnionWar", "occupy", (data) => {});
         this.regMsg("UnionWar", "leave", (data) => {});
-        this.regMsg("League", "warClose", (data) => {});
-        this.regMsg("Combat", "complete", (data) => {});
+        this.regMsg("League", "warClose", (data) => {}); // notification
+        this.regMsg("Combat", "complete", (data) => {}); // show combat
+        this.regMsg("RoleExplore", "update", (data) => {}); // notification
     },
 });

@@ -168,7 +168,7 @@ $HttpModel.addClass({
             this.controller.modifyPlayerAutomation(playerData.refreshAutomationKey, 3, autoConfigs);
         } else {
             playerData.refreshAutomationKey =
-                this.controller.setPlayerAutomation(playerData.account, playerData.server, 3, autoConfigs);
+                this.controller.setPlayerAutomation(playerData, 3, autoConfigs);
         }
     },
     stopRefreshAutomation:function(playerKey) {
@@ -187,7 +187,7 @@ $HttpModel.addClass({
             return;
         }
         playerData.refreshPlayerKey =
-            this.controller.setPlayerListAccount(playerData.account, playerData.server, 1, 10, 3000000, 8000000, 20);
+            this.controller.setPlayerListAccount(playerData, 1, 10, 300, 800, 20);
     },
     stopRefreshPlayerinfo:function(playerKey) {
         var playerData = this.players[playerKey];
@@ -205,7 +205,7 @@ $HttpModel.addClass({
             return;
         }
         playerData.refreshKingwarKey =
-            this.controller.setKingwarAccount(playerData.account, playerData.server, 1, area, star);
+            this.controller.setKingwarAccount(playerData, 1, area, star);
     },
     stopRefreshKingwar:function(playerKey) {
         var playerData = this.players[playerKey];
@@ -290,6 +290,7 @@ $HttpModel.addClass({
             accountKey: accountKey,
             account: this.accounts[accountKey].account,
             server: server,
+            validator: new GameValidator(),
         };
     },
     delPlayer:function(playerKey) {
@@ -363,7 +364,7 @@ $HttpModel.addClass({
             }
 
             var account = this.accountManager.add(username, password);
-            var conn = this.accountManager.connectAccount(account);
+            var conn = this.accountManager.connectAccount(account, null);
             var data = yield conn.loginAccount(next);
             if (!data.success) {
                 this.accountManager.remove(account);

@@ -403,6 +403,7 @@ var displayAutomationModel = {
     levels: ["账号"],
     configProps: [
         {name: "autoSign", desc: "打卡", props: [], },
+        {name: "autoForward", desc: "战斗，下一关", props: [], },
         {name: "autoVipReward", desc: "三卡", props: [], },
         {name: "autoFriendReward", desc: "好友", props: [], },
         {name: "autoEmail", desc: "邮件", props: [], },

@@ -1,0 +1,14 @@
+{
+    "automation":{
+        "autoSign":{}
+        ,"autoForward":{}
+        ,"autoVipReward":{}
+        ,"autoFriendReward":{}
+        ,"autoEmail":{}
+        ,"autoMaze":{"searchNumber":3}
+        ,"autoFriendWar":{"baseInspire":3,"advanceInspire":3}
+        ,"autoLadder":{"fightPlayer":false}
+        ,"autoLeague":{"prayNumber":10}
+        ,"autoKingWar":{}
+    }
+}

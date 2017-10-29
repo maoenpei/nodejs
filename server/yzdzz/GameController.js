@@ -26,13 +26,13 @@ Base.extends("AccountManager", {
         return this.accounts;
     },
 
-    connectAccount:function(accountKey) {
+    connectAccount:function(accountKey, validator) {
         var accountData = this.accounts[accountKey];
         if (!accountData) {
             return null;
         }
 
-        var accountObj = new GameConnection(accountData.username, accountData.password);
+        var accountObj = new GameConnection(accountData.username, accountData.password, validator);
         return accountObj;
     },
 });
@@ -53,8 +53,8 @@ Base.extends("GameController", {
     },
 
     // API
-    setPlayerAutomation:function(accountKey, serverDesc, intervalCount, autoConfigs) {
-        return this.appendRefresh(accountKey, serverDesc, intervalCount, (conn, done) => {
+    setPlayerAutomation:function(playerData, intervalCount, autoConfigs) {
+        return this.appendRefresh(playerData, intervalCount, (conn, done) => {
             this.refreshAutomation(conn, autoConfigs, done);
         });
     },
@@ -65,14 +65,14 @@ Base.extends("GameController", {
         });
     },
     // API
-    manualPlayerAutomation:function(accountKey, serverDesc, autoConfigs, done) {
+    manualPlayerAutomation:function(playerData, autoConfigs, done) {
         var next = coroutine(function*() {
-            var conn = this.accountManager.connectAccount(accountKey);
+            var conn = this.accountManager.connectAccount(playerData.account, playerData.validator);
             var data = yield conn.loginAccount(next);
             if (!data.success) {
                 return safe(done)({});
             }
-            var data = yield conn.loginGame(serverDesc, next);
+            var data = yield conn.loginGame(playerData.server, next);
             if (!data.success) {
                 return safe(done)({});
             }
@@ -98,13 +98,13 @@ Base.extends("GameController", {
     },
 
     // API
-    setPlayerListAccount:function(accountKey, serverDesc, intervalCount, unionCount, minPower, limitPower, limitDay) {
-        return this.appendRefresh(accountKey, serverDesc, intervalCount, (conn, done) => {
+    setPlayerListAccount:function(playerData, intervalCount, unionCount, minPower, limitPower, limitDay) {
+        return this.appendRefresh(playerData, intervalCount, (conn, done) => {
             this.refreshPlayers(conn, {
-                server: serverDesc,
-                minPower: minPower,
-                count: unionCount,
-                limitPower: limitPower,
+                server: playerData.server,
+                minPower: minPower * 10000,
+                unionCount: unionCount,
+                limitPower: limitPower * 10000,
                 limitDay: limitDay,
             }, done);
         });
@@ -204,7 +204,7 @@ Base.extends("GameController", {
                     name: unionItem.name,
                     short: unionItem.short,
                 };
-                if (i < refreshData.count) {
+                if (i < refreshData.unionCount) {
                     var playersData = yield conn.getUnionPlayers(unionItem.unionId, next);
                     if (!playersData.players) {
                         this.errLog("getUnionPlayers", "none");
@@ -240,19 +240,17 @@ Base.extends("GameController", {
     },
 
     // API
-    setKingwarAccount:function(accountKey, serverDesc, intervalCount, area, star) {
+    setKingwarAccount:function(playerData, intervalCount, area, star) {
         var key = area * 100 + star;
-        var refreshData = {
-            key: key,
-            area:area,
-            star:star,
-            account:accountKey,
-            server:serverDesc,
+        return this.appendRefresh(playerData, intervalCount, (conn, done) => {
+            this.refreshKingwar(conn, {
+                key: key,
+                area:area,
+                star:star,
+                server:playerData.server,
 
-            refData:this.kingwarRefs[key],
-        };
-        return this.appendRefresh(accountKey, serverDesc, intervalCount, (conn, done) => {
-            this.refreshKingwar(conn, refreshData, done);
+                refData:this.kingwarRefs[key],
+            }, done);
         });
     },
     // API
@@ -291,6 +289,10 @@ Base.extends("GameController", {
     refreshKingwar:function(conn, refreshData, done) {
         var next = coroutine(function*() {
             console.log("refreshKingwar..");
+            var validator = conn.getValidator();
+            if (this.constantKingwar && !validator.checkDaily("refreshKingwar")) {
+                return safe(done)();
+            }
             var data = yield conn.getKingWar(next);
             var constant = !data.allowJoin;
             if (this.constantKingwar && !constant) {
@@ -366,7 +368,7 @@ Base.extends("GameController", {
                     }
 
                     if (executables.length > 0) {
-                        var conn = this.accountManager.connectAccount(refreshInfo.account);
+                        var conn = this.accountManager.connectAccount(refreshInfo.account, refreshInfo.validator);
                         var data = yield conn.loginAccount(next);
                         if (!data.success) {
                             this.errLog("connectAccount", "account({0}), server({1})".format(conn.getUsername(), refreshInfo.server));
@@ -403,13 +405,14 @@ Base.extends("GameController", {
     errLog:function(action, state) {
         console.log("Failed to get task '{0}', detail:'{1}'".format(action, state));
     },
-    appendRefresh:function(accountKey, server, count, func) {
-        var accountGameKey = accountKey + "$" + server;
+    appendRefresh:function(playerData, count, func) {
+        var accountGameKey = playerData.account + "$" + playerData.server;
         var refreshInfo = this.refreshData[accountGameKey];
         refreshInfo = (refreshInfo ? refreshInfo : {
-            account: accountKey,
-            server: server,
+            account: playerData.account,
+            server: playerData.server,
             funcs: [],
+            validator: playerData.validator,
         });
         var funcObj = {
             func:func,
@@ -446,6 +449,9 @@ Base.extends("GameController", {
             for (var i = 0; i < refreshInfo.funcs.length; ++i) {
                 if (refreshInfo.funcs[i] === key.obj) {
                     refreshInfo.funcs.splice(i, 1);
+                    if (refreshInfo.funcs.length == 0) {
+                        delete this.refreshData[key.key];
+                    }
                     return true;
                 }
             }
