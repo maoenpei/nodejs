@@ -81,7 +81,6 @@ Base.extends("GameConnection", {
     quit:function() {
         this.sock.end();
         this.sock = null;
-        this.gameInfo = null;
     },
     loginAccount:function(done) {
         var next = coroutine(function*() {
@@ -260,7 +259,7 @@ Base.extends("GameConnection", {
     getUnion:function(done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("Union", "getinfo", null, next);
-            if (!data) {
+            if (!data || !data.id) {
                 return safe(done)({});
             }
             return safe(done)({
@@ -292,7 +291,7 @@ Base.extends("GameConnection", {
     getUnionPlayers:function(unionId, done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("Union", "view", {unionid:unionId}, next);
-            if (!data || data.level <= 0) {
+            if (!data || !data.members) {
                 return safe(done)({});
             }
 
@@ -317,7 +316,7 @@ Base.extends("GameConnection", {
     getUnionWar:function(done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("UnionWar", "getinfo", null, next);
-            if (!data) {
+            if (!data || !data.held) {
                 return safe(done)({});
             }
             var isOpen = Number(data.open) == 1;
@@ -381,11 +380,11 @@ Base.extends("GameConnection", {
     enterUnionWar:function(landId, done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("UnionWar", "enter", null, next);
-            if (!data) {
+            if (!data || !data.list) {
                 return safe(done)({});
             }
             var data = yield this.sendMsg("UnionWar", "enterland", {id:landId}, next);
-            if (!data) {
+            if (!data || !data.gems) {
                 return safe(done)({});
             }
             var mineArray = [];
@@ -1142,7 +1141,7 @@ Base.extends("GameConnection", {
     // private
     sendNotify:function(c, m, data, callback) {
         if (!this.sock) {
-            return;
+            return later(callback, null);
         }
         GameSock.send(this.sock, c, m, data, callback);
     },
@@ -1159,7 +1158,7 @@ Base.extends("GameConnection", {
     },
     sendMsg:function(c, m, data, callback) {
         if (!this.sock) {
-            return;
+            return later(callback, null);
         }
         var key = c + "." + m;
         var callbackArray = this.recvCallbacks[key];

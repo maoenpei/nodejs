@@ -4,10 +4,11 @@ require("../server/yzdzz/GameController");
 
 $FileManager.RootDirectory = __dirname;
 
-var isWeekend = false;
+var isWeekend = true;
 
 var throwCard = true;
 var occupyGem = true;
+var fightPlayer = false;
 
 var accounts = [
     {u:"eyexiaohao001", p:"123456"},
@@ -41,7 +42,7 @@ var next = coroutine(function*() {
             console.log("account", data.success);
             if (!data.success) {continue;}
             for (var m = 0; m < servers.length; ++m) {
-                yield setTimeout(next, 300);
+                yield setTimeout(next, 100);
                 var data = yield conn.loginGame(servers[m], next);
                 console.log("game", data.success);
                 if (!data.success) {continue;}
@@ -73,7 +74,7 @@ var next = coroutine(function*() {
                 }
                 if (occupyGem) {
                     if (isWeekend) {
-                        for (var j = 1; j < 3; ++j) {
+                        for (var j = 1; j <= 1; ++j) {
                             var occupied = false;
                             var data = yield conn.enterUnionWar(j, next);
                             if (data.mineArray) {
