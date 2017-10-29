@@ -8,16 +8,16 @@ Base.extends("AccountManager", {
     },
     add:function(username, password) {
         var accountKey = rkey();
-        while(this.accounts[accountKey]) {
-            accountKey = rkey();
-        }
+        while(this.accounts[accountKey]) {accountKey = rkey();}
         this.accounts[accountKey] = {
             username:username,
             password:password,
         }
+        console.log("Account added. accountKey:{0}, username:{1}, password:{2}".format(accountKey, username, password));
         return accountKey;
     },
     remove:function(accountKey) {
+        console.log("Account deleted. accountKey:{0}".format(accountKey));
         if (this.accounts[accountKey]) {
             delete this.accounts[accountKey];
         }
@@ -68,6 +68,9 @@ Base.extends("GameController", {
     manualPlayerAutomation:function(playerData, autoConfigs, done) {
         var next = coroutine(function*() {
             var conn = this.accountManager.connectAccount(playerData.account, playerData.validator);
+            if (!conn) {
+                return safe(done)({});
+            }
             var data = yield conn.loginAccount(next);
             if (!data.success) {
                 return safe(done)({});
@@ -369,9 +372,13 @@ Base.extends("GameController", {
 
                     if (executables.length > 0) {
                         var conn = this.accountManager.connectAccount(refreshInfo.account, refreshInfo.validator);
+                        if (!conn) {
+                            this.errLog("connectAccount", "account:{0}".format(refreshInfo.account));
+                            continue;
+                        }
                         var data = yield conn.loginAccount(next);
                         if (!data.success) {
-                            this.errLog("connectAccount", "account({0}), server({1})".format(conn.getUsername(), refreshInfo.server));
+                            this.errLog("loginAccount", "account({0}), server({1})".format(conn.getUsername(), refreshInfo.server));
                             continue;
                         }
                         var data = yield conn.loginGame(refreshInfo.server, next);

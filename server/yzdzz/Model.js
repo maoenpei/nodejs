@@ -280,7 +280,10 @@ $HttpModel.addClass({
             this.delPlayer(playerKey);
         }
         var accountData = this.accounts[accountKey];
-        this.accountManager.remove(accountData.account);
+        var account = accountData.account;
+        this.noConfliction(() => {
+            this.accountManager.remove(account);
+        });
         delete this.accounts[accountKey];
     },
     addPlayer:function(playerKey, accountKey, server) {
@@ -690,7 +693,7 @@ $HttpModel.addClass({
             var data = yield this.controller.manualPlayerAutomation(playerData, autoConfigs, next);
 
             responder.respondJson({
-                success: data.success,
+                success: !!data.success,
             }, done);
         }, this);
     },
