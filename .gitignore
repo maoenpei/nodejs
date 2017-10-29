@@ -3,3 +3,5 @@ data/*.d
 data/*.in
 nohup.out
 pid
+pid_daemon
+logs

@@ -1,1 +1,1 @@
-kill `cat pid`
+kill `cat pid_daemon`
