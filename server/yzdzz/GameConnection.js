@@ -200,6 +200,7 @@ Base.extends("GameConnection", {
                 colorDiamond : data.gold, // color diamond
                 whiteDiamond : data.ticket, // white diamond
                 power: data.cpi,
+                leagueMedal: data.league_medal,
             };
             var result = yield GameHTTP.stat(this.gameInfo.playerId, "reg", next);
             if (result != 'done') {
@@ -933,6 +934,17 @@ Base.extends("GameConnection", {
                 }
                 // auto pray
                 var prayLimit = (config.prayNumber > 23 ? 23 : config.prayNumber);
+                var allMedal = this.gameInfo.leagueMedal;
+                var prayMax = 3;
+                var prayCost = 50;
+                while (prayMax < prayLimit && prayCost <= allMedal) {
+                    allMedal -= prayCost;
+                    prayMax++;
+                    if (prayCost < 1600) {
+                        prayCost *= 2;
+                    }
+                }
+                prayLimit = (prayLimit < prayMax ? prayLimit : prayMax);
                 prayLimit = 3 - prayLimit;
                 if (data.pray_num > prayLimit) {
                     for (var i = data.pray_num; i > prayLimit; --i) {

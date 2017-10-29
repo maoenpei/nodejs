@@ -72,6 +72,7 @@ $HttpModel.addClass({
             }
 
             var allUsers = [];
+            var sortBaseIndex = 0;
             for (var serial in userStates.keys) {
                 var keyData = userStates.keys[serial];
                 if (!keyData.name) {
@@ -83,10 +84,17 @@ $HttpModel.addClass({
                         serial:serial,
                         auth:0,
                     });
+                    sortBaseIndex++;
                 } else {
                     var userData = userStates.users[keyData.userKey];
                     if (userData) {
-                        allUsers.push({
+                        var insertIndex = allUsers.length - 1;
+                        for (; insertIndex >= sortBaseIndex; --insertIndex) {
+                            if (allUsers[insertIndex].auth > userData.auth) {
+                                break;
+                            }
+                        }
+                        allUsers.splice(insertIndex + 1, 0, {
                             name:keyData.name,
                             serial:serial,
                             auth:userData.auth,
