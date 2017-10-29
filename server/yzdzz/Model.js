@@ -39,6 +39,7 @@ $HttpModel.addClass({
         httpServer.registerCommand("addplayer", this);
         httpServer.registerCommand("delplayer", this);
         httpServer.registerCommand("playerautomation", this);
+        httpServer.registerCommand("playermanual", this);
         httpServer.registerCommand("listautomation", this);
         httpServer.registerCommand("checkrefresh", this);
         httpServer.registerCommand("manrefresh", this);
@@ -159,11 +160,11 @@ $HttpModel.addClass({
 
     startRefreshAutomation:function(playerKey, automationConfig) {
         var playerData = this.players[playerKey];
-        var autoConfigs = this.generateConfig(automationConfig, false);
-        if (!autoConfigs) {
+        if (automationConfig.disabled) {
             this.stopRefreshAutomation(playerKey);
             return;
         }
+        var autoConfigs = this.generateConfig(automationConfig, false);
         if (playerData.refreshAutomationKey) {
             this.controller.modifyPlayerAutomation(playerData.refreshAutomationKey, 3, autoConfigs);
         } else {
@@ -219,9 +220,6 @@ $HttpModel.addClass({
     },
 
     generateConfig:function(automationConfig, needDisabled) {
-        if (automationConfig.disabled && !needDisabled) {
-            return null;
-        }
         var defaultsStates = $StateManager.getState(GAME_DEFAULTS_CONFIG);
         var autoConfigs = {};
         if (needDisabled) {
@@ -526,7 +524,7 @@ $HttpModel.addClass({
             responder.respondJson({
                 success: true,
                 key: playerKey,
-                configs: this.generateConfig({ disabled: true }, true)
+                configs: this.generateConfig({ disabled: true }, true),
             }, done);
         }, this);
     },
@@ -625,19 +623,74 @@ $HttpModel.addClass({
                 return responder.respondJson({}, done);
             }
 
-            var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
             var automationConfig = this.validateConfig(configs);
             if (!automationConfig) {
                 responder.addError("Not valid config information.");
                 return responder.respondJson({}, done);
             }
 
+            var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
             settingStates.automation[playerKey] = automationConfig;
             this.startRefreshAutomation(playerKey, automationConfig);
             yield $StateManager.commitState(GAME_SETTING_CONFIG, next);
 
             responder.respondJson({
                 success: true,
+            }, done);
+        }, this);
+    },
+    playermanual:function(requestor, responder, done) {
+        var next = coroutine(function*() {
+            var obj = yield this.httpServer.tokenValid(requestor, next);
+            if (!obj) {
+                responder.addError("Not valid token for logout.");
+                return responder.respondJson({}, done);
+            }
+
+            var userStates = $StateManager.getState(USER_CONFIG);
+            var keyData = userStates.keys[obj.getSerial()];
+            if (!keyData || !keyData.userKey) {
+                responder.addError("Not an authorized user.");
+                return responder.respondJson({}, done);
+            }
+
+            var userData = userStates.users[keyData.userKey];
+            if (!userData || userData.auth < 2) {
+                responder.addError("Admin level not enough.");
+                return responder.respondJson({}, done);
+            }
+
+            var json = yield requestor.visitBodyJson(next);
+            if (!json || !json.key) {
+                responder.addError("Parameter data not correct.");
+                return responder.respondJson({}, done);
+            }
+
+            var playerKey = json.key;
+            var playerData = this.players[playerKey];
+            if (!playerData) {
+                responder.addError("Invalid player key.");
+                return responder.respondJson({}, done);
+            }
+
+            var playerBelong = this.getPlayerIndex(userData, playerKey);
+            if (playerBelong < 0) {
+                responder.addError("Player doesn't belong to user.");
+                return responder.respondJson({}, done);
+            }
+
+            var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
+            var automationConfig = settingStates.automation[playerKey];
+            if (!automationConfig.disabled) {
+                responder.addError("Automation enabled config cannot do manual.");
+                return responder.respondJson({}, done);
+            }
+            
+            var autoConfigs = this.generateConfig(automationConfig, false);
+            var data = yield this.controller.manualPlayerAutomation(playerData, autoConfigs, next);
+
+            responder.respondJson({
+                success: data.success,
             }, done);
         }, this);
     },

@@ -548,6 +548,12 @@ displayAutomationModel.save = function(player, callback) {
         }
     });
 }
+displayAutomationModel.manual = function(player, callback) {
+    $this = this;
+    requestPost("playermanual", { key: player.key }, function(json) {
+        callback(json.success);
+    });
+}
 
 function displayAutomation() {
     var divContentPanel = $(".div_content_panel");
@@ -692,6 +698,7 @@ function displayAutomation() {
                         name: player.server,
                         hasCheck:true,
                         enabled: !player.copy_configs.disabled,
+                        rightText: "手动",
                     }));
                     divAutoPlayerBlock.appendTo(divAutomationContent);
 
@@ -699,6 +706,15 @@ function displayAutomation() {
                         if (confirm("确认删除'" + player.server + "'的角色？")) {
                             displayAutomationModel.delPlayer(lastAccount, player, function() {
                                 displayPlayers();
+                            });
+                        }
+                    });
+                    divAutoPlayerBlock.find(".div_auto_item_right").click(function() {
+                        if (!player.copy_configs.disabled) {
+                            alert("手动必须先禁用自动模式");
+                        } else {
+                            displayAutomationModel.manual(player, function(success) {
+                                alert(success ? "手动成功，请登陆游戏查看" : "手动失败");
                             });
                         }
                     });
@@ -720,14 +736,19 @@ function displayAutomation() {
             lastPlayer = (player ? player : lastPlayer);
 
             displayCommands({name: "保存", func: function() {
-                displayAutomationModel.save(lastPlayer, function(success) {
-                    if (success) {
-                        alert("保存成功!");
-                    } else {
-                        alert("保存失败!");
+                if (lastPlayer.copy_configs.disabled) {
+                    if (confirm("该配置尚未启用，需要启用吗？")) {
+                        lastPlayer.copy_configs.disabled = undefined;
                     }
-                    displayConfig();
-                });
+                    displayAutomationModel.save(lastPlayer, function(success) {
+                        if (success) {
+                            alert("保存成功!");
+                        } else {
+                            alert("保存失败!");
+                        }
+                        displayConfig();
+                    });
+                }
             }});
 
             divAutomationContent.html("");
