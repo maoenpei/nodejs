@@ -1060,39 +1060,40 @@ Base.extends("GameConnection", {
                 var data_like = yield this.sendMsg("Union", "like", { unionid: data.id }, next);
                 var data_like = yield this.sendMsg("UnionWar", "agree", null, next);
                 var data_like = yield this.sendMsg("UnionRace", "agree", null, next);
-            }
-            if (this.validator.checkHourly("autoUnion")) {
-                // auto race reward
-                var data_rewardlist = yield this.sendMsg("UnionRace", "getrewardlist", null, next);
-                if (!data_rewardlist || !data_rewardlist.list) {
-                    return safe(done)({});
-                }
-                for (var i = 0; i < data_rewardlist.list.length; ++i) {
-                    var reward = data_rewardlist.list[i];
-                    if (reward.state == 1) {
-                        var data_reward = yield this.sendMsg("UnionRace", "reward", {id:reward.id}, next);
+
+                if (this.validator.checkHourly("autoUnion")) {
+                    // auto race reward
+                    var data_rewardlist = yield this.sendMsg("UnionRace", "getrewardlist", null, next);
+                    if (!data_rewardlist || !data_rewardlist.list) {
+                        return safe(done)({});
                     }
-                }
-                // auto reward
-                for (var landId in data.lands) {
-                    if (data.lands[landId] == 1) {
-                        var data_reward = yield this.sendMsg("UnionWar", "reward", { id: landId }, next);
+                    for (var i = 0; i < data_rewardlist.list.length; ++i) {
+                        var reward = data_rewardlist.list[i];
+                        if (reward.state == 1) {
+                            var data_reward = yield this.sendMsg("UnionRace", "reward", {id:reward.id}, next);
+                        }
                     }
-                }
-                // auto donate
-                var data_home = yield this.sendMsg("Union", "home", null, next);
-                if (!data_home || !data_home.shop) {
-                    return safe(done)({});
-                }
-                var alreadyNum = 10 - data_home.my_max / 1000000;
-                var donateNum = (data_home.my_max < data_home.total_max ? data_home.my_max : data_home.total_max) / 1000000;
-                donateNum = (donateNum < (config.donateMax - alreadyNum) ? donateNum : (config.donateMax - alreadyNum));
-                if (donateNum > 0) {
-                    if (donateNum == 10) {
-                        var data_donate = yield this.sendMsg("Union", "donate", {type:2}, next);
-                    } else {
-                        for (var i = 0; i < donateNum; ++i) {
-                            var data_donate = yield this.sendMsg("Union", "donate", {type:1}, next);
+                    // auto reward
+                    for (var landId in data.lands) {
+                        if (data.lands[landId] == 1) {
+                            var data_reward = yield this.sendMsg("UnionWar", "reward", { id: landId }, next);
+                        }
+                    }
+                    // auto donate
+                    var data_home = yield this.sendMsg("Union", "home", null, next);
+                    if (!data_home || !data_home.shop) {
+                        return safe(done)({});
+                    }
+                    var alreadyNum = 10 - data_home.my_max / 1000000;
+                    var donateNum = (data_home.my_max < data_home.total_max ? data_home.my_max : data_home.total_max) / 1000000;
+                    donateNum = (donateNum < (config.donateMax - alreadyNum) ? donateNum : (config.donateMax - alreadyNum));
+                    if (donateNum > 0) {
+                        if (donateNum == 10) {
+                            var data_donate = yield this.sendMsg("Union", "donate", {type:2}, next);
+                        } else {
+                            for (var i = 0; i < donateNum; ++i) {
+                                var data_donate = yield this.sendMsg("Union", "donate", {type:1}, next);
+                            }
                         }
                     }
                 }
