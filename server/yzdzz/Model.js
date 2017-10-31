@@ -690,13 +690,15 @@ $HttpModel.addClass({
 
             var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
             var automationConfig = settingStates.automation[playerKey];
+            automationConfig = (automationConfig ? automationConfig : { disabled: true, });
             if (!automationConfig.disabled) {
                 responder.addError("Automation enabled config cannot do manual.");
                 return responder.respondJson({}, done);
             }
-            
+
             var autoConfigs = this.generateConfig(automationConfig, false);
             var data = yield this.controller.manualPlayerAutomation(playerData, autoConfigs, next);
+            console.log("Manual finished!");
 
             responder.respondJson({
                 success: !!data.success,
