@@ -425,6 +425,15 @@ var displayAutomationModel = {
         {name: "autoUnion", desc: "骑士团", props: [
             {name: "donateMax", desc: "贡献次数", type: "number", limit: [0, 10]},
         ]},
+        {name: "autoArena", desc: "竞技场", props:[
+            {name: "boxMax", desc: "积分兑换次数", type: "number", limit: [3, 26]},
+            {name: "buyHeroSoul", desc: "是否购买蓝魂", type: "check"},
+            {name: "fightPlayer", desc: "是否攻击战力低的玩家", type: "check"},
+            {name: "fightMax", desc: "攻击次数", type: "number", limit: [0, 20]},
+        ]},
+        {name: "autoReward", desc: "领取(日历，任务，招财猫，活动...)", props: [
+            {name: "nekoMax", desc: "招财猫次数", type: "number", limit: [0, 10]},
+        ]},
     ],
 };
 

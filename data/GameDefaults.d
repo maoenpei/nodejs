@@ -11,5 +11,7 @@
         ,"autoLeague":{"prayNumber":10,"donateMax":10}
         ,"autoKingWar":{}
         ,"autoUnion":{"donateMax":10}
+        ,"autoArena":{"boxMax":6,"buyHeroSoul":true,"fightPlayer":true,"fightMax":10}
+        ,"autoReward":{"nekoMax":4}
     }
 }

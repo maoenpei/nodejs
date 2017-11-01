@@ -201,6 +201,8 @@ Base.extends("GameConnection", {
                 power: data.cpi,
                 leagueMedal: data.league_medal,
                 crystal: data.crystal, // Kingwar crystal
+                arenaPoint: data.arena_point,
+                arenaGlory: data.arena_glory,
             };
             var result = yield GameHTTP.stat(this.gameInfo.playerId, "reg", next);
             if (result != 'done') {
@@ -876,11 +878,13 @@ Base.extends("GameConnection", {
                                 continue;
                             }
                             var data_card = null;
-                            if (member.pc != 1 && (card == 1 || card == 4)) {
+                            if (member.pc != 1 && card == 1) {
+                                data_card = yield this.sendMsg("Ladder", "card", {id:member.id, evid:0}, next);
+                            } else if (member.pc != 1 && member.good < 3 && card == 4) {
                                 data_card = yield this.sendMsg("Ladder", "card", {id:member.id, evid:0}, next);
                             } else if (member.pc != 1 && member.bad > 0 && card == 6) {
                                 data_card = yield this.sendMsg("Ladder", "card", {id:member.id, evid:0}, next);
-                            } else if (member.pc == 1 && (card == 2 || card == 3 || card == 5)) {
+                            } else if (member.pc == 1 && member.bad < 3 && (card == 2 || card == 3 || card == 5)) {
                                 data_card = yield this.sendMsg("Ladder", "card", {id:member.id, evid:0}, next);
                             }
                             if (data_card) {
@@ -892,6 +896,9 @@ Base.extends("GameConnection", {
                             for (var j = data.members.length - 1; j >= 0; --j) {
                                 var member = data.members[j];
                                 if (member.id == this.gameInfo.playerId) {
+                                    continue;
+                                }
+                                if ((member.good == 3 && card == 4) || (member.bad == 3 && (card == 2 || card == 3))) {
                                     continue;
                                 }
                                 var data_card = yield this.sendMsg("Ladder", "card", {id:member.id, evid:0}, next);
@@ -956,6 +963,9 @@ Base.extends("GameConnection", {
                 }
                 // auto city reward
                 var data_city = yield this.sendMsg("League", "getCityInfo", null, next);
+                if (!data_city) {
+                    return safe(done)({});
+                }
                 if (data_city.award_1 == 1 && data_city.get_1 != 1) {
                     var data_award = yield this.sendMsg("League", "cityAward", {h:1}, next);
                 }
@@ -971,37 +981,37 @@ Base.extends("GameConnection", {
                         }
                     }
                 }
-                // auto donate
-                var alreadyNum = 10 - data.donate_role_max / 1000000;
-                var donateNum = (data.donate_role_max < data.donate_max ? data.donate_role_max : data.donate_max) / 1000000;
-                donateNum = (donateNum < (config.donateMax - alreadyNum) ? donateNum : (config.donateMax - alreadyNum));
-                if (donateNum > 0) {
-                    var data_goddess = yield this.sendMsg("League", "getGoddess", null, next);
-                    if (!data_goddess || !data_goddess.list) {
-                        return safe(done)({});
-                    }
-                    var goddessData = {};
-                    for (var i in data_goddess.list) {
-                        var goddess = data_goddess.list[i];
-                        goddessData[goddess.id] = goddess;
-                    }
-                    var donateOrder = [1, 4, 2, 5, 6, 3];
-                    for (var i = 0; i < donateOrder.length; ++i) {
-                        var id = donateOrder[i];
-                        var goddess = goddessData[id];
-                        if (goddess.level < 120) {
-                            if (donateNum == 10) {
-                                var data_donate = yield this.sendMsg("League", "donate", {id:id, type:2}, next);
-                            } else {
-                                for (var j = 0; j < donateNum; ++j) {
-                                    var data_donate = yield this.sendMsg("League", "donate", {id:id, type:1}, next);
+                if (this.validator.checkDaily("autoLeague")) {
+                    // auto donate
+                    var alreadyNum = 10 - data.donate_role_max / 1000000;
+                    var donateNum = (data.donate_role_max < data.donate_max ? data.donate_role_max : data.donate_max) / 1000000;
+                    donateNum = (donateNum < (config.donateMax - alreadyNum) ? donateNum : (config.donateMax - alreadyNum));
+                    if (donateNum > 0) {
+                        var data_goddess = yield this.sendMsg("League", "getGoddess", null, next);
+                        if (!data_goddess || !data_goddess.list) {
+                            return safe(done)({});
+                        }
+                        var goddessData = {};
+                        for (var i in data_goddess.list) {
+                            var goddess = data_goddess.list[i];
+                            goddessData[goddess.id] = goddess;
+                        }
+                        var donateOrder = [1, 4, 2, 5, 6, 3];
+                        for (var i = 0; i < donateOrder.length; ++i) {
+                            var id = donateOrder[i];
+                            var goddess = goddessData[id];
+                            if (goddess.level < 120) {
+                                if (donateNum == 10) {
+                                    var data_donate = yield this.sendMsg("League", "donate", {id:id, type:2}, next);
+                                } else {
+                                    for (var j = 0; j < donateNum; ++j) {
+                                        var data_donate = yield this.sendMsg("League", "donate", {id:id, type:1}, next);
+                                    }
                                 }
+                                break;
                             }
-                            break;
                         }
                     }
-                }
-                if (this.validator.checkDaily("autoLeague_day")) {
                     // auto gift
                     if (data.is_gift == 0) {
                         var data_gift = yield this.sendMsg("League", "gift", null, next);
@@ -1029,7 +1039,7 @@ Base.extends("GameConnection", {
                 for (var i = 0; i < data.luckcard.length; ++i) {
                     var card = data.luckcard[i];
                     if (card.state == 1) {
-                        // card.id
+                        var data_luckCard = yield this.sendMsg("KingWar", "luckCardGift", {id: card.id}, next);
                     }
                 }
                 // auto rank reward
@@ -1051,34 +1061,16 @@ Base.extends("GameConnection", {
     },
     autoUnion:function(config, done) {
         var next = coroutine(function*() {
-            if (this.validator.checkDaily("autoUnion")) {
+            if (this.validator.checkHourly("autoUnion")) {
                 var data = yield this.sendMsg("Union", "getinfo", null, next);
                 if (!data || !data.lands) {
                     return safe(done)({});
                 }
-                // auto thumb
-                var data_like = yield this.sendMsg("Union", "like", { unionid: data.id }, next);
-                var data_like = yield this.sendMsg("UnionWar", "agree", null, next);
-                var data_like = yield this.sendMsg("UnionRace", "agree", null, next);
-
-                if (this.validator.checkHourly("autoUnion")) {
-                    // auto race reward
-                    var data_rewardlist = yield this.sendMsg("UnionRace", "getrewardlist", null, next);
-                    if (!data_rewardlist || !data_rewardlist.list) {
-                        return safe(done)({});
-                    }
-                    for (var i = 0; i < data_rewardlist.list.length; ++i) {
-                        var reward = data_rewardlist.list[i];
-                        if (reward.state == 1) {
-                            var data_reward = yield this.sendMsg("UnionRace", "reward", {id:reward.id}, next);
-                        }
-                    }
-                    // auto reward
-                    for (var landId in data.lands) {
-                        if (data.lands[landId] == 1) {
-                            var data_reward = yield this.sendMsg("UnionWar", "reward", { id: landId }, next);
-                        }
-                    }
+                if (this.validator.checkDaily("autoUnion")) {
+                    // auto thumb
+                    var data_like = yield this.sendMsg("Union", "like", { unionid: data.id }, next);
+                    var data_like = yield this.sendMsg("UnionWar", "agree", null, next);
+                    var data_like = yield this.sendMsg("UnionRace", "agree", null, next);
                     // auto donate
                     var data_home = yield this.sendMsg("Union", "home", null, next);
                     if (!data_home || !data_home.shop) {
@@ -1094,6 +1086,249 @@ Base.extends("GameConnection", {
                             for (var i = 0; i < donateNum; ++i) {
                                 var data_donate = yield this.sendMsg("Union", "donate", {type:1}, next);
                             }
+                        }
+                    }
+                }
+
+                // auto race reward
+                var data_rewardlist = yield this.sendMsg("UnionRace", "getrewardlist", null, next);
+                if (!data_rewardlist || !data_rewardlist.list) {
+                    return safe(done)({});
+                }
+                for (var i = 0; i < data_rewardlist.list.length; ++i) {
+                    var reward = data_rewardlist.list[i];
+                    if (reward.state == 1) {
+                        var data_reward = yield this.sendMsg("UnionRace", "reward", {id:reward.id}, next);
+                    }
+                }
+                // auto reward
+                for (var landId in data.lands) {
+                    if (data.lands[landId] == 1) {
+                        var data_reward = yield this.sendMsg("UnionWar", "reward", { id: landId }, next);
+                    }
+                }
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    autoArena:function(config, done) {
+        var next = coroutine(function*() {
+            if (this.validator.checkHourly("autoArena")) {
+                var data = yield this.sendMsg("Arena", "getinfo", null, next);
+                if (!data || !data.list) {
+                    return safe(done)({});
+                }
+                // auto reward
+                if (data.reward.done == 0) {
+                    var data_reward = yield this.sendMsg("Arena", "reward", null, next);
+                }
+                // auto box
+                var boxMax = (config.boxMax > 26 ? 26 : config.boxMax);
+                var restArenaPoint = this.gameInfo.arenaPoint;
+                if (restArenaPoint < 1400) {
+                    boxMax = 0;
+                } else if (restArenaPoint < 4600) {
+                    boxMax = 3;
+                } else if (restArenaPoint <= 30200) {
+                    var blockNum = Math.floor((restArenaPoint - 4600) / 6400);
+                    boxMax = 6 + blockNum * 5;
+                }
+                for (var i = data.box_num; i < boxMax; ++i) {
+                    var data_box = yield this.sendMsg("Arena", "box", null, next);
+                }
+                // auto buy
+                if (config.buyHeroSoul && this.gameInfo.arenaGlory > 120) {
+                    var data_shop = yield this.sendMsg("Arena", "shop", null, next);
+                    if (!data_shop || !data_shop.list) {
+                        return safe(done)({});
+                    }
+                    var buyNum = Math.floor(this.gameInfo.arenaGlory / 120);
+                    var item_id = null;
+                    for (var i = 0; i < data_shop.list.length; ++i) {
+                        var item = data_shop.list[i];
+                        if (item.res.indexOf("hero_soul") >= 0) {
+                            item_id = item.id;
+                            buyNum = (buyNum < item.max - item.num ? buyNum : item.max - item.num);
+                            break;
+                        }
+                    }
+                    if (item_id && buyNum > 0) {
+                        for (var i = 0; i < buyNum; ++i) {
+                            var data_exchange = yield this.sendMsg("Arena", "exchange", { id: item_id }, next);
+                        }
+                    }
+                }
+                // auto fight
+                var fightMax = (config.fightMax > 20 ? 20 : config.fightMax);
+                if (config.fightPlayer && data.fight_num < fightMax) {
+                    var fightItem = data.list[data.list.length - 1];
+                    if (fightItem.cpi > this.gameInfo.power) {
+                        var data_refresh = yield this.sendMsg("Arena", "refresh", null, next);
+                        fightItem = data_refresh.list[data_refresh.list.length - 1];
+                        if (fightItem.cpi > this.gameInfo.power) {
+                            fightItem = null;
+                        }
+                    }
+                    if (fightItem) {
+                        for (var i = data.fight_num; i < fightMax; ++i) {
+                            var data_fight = yield this.sendMsg("Arena", "fight", { data: fightItem.uid }, next);
+                        }
+                    }
+                }
+                if (this.validator.checkDaily("autoArena")) {
+                    // auto like
+                    if (data.like == 0) {
+                        var data_rank = yield this.sendMsg("Arena", "getrank", null, next);
+                        if (data_rank && data_rank.list) {
+                            var data_like = yield this.sendMsg("Arena", "like", { id:data_rank.list[0].uid }, next);
+                        }
+                    }
+                    // auto achievement
+                    var data_achievement = yield this.sendMsg("Arena", "achievement", null, next);
+                    if (!data_achievement || !data_achievement.list) {
+                        return safe(done)({});
+                    }
+                    for (var i = 0; i < data_achievement.list.length; ++i) {
+                        var item = data_achievement.list[i];
+                        if (item.state == 1) {
+                            var data_res = yield this.sendMsg("Arena", "achievementres", { id: item.id }, next);
+                        }
+                    }
+                }
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    autoReward:function(config, done) {
+        var next = coroutine(function*() {
+            if (this.validator.checkDaily("autoReward")) {
+                // auto collect card
+                var data = yield this.sendMsg("ActCollectCard", "getinfo", null, next);
+                if (data && data.list) {
+                    var collectable = [];
+                    collectable.push(data.show);
+                    for (var i = 0; i < data.list.length; ++i) {
+                        var item = data.list[i];
+                        if (item.tips == 1 && item.id != data.show.id) {
+                            var data_card = yield this.sendMsg("ActCollectCard", "card", { id:item.id }, next);
+                            if (data_card) {
+                                collectable.push(data_card);
+                            }
+                        }
+                    }
+                    for (var i = 0; i < collectable.length; ++i) {
+                        var item = collectable[i];
+                        if (item.daily == 0) {
+                            var data_daily = yield this.sendMsg("ActCollectCard", "dailyGift", { id:item.id }, next);
+                        }
+                        for (var j = 1; j <= item.day; ++j) {
+                            if (!item.list || !item.list[j]) {
+                                var data_gift = yield this.sendMsg("ActCollectCard", "gift", { id:item.id, day:j-1 }, next);
+                            }
+                        }
+                    }
+                }
+            }
+            if (this.validator.checkHourly("autoReward")) {
+                // auto neko
+                var data = yield this.sendMsg("ActNeko", "getinfo", null, next);
+                if (data && typeof(data.num) == "number") {
+                    var nekoNum = (config.nekoMax > 10 ? 10 : config.nekoMax);
+                    for (var i = data.num; i < nekoNum; ++i) {
+                        var data_neko = yield this.sendMsg("ActNeko", "knock", null, next);
+                    }
+                }
+                // auto active
+                var data = yield this.sendMsg("ActActive", "getinfo", null, next);
+                if (data && data.list) {
+                    for (var i = 0; i < data.list.length; ++i) {
+                        var item = data.list[i];
+                        if (item.num == item.max) {
+                            var data_reward = yield this.sendMsg("ActActive", "reward", { id:item.id }, next);
+                        }
+                    }
+                }
+                var data = yield this.sendMsg("ActActive", "getinfo", null, next);
+                if (data && data.list) {
+                    var rewarded = {};
+                    for (var i = 20; i <= data.point; i += 20) {
+                        var boxid = i / 20;
+                        rewarded[boxid] = true;
+                    }
+                    for (var i = 0; i < data.box.length; ++i) {
+                        var boxid = data.box[i];
+                        if (rewarded[boxid]) {
+                            delete rewarded[boxid];
+                        }
+                    }
+                    for (var boxid in rewarded) {
+                        var data_box = yield this.sendMsg("ActActive", "box", {id:boxid}, next);
+                    }
+                }
+                // auto quest
+                var hasQuest = true;
+                while(hasQuest) {
+                    hasQuest = false;
+                    var data = yield this.sendMsg("Quest", "getinfo", null, next);
+                    if (data && data.list) {
+                        for (var id in data.list) {
+                            var item = data.list[id];
+                            if (item.state == 1) {
+                                hasQuest = true;
+                                var data_quest = yield this.sendMsg("Quest", "done", {id:id}, next);
+                            }
+                        }
+                    }
+                }
+                // auto splendid
+                var data = yield this.sendMsg("ActSplendid", "getinfo", null, next);
+                if (data && data.list) {
+                    for (var i = 0; i < data.list.length; ++i) {
+                        var splendidItem = data.list[i];
+                        for (var j = 0; j < splendidItem.box.length; ++j) {
+                            var boxItem = splendidItem.box[j];
+                            if (boxItem.num == boxItem.max && boxItem.done == 0) {
+                                var data_reward = yield this.sendMsg("ActSplendid", "reward", { actid: splendidItem.id, boxid: boxItem.id }, next);
+                            }
+                        }
+                    }
+                }
+                // auto meal
+                var data = yield this.sendMsg("ActMeal", "getinfo", null, next);
+                if (data && data.list) {
+                    var rewards = {};
+                    var hourNum = new Date().getHours();
+                    if (hourNum >= 12 && hourNum <= 14) {
+                        rewards[30001] = true;
+                    }
+                    if (hourNum >= 18 && hourNum <= 20) {
+                        rewards[30002] = true;
+                    }
+                    if (hourNum >= 20 && hourNum <= 22) {
+                        rewards[30003] = true;
+                    }
+                    if (data.online >= 1) {
+                        rewards[30004] = true;
+                    }
+                    if (data.online >= 5) {
+                        rewards[30005] = true;
+                    }
+                    if (data.online >= 30) {
+                        rewards[30006] = true;
+                    }
+                    if (data.online >= 60) {
+                        rewards[30007] = true;
+                    }
+                    if (data.online >= 120) {
+                        rewards[30008] = true;
+                    }
+                    for (var id in rewards) {
+                        if (data.list[id] != 1) {
+                            var data_reward = yield this.sendMsg("ActMeal", "reward", { id:id }, next);
                         }
                     }
                 }
@@ -1122,16 +1357,28 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("League", "getPosList", null, next); // 国家玩家列表
             //var data = yield this.sendMsg("KingWar", "getAreaRes", null, next); // 帝国战获取奖励列表
             //var data = yield this.sendMsg("UnionRace", "getinfo", null, next); // 比武大会
+            //var data = yield this.sendMsg("Role", "quick", null, next); // 活跃日历
 
             //var data = yield this.sendMsg("UnionWar", "cardlog", null, next); // 查看卡牌列表
             //var data = yield this.sendMsg("UnionWar", "ahead", null, next); // 查看名次信息
             //var data = yield this.sendMsg("UnionWar", "refreshCard", null, next); // 刷新可用卡牌
-            //var data = yield this.sendMsg("ActSplendid", "getinfo", null, next); // 福利
-            //var data = yield this.sendMsg("ActMeal", "getinfo", null, next); // 勇者餐馆
             //var data = yield this.sendMsg("ActGoblin", "getinfo", null, next);
             //var data = yield this.sendMsg("ActGoblin", "buy", {id:"2120004"}, next);
             //var data = yield this.sendMsg("ActGoblin", "refresh", null, next);
             //var data = yield this.sendMsg("League", "getWarInfo", null, next); // 国战信息
+
+            //var data = yield this.sendMsg("Quest", "getinfo", null, next);
+            //var data = yield this.sendMsg("Quest", "done", {id:2}, next);
+            //var data = yield this.sendMsg("ActSplendid", "getinfo", null, next);
+            //var data = yield this.sendMsg("ActSplendid", "reward", { actid: "", boxid: "" }, next);
+            //var data = yield this.sendMsg("ActNeko", "getinfo", null, next);
+            //var data = yield this.sendMsg("ActNeko", "knock", null, next);
+            //var data = yield this.sendMsg("ActMeal", "getinfo", null, next);
+            //var data = yield this.sendMsg("ActMeal", "reward", {id:30002}, next);
+            //var data = yield this.sendMsg("ActCollectCard", "getinfo", null, next);
+            //var data = yield this.sendMsg("ActCollectCard", "card", {id:51011}, next);
+            //var data = yield this.sendMsg("ActCollectCard", "dailyGift", {id:51011}, next);
+            //var data = yield this.sendMsg("ActCollectCard", "gift", {id:51011, day:0}, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
