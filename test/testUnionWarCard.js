@@ -8,7 +8,6 @@ var isWeekend = true;
 
 var throwCard = true;
 var occupyGem = true;
-var fightPlayer = false;
 
 var accounts = [
     {u:"eyexiaohao001", p:"123456"},
@@ -78,8 +77,10 @@ var next = coroutine(function*() {
                             var occupied = false;
                             var data = yield conn.enterUnionWar(j, next);
                             if (data.mineArray) {
+                                if (conn.getGameInfo().unionWarDouble < 100) {
+                                    yield conn.buySpeed(300, next);
+                                }
                                 if (!data.hasSpeed) {
-                                    yield conn.buySpeed(500, next);
                                     yield conn.setSpeed(true, next);
                                 }
                                 var minCount = data.mineArray.length;

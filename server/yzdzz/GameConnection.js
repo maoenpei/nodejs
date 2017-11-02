@@ -187,6 +187,7 @@ Base.extends("GameConnection", {
                 "channelUid":this.accountInfo.accountId,
                 "productId":182,
             }, next);
+            //yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
             if (!data || !data.uid) {
                 this.quit();
                 return safe(done)({});
@@ -203,6 +204,7 @@ Base.extends("GameConnection", {
                 crystal: data.crystal, // Kingwar crystal
                 arenaPoint: data.arena_point,
                 arenaGlory: data.arena_glory,
+                unionWarDouble: data.union_war_double,
             };
             var result = yield GameHTTP.stat(this.gameInfo.playerId, "reg", next);
             if (result != 'done') {
@@ -1366,19 +1368,6 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("ActGoblin", "buy", {id:"2120004"}, next);
             //var data = yield this.sendMsg("ActGoblin", "refresh", null, next);
             //var data = yield this.sendMsg("League", "getWarInfo", null, next); // 国战信息
-
-            //var data = yield this.sendMsg("Quest", "getinfo", null, next);
-            //var data = yield this.sendMsg("Quest", "done", {id:2}, next);
-            //var data = yield this.sendMsg("ActSplendid", "getinfo", null, next);
-            //var data = yield this.sendMsg("ActSplendid", "reward", { actid: "", boxid: "" }, next);
-            //var data = yield this.sendMsg("ActNeko", "getinfo", null, next);
-            //var data = yield this.sendMsg("ActNeko", "knock", null, next);
-            //var data = yield this.sendMsg("ActMeal", "getinfo", null, next);
-            //var data = yield this.sendMsg("ActMeal", "reward", {id:30002}, next);
-            //var data = yield this.sendMsg("ActCollectCard", "getinfo", null, next);
-            //var data = yield this.sendMsg("ActCollectCard", "card", {id:51011}, next);
-            //var data = yield this.sendMsg("ActCollectCard", "dailyGift", {id:51011}, next);
-            //var data = yield this.sendMsg("ActCollectCard", "gift", {id:51011, day:0}, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);

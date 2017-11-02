@@ -408,7 +408,7 @@ var displayAutomationModel = {
         {name: "autoFriendReward", desc: "好友", props: []},
         {name: "autoEmail", desc: "邮件", props: []},
         {name: "autoMaze", desc: "迷宫", props: [
-            {name: "searchNumber", desc: "单个迷宫搜索次数", type: "number", limit: [0, 13]},
+            {name: "searchNumber", desc: "每个迷宫的寻宝次数", type: "number", limit: [0, 13]},
         ]},
         {name: "autoFriendWar", desc: "友谊战", props: [
             {name: "baseInspire", desc: "基础加成", type: "number", limit: [0, 6]},
