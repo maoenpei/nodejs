@@ -754,15 +754,15 @@ function displayAutomation() {
                     if (confirm("该配置尚未启用，需要启用吗？")) {
                         lastPlayer.copy_configs.disabled = undefined;
                     }
-                    displayAutomationModel.save(lastPlayer, function(success) {
-                        if (success) {
-                            alert("保存成功!");
-                        } else {
-                            alert("保存失败!");
-                        }
-                        displayConfig();
-                    });
                 }
+                displayAutomationModel.save(lastPlayer, function(success) {
+                    if (success) {
+                        alert("保存成功!");
+                    } else {
+                        alert("保存失败!");
+                    }
+                    displayConfig();
+                });
             }});
 
             divAutomationContent.html("");

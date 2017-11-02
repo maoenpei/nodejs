@@ -25,6 +25,9 @@ Base.extends("GameValidator", {
         this.setDay[name] = currDay;
         return true;
     },
+    resetDaily:function() {
+        this.setDay = {};
+    },
     checkHourly:function(name) {
         var lastHour = (this.setHour[name] ? this.setHour[name] : -1);
         var currHour = new Date().getHours();
@@ -33,6 +36,9 @@ Base.extends("GameValidator", {
         }
         this.setHour[name] = currHour;
         return true;
+    },
+    resetHourly:function() {
+        this.setHour = {};
     },
 });
 
@@ -1129,16 +1135,22 @@ Base.extends("GameConnection", {
                 // auto box
                 var boxMax = (config.boxMax > 26 ? 26 : config.boxMax);
                 var restArenaPoint = this.gameInfo.arenaPoint;
+                var boxNum = boxMax;
                 if (restArenaPoint < 1400) {
-                    boxMax = 0;
+                    boxNum = 0;
                 } else if (restArenaPoint < 4600) {
-                    boxMax = 3;
+                    boxNum = 3;
                 } else if (restArenaPoint <= 30200) {
                     var blockNum = Math.floor((restArenaPoint - 4600) / 6400);
-                    boxMax = 6 + blockNum * 5;
+                    boxNum = 6 + blockNum * 5;
                 }
-                for (var i = data.box_num; i < boxMax; ++i) {
+                boxNum = (boxNum > boxMax ? boxMax : boxNum);
+                for (var i = data.box_num; i < boxNum; ++i) {
                     var data_box = yield this.sendMsg("Arena", "box", null, next);
+                    if (!data_box) {
+                        console.log("box failed", boxMax, boxNum, restArenaPoint);
+                        break;
+                    }
                 }
                 // auto buy
                 if (config.buyHeroSoul && this.gameInfo.arenaGlory > 120) {
@@ -1176,6 +1188,10 @@ Base.extends("GameConnection", {
                     if (fightItem) {
                         for (var i = data.fight_num; i < fightMax; ++i) {
                             var data_fight = yield this.sendMsg("Arena", "fight", { data: fightItem.uid }, next);
+                            if (!data_fight) {
+                                console.log("fight failed", data.list.length, fightItem);
+                                break;
+                            }
                         }
                     }
                 }
@@ -1229,7 +1245,7 @@ Base.extends("GameConnection", {
                         }
                         for (var j = 1; j <= item.day; ++j) {
                             if (!item.list || !item.list[j]) {
-                                var data_gift = yield this.sendMsg("ActCollectCard", "gift", { id:item.id, day:j-1 }, next);
+                                var data_gift = yield this.sendMsg("ActCollectCard", "gift", { id:item.id, day: item.day - j }, next);
                             }
                         }
                     }

@@ -36,7 +36,7 @@ Base.extends("$StateManager", {
         }
         var path = "/data/" + fileName;
         var state = this.fileStates[fileName];
-        $FileManager.saveFile(path, JSON.stringify(state), done);
+        $FileManager.saveFile(path, JSON.stringify(state, null, 2), done);
     },
     stateModified:function(fileName, done) {
         if (!this.canSave[fileName] || !this.fileStates[fileName]) {
