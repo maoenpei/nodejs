@@ -402,11 +402,8 @@ var displayAutomationModel = {
     servers: ["s96", "s95", "s94", "s93", ],
     levels: ["账号"],
     configProps: [
-        {name: "autoSign", desc: "打卡", props: []},
+        {name: "autoBenefit", desc: "有益无害(打卡，三卡，好友，邮件...)", props: []},
         {name: "autoForward", desc: "战斗，下一关", props: []},
-        {name: "autoVipReward", desc: "三卡", props: []},
-        {name: "autoFriendReward", desc: "好友", props: []},
-        {name: "autoEmail", desc: "邮件", props: []},
         {name: "autoMaze", desc: "迷宫", props: [
             {name: "searchNumber", desc: "每个迷宫的寻宝次数", type: "number", limit: [0, 13]},
         ]},
@@ -421,7 +418,6 @@ var displayAutomationModel = {
             {name: "prayNumber", desc: "国家福利次数", type: "number", limit: [3, 23]},
             {name: "donateMax", desc: "女神捐献次数", type: "number", limit: [0, 10]},
         ]},
-        {name: "autoKingWar", desc: "帝国战奖励", props: []},
         {name: "autoUnion", desc: "骑士团", props: [
             {name: "donateMax", desc: "贡献次数", type: "number", limit: [0, 10]},
         ]},

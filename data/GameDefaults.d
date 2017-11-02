@@ -1,15 +1,11 @@
 {
     "automation":{
-        "autoSign":{}
+        "autoBenefit":{}
         ,"autoForward":{}
-        ,"autoVipReward":{}
-        ,"autoFriendReward":{}
-        ,"autoEmail":{}
         ,"autoMaze":{"searchNumber":3}
         ,"autoFriendWar":{"baseInspire":3,"advanceInspire":3}
         ,"autoLadder":{"fightPlayer":false}
         ,"autoLeague":{"prayNumber":10,"donateMax":10}
-        ,"autoKingWar":{}
         ,"autoUnion":{"donateMax":10}
         ,"autoArena":{"boxMax":6,"buyHeroSoul":true,"fightPlayer":true,"fightMax":10}
         ,"autoReward":{"nekoMax":4}

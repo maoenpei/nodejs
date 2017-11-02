@@ -577,17 +577,103 @@ Base.extends("GameConnection", {
             });
         }, this);
     },
-
-    autoSign:function(config, done) {
+    getMaze:function(done) {
         var next = coroutine(function*() {
+            var data = yield this.sendMsg("Maze", "getinfo", null, next);
+            if (!data || !data.type) {
+                return safe(done)({});
+            }
+            return safe(done)({
+                mazeId: data.type,
+                searchs: [
+                    data.search_num_1,
+                    data.search_num_2,
+                    data.search_num_3,
+                ],
+            });
+        }, this);
+    },
+    changeMaze:function(mazeId, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("Maze", "change", {type:mazeId}, next);
+            if (!data || data.type != mazeId) {
+                return safe(done)({});
+            }
+            return safe(done)({
+                success:true,
+            });
+        }, this);
+    },
+    mazeSearch:function(count, done) {
+        var next = coroutine(function*() {
+            for (var i = 0; i < count; ++i) {
+                var data = yield this.sendMsg("Maze", "search", null, next);
+            }
+            return safe(done)({
+                success:true,
+            });
+        }, this);
+    },
+
+    autoBenefit:function(config, done) {
+        var next = coroutine(function*() {
+            // auto sign
             if (this.validator.checkDaily("autoSign")) {
                 var data = yield this.sendMsg("Sign", "getinfo", null, next);
-                if (!data || !data.list) {
-                    return safe(done)({});
+                if (data && data.list) {
+                    var signed = !!(data.list[String(data.count)]);
+                    if (!signed) {
+                        var data = yield this.sendMsg("Sign", "start", {point:0}, next);
+                    }
                 }
-                var signed = !!(data.list[String(data.count)]);
-                if (!signed) {
-                    var data = yield this.sendMsg("Sign", "start", {point:0}, next);
+            }
+            // auto vip
+            if (this.validator.checkDaily("autoVipReward")) {
+                var data = yield this.sendMsg("Vip", "getinfo", null, next);
+                if (data && data.cards) {
+                    for (var i = 0; i < data.cards.length; ++i) {
+                        var card = data.cards[i];
+                        if (card.expire > 0 && card.daily == 1) {
+                            var data_gift = yield this.sendMsg("Vip", "dailyGift", {id:card.id}, next);
+                        }
+                    }
+                }
+            }
+            // auto friend reward
+            if (this.validator.checkHourly("autoFriendReward")) {
+                var data = yield this.sendMsg("Friend", "getinfo", null, next);
+                if (data && data.friend) {
+                    var friends = {};
+                    for (var i = 0; i < data.friend.length; ++i) {
+                        var playerId = data.friend[i].uid;
+                        friends[playerId] = true;
+                    }
+                    for (var i = 0; i < data.bless_out.length; ++i) {
+                        var playerId = data.bless_out[i];
+                        delete friends[playerId];
+                    }
+                    for (var playerId in friends) {
+                        var data_bless = yield this.sendMsg("Friend", "bless", {uid:playerId, type:1}, next);
+                    }
+                    for (var i = 0; i < data.bless_in.length; ++i) {
+                        var playerData = data.bless_in[i];
+                        var data_bless = yield this.sendMsg("Friend", "bless", {uid:playerData.uid, type:2}, next);
+                    }
+                }
+            }
+            // auto email
+            if (this.validator.checkHourly("autoEmail")) {
+                var data = yield this.sendMsg("RoleEmail", "getlist", null, next);
+                if (data && data.list) {
+                    for (var i = 0; i < data.list.length; ++i) {
+                        var email = data.list[i];
+                        if (email.state == 0) {
+                            var data_read = yield this.sendMsg("RoleEmail", "read", {id: email.id}, next);
+                        }
+                        if (email.attachment && email.state != 2) {
+                            var data_fetch = yield this.sendMsg("RoleEmail", "fetch", {id: email.id}, next);
+                        }
+                    }
                 }
             }
             return safe(done)({
@@ -621,113 +707,6 @@ Base.extends("GameConnection", {
                         this.validator.nextLevel = this.gameInfo.level + 1;
                     }
                 }
-            }
-            return safe(done)({
-                success:true,
-            });
-        }, this);
-    },
-    autoVipReward:function(config, done) {
-        var next = coroutine(function*() {
-            if (this.validator.checkDaily("autoVipReward")) {
-                var data = yield this.sendMsg("Vip", "getinfo", null, next);
-                if (!data || !data.cards) {
-                    return safe(done)({});
-                }
-                for (var i = 0; i < data.cards.length; ++i) {
-                    var card = data.cards[i];
-                    if (card.expire > 0 && card.daily == 1) {
-                        var data_gift = yield this.sendMsg("Vip", "dailyGift", {id:card.id}, next);
-                    }
-                }
-            }
-            return safe(done)({
-                success:true,
-            });
-        }, this);
-    },
-    autoFriendReward:function(config, done) {
-        var next = coroutine(function*() {
-            if (this.validator.checkHourly("autoFriendReward")) {
-                var data = yield this.sendMsg("Friend", "getinfo", null, next);
-                if (!data || !data.friend) {
-                    return safe(done)({});
-                }
-                var friends = {};
-                for (var i = 0; i < data.friend.length; ++i) {
-                    var playerId = data.friend[i].uid;
-                    friends[playerId] = true;
-                }
-                for (var i = 0; i < data.bless_out.length; ++i) {
-                    var playerId = data.bless_out[i];
-                    delete friends[playerId];
-                }
-                for (var playerId in friends) {
-                    var data_bless = yield this.sendMsg("Friend", "bless", {uid:playerId, type:1}, next);
-                }
-                for (var i = 0; i < data.bless_in.length; ++i) {
-                    var playerData = data.bless_in[i];
-                    var data_bless = yield this.sendMsg("Friend", "bless", {uid:playerData.uid, type:2}, next);
-                }
-            }
-            return safe(done)({
-                success:true,
-            });
-        }, this);
-    },
-    autoEmail:function(config, done) {
-        var next = coroutine(function*() {
-            if (this.validator.checkHourly("autoEmail")) {
-                var data = yield this.sendMsg("RoleEmail", "getlist", null, next);
-                if (!data || !data.list) {
-                    return safe(done)({});
-                }
-                for (var i = 0; i < data.list.length; ++i) {
-                    var email = data.list[i];
-                    if (email.state == 0) {
-                        var data_read = yield this.sendMsg("RoleEmail", "read", {id: email.id}, next);
-                    }
-                    if (email.attachment && email.state != 2) {
-                        var data_fetch = yield this.sendMsg("RoleEmail", "fetch", {id: email.id}, next);
-                    }
-                }
-            }
-            return safe(done)({
-                success: true,
-            });
-        }, this);
-    },
-    getMaze:function(done) {
-        var next = coroutine(function*() {
-            var data = yield this.sendMsg("Maze", "getinfo", null, next);
-            if (!data || !data.type) {
-                return safe(done)({});
-            }
-            return safe(done)({
-                mazeId: data.type,
-                searchs: [
-                    data.search_num_1,
-                    data.search_num_2,
-                    data.search_num_3,
-                ],
-            });
-        }, this);
-    },
-    changeMaze:function(mazeId, done) {
-        var next = coroutine(function*() {
-            var data = yield this.sendMsg("Maze", "change", {type:mazeId}, next);
-            if (!data || data.type != mazeId) {
-                return safe(done)({});
-            }
-            return safe(done)({
-                success:true,
-            });
-        }, this);
-    },
-    mazeSearch:function(count, done) {
-        var next = coroutine(function*() {
-            for (var i = 0; i < count; ++i) {
-                var data = yield this.sendMsg("Maze", "search", null, next);
             }
             return safe(done)({
                 success:true,
@@ -1033,40 +1012,6 @@ Base.extends("GameConnection", {
             });
         }, this);
     },
-    autoKingWar:function(config, done) {
-        var next = coroutine(function*() {
-            if (this.validator.checkDaily("autoKingWar")) {
-                var data = yield this.sendMsg("KingWar", "gift", null, next);
-                if (!data || !data.daily) {
-                    return safe(done)({});
-                }
-                // auto daily
-                if (data.done == 0) {
-                    var data_daily = yield this.sendMsg("KingWar", "dailyGift", null, next);
-                }
-                for (var i = 0; i < data.luckcard.length; ++i) {
-                    var card = data.luckcard[i];
-                    if (card.state == 1) {
-                        var data_luckCard = yield this.sendMsg("KingWar", "luckCardGift", {id: card.id}, next);
-                    }
-                }
-                // auto rank reward
-                for (var i = 1; i <= 3; ++i) {
-                    var data_rank = yield this.sendMsg("KingWar", "areaRank", {areaid:i}, next);
-                    if (data_rank.state == 1) {
-                        var data_fetch = yield this.sendMsg("KingWar", "fetchAreaRes", {areaid:i}, next);
-                    }
-                }
-                var data_emperor = yield this.sendMsg("KingWar", "emperorRank", null, next);
-                if (data_emperor.state == 1) {
-                    var data_fetch = yield this.sendMsg("KingWar", "fetchEmperorRes", null, next);
-                }
-            }
-            return safe(done)({
-                success: true,
-            });
-        }, this);
-    },
     autoUnion:function(config, done) {
         var next = coroutine(function*() {
             if (this.validator.checkHourly("autoUnion")) {
@@ -1248,6 +1193,31 @@ Base.extends("GameConnection", {
                                 var data_gift = yield this.sendMsg("ActCollectCard", "gift", { id:item.id, day: item.day - j }, next);
                             }
                         }
+                    }
+                }
+                // auto kingwar
+                var data = yield this.sendMsg("KingWar", "gift", null, next);
+                if (data && data.daily) {
+                    // auto daily
+                    if (data.done == 0) {
+                        var data_daily = yield this.sendMsg("KingWar", "dailyGift", null, next);
+                    }
+                    for (var i = 0; i < data.luckcard.length; ++i) {
+                        var card = data.luckcard[i];
+                        if (card.state == 1) {
+                            var data_luckCard = yield this.sendMsg("KingWar", "luckCardGift", {id: card.id}, next);
+                        }
+                    }
+                    // auto rank reward
+                    for (var i = 1; i <= 3; ++i) {
+                        var data_rank = yield this.sendMsg("KingWar", "areaRank", {areaid:i}, next);
+                        if (data_rank.state == 1) {
+                            var data_fetch = yield this.sendMsg("KingWar", "fetchAreaRes", {areaid:i}, next);
+                        }
+                    }
+                    var data_emperor = yield this.sendMsg("KingWar", "emperorRank", null, next);
+                    if (data_emperor.state == 1) {
+                        var data_fetch = yield this.sendMsg("KingWar", "fetchEmperorRes", null, next);
                     }
                 }
             }
