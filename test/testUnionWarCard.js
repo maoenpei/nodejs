@@ -2,9 +2,9 @@
 require("../server/FileManager");
 require("../server/yzdzz/GameController");
 
-$FileManager.RootDirectory = __dirname;
+$FileManager.RootDirectory = __dirname + "/..";
 
-var isWeekend = true;
+var isWeekend = new Date().getDay() == 0;
 
 var throwCard = true;
 var occupyGem = true;
@@ -17,7 +17,7 @@ var accounts = [
     {u:"eyexiaohao005", p:"123456"},
 ];
 
-if (isWeekend) {
+if (false) {
     accounts.push({u:"lv35679183", p:"zhangpeng1989"});
     accounts.push({u:"13719987234", p:"xwWZT123"});
     accounts.push({u:"13801890722", p:"Q950318my"});
@@ -27,16 +27,20 @@ var servers = (isWeekend ? ["s95", "s96", "s93", "s94", ] : [ "s96", ]);
 
 var friendUnion = (isWeekend ? ["b275705814a85d98", "b3b459f1b6a85a2a", "b3b455b0e2a85cc1"] : ["b275705814a85d98"]);
 var enemyUnion = (isWeekend ? ["b26d0533bba85c43"] : ["b3bdc946b8285de7", "b3b4461918285dc2"]);
+//var enemyUnion = (isWeekend ? [] : ["b3bdc946b8285de7", "b3b4461918285dc2"]);
 
 var next = coroutine(function*() {
 
     var gameController = new GameController();
     var accountManager = gameController.getAccountManager();
+    var accountKeys = [];
+    for (var i = 0; i < accounts.length; ++i) {
+        accountKeys.push(accountManager.add(accounts[i].u, accounts[i].p));
+    }
 
     while(true) {
-        for (var i = 0; i < accounts.length; ++i) {
-            var accountKey = accountManager.add(accounts[i].u, accounts[i].p);
-            var conn = accountManager.connectAccount(accountKey);
+        for (var i = 0; i < accountKeys.length; ++i) {
+            var conn = accountManager.connectAccount(accountKeys[i]);
             var data = yield conn.loginAccount(next);
             console.log("account", data.success);
             if (!data.success) {continue;}
@@ -55,10 +59,11 @@ var next = coroutine(function*() {
                     for (var j = 1; j <= 9; ++j) {
                         var data = yield conn.enterUnionWar(j, next);
                         if (data.mineArray) {
-                            if (!data.cardReady) {
+                            var card = data.card;
+                            if (!card.ready) {
                                 break;
                             }
-                            if (data.isGoodCard) {
+                            if (card.isgood) {
                                 for (var k = 0; k < friendUnion.length; ++k) {
                                     var data_usecard = yield conn.useCard(friendUnion[k], next);
                                 }

@@ -13,7 +13,7 @@ Base.extends("AccountManager", {
             username:username,
             password:password,
         }
-        console.log("Account added. accountKey:{0}, username:{1}, password:{2}".format(accountKey, username, password));
+        console.log("Account added. accountKey:{0}, username:{1}".format(accountKey, username));
         return accountKey;
     },
     remove:function(accountKey) {

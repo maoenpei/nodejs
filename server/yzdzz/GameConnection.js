@@ -404,14 +404,16 @@ Base.extends("GameConnection", {
                     pos: gem.pos,
                     playerId: gem.owner,
                     unionId: gem.union_id,
-                    playerLife: gem.hp,
+                    life: gem.hp,
                     mineLife: gem.gem,
                 });
             }
             return safe(done)({
-                cardReady: Number(data.card_used) == 0,
-                cardType: data.card_id,
-                isGoodCard: data.card_id <= 4,
+                card: {
+                    ready: Number(data.card_used) == 0,
+                    type: data.card_id,
+                    isgood: data.card_id <= 4,
+                },
                 mineArray: mineArray,
                 hasSpeed: (data.speed == 0 ? false : true),
             });
@@ -454,8 +456,20 @@ Base.extends("GameConnection", {
                 return safe(done)({});
             }
             return safe(done)({
+                success: true,
                 playerId: data.owner,
                 unionId: data.union_id,
+            });
+        }, this);
+    },
+    fire:function(landId, pos, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("UnionWar", "fire", { id:landId, pos:pos }, next);
+            if (!data) {
+                return safe(done)({});
+            }
+            return safe(done)({
+                success: true,
             });
         }, this);
     },
@@ -577,6 +591,7 @@ Base.extends("GameConnection", {
             });
         }, this);
     },
+
     getMaze:function(done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("Maze", "getinfo", null, next);
@@ -611,6 +626,62 @@ Base.extends("GameConnection", {
             }
             return safe(done)({
                 success:true,
+            });
+        }, this);
+    },
+
+    getLadder:function(done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("Ladder", "getinfo", null, next);
+            if (!data || !data.members) {
+                return safe(done)({});
+            }
+            var cards = [];
+            for (var i = 0; i < data.cards.length; ++i) {
+                var card = data.cards[i];
+                cards.push({
+                    isGood: card == 4,
+                    cardType: card,
+                });
+            }
+            var members = [];
+            for (var i = 0; i < data.members.length; ++i) {
+                var member = data.members[i];
+                members.push({
+                    isPlayer: member.pc != 1,
+                    good: member.good,
+                    bad: member.bad,
+                    playerId: member.id,
+                    power: member.cpi,
+                });
+            }
+            return safe(done)({
+                rank: data.rank,
+                reward: data.reward == 0,
+                cards: cards,
+                members: members,
+            });
+        }, this);
+    },
+    useLadderCard:function(playerId, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("Ladder", "card", {id:playerId, evid:0}, next);
+            if (!data || data.playerid != playerId) {
+                return safe(done)({});
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    fightLadder:function(playerId, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("Ladder", "fight", {id:playerId}, next);
+            if (!data || data.id != playerId) {
+                return safe(done)({});
+            }
+            return safe(done)({
+                success: true,
             });
         }, this);
     },
@@ -772,61 +843,6 @@ Base.extends("GameConnection", {
                         var data_reward = yield this.sendMsg("FriendWar", "reward", {id:i}, next);
                     }
                 }
-            }
-            return safe(done)({
-                success: true,
-            });
-        }, this);
-    },
-    getLadder:function(done) {
-        var next = coroutine(function*() {
-            var data = yield this.sendMsg("Ladder", "getinfo", null, next);
-            if (!data || !data.members) {
-                return safe(done)({});
-            }
-            var cards = [];
-            for (var i = 0; i < data.cards.length; ++i) {
-                var card = data.cards[i];
-                cards.push({
-                    isGood: card == 4,
-                    cardType: card,
-                });
-            }
-            var members = [];
-            for (var i = 0; i < data.members.length; ++i) {
-                var member = data.members[i];
-                members.push({
-                    isPlayer: member.pc != 1,
-                    good: member.good,
-                    bad: member.bad,
-                    playerId: member.id,
-                    power: member.cpi,
-                });
-            }
-            return safe(done)({
-                rank: data.rank,
-                reward: data.reward == 0,
-                cards: cards,
-                members: members,
-            });
-        }, this);
-    },
-    useLadderCard:function(playerId, done) {
-        var next = coroutine(function*() {
-            var data = yield this.sendMsg("Ladder", "card", {id:playerId, evid:0}, next);
-            if (!data || data.playerid != playerId) {
-                return safe(done)({});
-            }
-            return safe(done)({
-                success: true,
-            });
-        }, this);
-    },
-    fightLadder:function(playerId, done) {
-        var next = coroutine(function*() {
-            var data = yield this.sendMsg("Ladder", "fight", {id:playerId}, next);
-            if (!data || data.id != playerId) {
-                return safe(done)({});
             }
             return safe(done)({
                 success: true,
