@@ -5,7 +5,7 @@
         ,"autoMaze":{"searchNumber":3}
         ,"autoFriendWar":{"baseInspire":3,"advanceInspire":3}
         ,"autoLadder":{"fightPlayer":false}
-        ,"autoLeague":{"prayNumber":10,"donateMax":10}
+        ,"autoLeague":{"prayNumber":10,"donateMax":10,"autoWar":false,"warPay":0}
         ,"autoUnion":{"donateMax":10}
         ,"autoArena":{"boxMax":6,"buyHeroSoul":true,"fightPlayer":true,"fightMax":10}
         ,"autoReward":{"nekoMax":4}

@@ -211,6 +211,7 @@ Base.extends("GameConnection", {
                 arenaPoint: data.arena_point,
                 arenaGlory: data.arena_glory,
                 unionWarDouble: data.union_war_double,
+                vip: data.vip,
             };
             var result = yield GameHTTP.stat(this.gameInfo.playerId, "reg", next);
             if (result != 'done') {
@@ -979,7 +980,8 @@ Base.extends("GameConnection", {
                 if (data.boss_id <= data.boss_max) {
                     for (var boss_id = data.boss_id; boss_id <= data.boss_max; ++boss_id) {
                         var data_boss = yield this.sendMsg("League", "boss", null, next);
-                        if (data_boss.succ != 1) {
+                        if (!data_boss || data_boss.succ != 1) {
+                            console.log("boss failed", data_boss);
                             break;
                         }
                     }
@@ -1021,6 +1023,26 @@ Base.extends("GameConnection", {
                     }
                     // auto golory
                     var data_glory = yield this.sendMsg("League", "gloryDaily", null, next);
+                    // auto war
+                    if (this.gameInfo.vip >= 3) {
+                        var data_war = yield this.sendMsg("League", "getAutoInfo", null, next);
+                        if (!data_war) {
+                            return safe(done)({});
+                        }
+                        if (data_war.auto_num > 0) {
+                            var data_reward = yield this.sendMsg("League", "getAutoWarReward", null, next);
+                        }
+                        var payMax = (config.warPay > 20 ? 20 : config.warPay);
+                        var warPay = (data_war.paynum ? data_war.paynum : 0);
+                        if (payMax > 0 && (warPay < payMax)) {
+                            for (var i = warPay; i < payMax; ++i) {
+                                var data_addpay = yield this.sendMsg("League", "addpay", null, next);
+                            }
+                        }
+                        if (config.autoWar && data_war.auto == 0) {
+                            var data_start = yield this.sendMsg("League", "startAutoWar", null, next);
+                        }
+                    }
                 }
             }
             return safe(done)({

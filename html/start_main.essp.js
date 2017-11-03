@@ -417,6 +417,8 @@ var displayAutomationModel = {
         {name: "autoLeague", desc: "国家(福利，狩猎，国土奖励...)", props: [
             {name: "prayNumber", desc: "国家福利次数", type: "number", limit: [3, 23]},
             {name: "donateMax", desc: "女神捐献次数", type: "number", limit: [0, 10]},
+            {name: "autoWar", desc: "开启国战挂机", type: "check"},
+            {name: "warPay", desc: "国家热情次数", type: "number", limit: [0, 20]},
         ]},
         {name: "autoUnion", desc: "骑士团", props: [
             {name: "donateMax", desc: "贡献次数", type: "number", limit: [0, 10]},
