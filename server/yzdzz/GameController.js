@@ -382,6 +382,7 @@ Base.extends("GameController", {
                         this.refreshForPlayer(refreshInfo, executables, select.setup());
                     }
                 }
+                console.log("refreshing player start!", new Date());
                 yield select.all(next);
                 console.log("refreshing all done!", new Date());
                 this.refreshingState = false;
@@ -472,6 +473,7 @@ Base.extends("GameController", {
                 this.errLog("connectAccount", "account:{0}".format(refreshInfo.account));
                 return safe(done)();
             }
+            console.log("start -- player!", conn.getUsername(), refreshInfo.server);
             var data = yield conn.loginAccount(next);
             if (!data.success) {
                 this.errLog("loginAccount", "account({0}), server({1})".format(conn.getUsername(), refreshInfo.server));
@@ -485,7 +487,7 @@ Base.extends("GameController", {
             for (var i = 0; i < executables.length; ++i) {
                 yield executables[i](conn, next);
             }
-            console.log("player quiting!", conn.getGameInfo().name);
+            console.log("quit -- player!", conn.getUsername(), refreshInfo.server, conn.getGameInfo().name);
             conn.quit();
             safe(done)();
         }, this);

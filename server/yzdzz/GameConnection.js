@@ -986,8 +986,9 @@ Base.extends("GameConnection", {
                     var data_award = yield this.sendMsg("League", "cityAward", {h:2}, next);
                 }
                 // auto boss
-                if (data.boss_id <= data.boss_max) {
-                    for (var boss_id = data.boss_id; boss_id <= data.boss_max; ++boss_id) {
+                var curr_boss_id = (data.boss_id ? data.boss_id : 1);
+                if (curr_boss_id <= data.boss_max) {
+                    for (var boss_id = curr_boss_id; boss_id <= data.boss_max; ++boss_id) {
                         var data_boss = yield this.sendMsg("League", "boss", null, next);
                         if (!data_boss || data_boss.succ != 1) {
                             console.log("boss failed", data_boss);
