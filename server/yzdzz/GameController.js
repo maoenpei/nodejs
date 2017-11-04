@@ -67,8 +67,6 @@ Base.extends("GameController", {
     // API
     manualPlayerAutomation:function(playerData, autoConfigs, done) {
         var next = coroutine(function*() {
-            playerData.validator.resetDaily();
-            playerData.validator.resetHourly();
             var conn = this.accountManager.connectAccount(playerData.account, playerData.validator);
             if (!conn) {
                 return safe(done)({});

@@ -621,7 +621,8 @@ $HttpModel.addClass({
 
             var playerKey = json.key;
             var configs = json.configs;
-            if (!this.players[playerKey]) {
+            var playerData = this.players[playerKey];
+            if (!playerData) {
                 responder.addError("Invalid player key.");
                 return responder.respondJson({}, done);
             }
@@ -640,6 +641,8 @@ $HttpModel.addClass({
 
             var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
             settingStates.automation[playerKey] = automationConfig;
+            playerData.validator.resetDaily();
+            playerData.validator.resetHourly();
             this.startRefreshAutomation(playerKey, automationConfig);
             yield $StateManager.commitState(GAME_SETTING_CONFIG, next);
 
@@ -697,6 +700,8 @@ $HttpModel.addClass({
             }
 
             var autoConfigs = this.generateConfig(automationConfig, false);
+            playerData.validator.resetDaily();
+            playerData.validator.resetHourly();
             var data = yield this.controller.manualPlayerAutomation(playerData, autoConfigs, next);
             console.log("Manual finished!");
 
