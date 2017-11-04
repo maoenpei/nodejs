@@ -388,7 +388,7 @@ Base.extends("GameController", {
                     yield mark.callback(next);
                 }
                 var period = (endTime - startTime) / 1000;
-                console.log("taking {0} seconds. waiting {1} seconds...".format(period, interval));
+                console.log("taking {0} seconds. waiting {1} seconds...".format(period, interval), new Date());
                 yield setTimeout(next, interval * 1000);
                 refreshType = null;
             }
