@@ -5,6 +5,7 @@ require("../server/yzdzz/GameController");
 $FileManager.RootDirectory = __dirname + "/..";
 
 var isWeekend = new Date().getDay() == 0;
+console.log("isWeekend", isWeekend, new Date().getDay());
 
 var throwCard = true;
 var occupyGem = true;
@@ -26,8 +27,8 @@ if (false) {
 var servers = (isWeekend ? ["s95", "s96", "s93", "s94", ] : [ "s96", ]);
 
 var friendUnion = (isWeekend ? ["b275705814a85d98", "b3b459f1b6a85a2a", "b3b455b0e2a85cc1"] : ["b275705814a85d98"]);
-var enemyUnion = (isWeekend ? ["b26d0533bba85c43"] : ["b3bdc946b8285de7", "b3b4461918285dc2"]);
-//var enemyUnion = (isWeekend ? [] : ["b3bdc946b8285de7", "b3b4461918285dc2"]);
+//var enemyUnion = (isWeekend ? ["b26d0533bba85c43"] : ["b3bdc946b8285de7", "b3b4461918285dc2"]);
+var enemyUnion = (isWeekend ? [] : ["b3bdc946b8285de7", "b3b4461918285dc2"]);
 
 var next = coroutine(function*() {
 
@@ -108,7 +109,7 @@ var next = coroutine(function*() {
                             }
                         }
                     } else {
-                        for (var j = 9; j >= 1; --j) {
+                        for (var j = 4; j >= 4; --j) {
                             var occupied = false;
                             var data = yield conn.enterUnionWar(j, next);
                             if (data.mineArray) {
@@ -117,7 +118,7 @@ var next = coroutine(function*() {
                                     yield conn.setSpeed(true, next);
                                 }
                                 var minCount = data.mineArray.length;
-                                for (var k = minCount; k >=1; --k) {
+                                for (var k = minCount; k >= 6; --k) {
                                     var item = data.mineArray[k-1];
                                     if (item.playerId && item.playerId == conn.getGameInfo().playerId) {
                                         occupied = true;

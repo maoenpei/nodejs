@@ -208,10 +208,12 @@ Base.extends("GameConnection", {
                 power: data.cpi,
                 leagueMedal: data.league_medal,
                 crystal: data.crystal, // Kingwar crystal
-                arenaPoint: data.arena_point,
-                arenaGlory: data.arena_glory,
-                unionWarDouble: data.union_war_double,
+                arenaPoint: (data.arena_point ? data.arena_point : 0),
+                arenaGlory: (data.arena_glory ? data.arena_glory : 0),
+                unionWarDouble: (data.union_war_double ? data.union_war_double : 0),
                 vip: data.vip,
+
+                hasRedPacket: !!(data.act_redpacket && data.act_redpacket > 0),
             };
             var result = yield GameHTTP.stat(this.gameInfo.playerId, "reg", next);
             if (result != 'done') {
@@ -765,7 +767,8 @@ Base.extends("GameConnection", {
                 for (var i = 1; i <= 3; ++i) {
                     if (events[i] != 1) {
                         var data_event = yield this.sendMsg("RoleExplore", "event", {index:i}, next);
-                        if (!data_event) {
+                        if (!data_event || !data_event.events || data_event.events[i] != 1) {
+                            // May have fight failed.
                             return safe(done)({});
                         }
                         if (data_event.openid != 0){
@@ -798,8 +801,14 @@ Base.extends("GameConnection", {
                 searched[3] = data.search_num_3;
                 for (var i = 1; i <= 3; ++i) {
                     var data_change = yield this.sendMsg("Maze", "change", {type:i}, next);
+                    if (!data_change) {
+                        return safe(done)({});
+                    }
                     for (var j = searched[i]; j < config.searchNumber; ++j) {
                         var data_search = yield this.sendMsg("Maze", "search", null, next);
+                        if (!data_search) {
+                            return safe(done)({});
+                        }
                     }
                 }
             }
@@ -1112,7 +1121,7 @@ Base.extends("GameConnection", {
                     return safe(done)({});
                 }
                 // auto reward
-                if (data.reward.done == 0) {
+                if (data.reward.done == 0 && data.reward.rank > 0) {
                     var data_reward = yield this.sendMsg("Arena", "reward", null, next);
                 }
                 // auto box

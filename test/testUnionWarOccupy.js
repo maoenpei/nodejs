@@ -110,7 +110,8 @@ var next = coroutine(function*() {
                             if (mineData.pos < worstFight) {
                                 worstFight = mineData.pos;
                             }
-                            if (conn.getGameInfo().power + 200000 > allPowerMax[mineData.playerId].maxPower){
+                            maxPowerPlayer = allPowerMax[mineData.playerId];
+                            if (!maxPowerPlayer || conn.getGameInfo().power + 200000 > allPowerMax[mineData.playerId].maxPower){
                                 if (mineData.pos < bestFight) {
                                     bestFight = mineData.pos;
                                 }
@@ -121,9 +122,11 @@ var next = coroutine(function*() {
                     bestFight = (bestFight == 100 ? worstFight : bestFight);
                     if (bestFight != 100 && (selfOccupy == 100 || bestFight < selfOccupy)) {
                         var data_fire = yield conn.fire(landId, bestFight, next);
+                        console.log("data_fire", data_fire);
                         if (data_fire.success) {
                             selfOccupy = 100;
                             var data_occupy = yield conn.occupy(landId, bestFight, next);
+                            console.log("data_occupy", data_occupy);
                             if (data_occupy.success) {
                                 selfOccupy = bestFight;
                                 justOccupy = true;
