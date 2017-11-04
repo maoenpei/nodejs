@@ -872,7 +872,7 @@ Base.extends("GameConnection", {
                     }
                 }
                 // auto use cards
-                if (data.cards.length > 0) {
+                if (config.useCard && data.cards.length > 0) {
                     for (var i = 0; i < data.cards.length; ++i) {
                         var card = data.cards[i];
                         var used = false;

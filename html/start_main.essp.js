@@ -414,6 +414,7 @@ var displayAutomationModel = {
         ]},
         {name: "autoLadder", desc: "晋级赛", props: [
             {name: "fightPlayer", desc: "是否攻击战力低的玩家", type: "check"},
+            {name: "useCard", desc: "智能放卡", type: "check"},
         ]},
         {name: "autoLeague", desc: "国家(福利，狩猎，国土奖励...)", props: [
             {name: "prayNumber", desc: "国家福利次数", type: "number", limit: [3, 23]},
@@ -895,7 +896,6 @@ function displayPlayerList() {
                     name: playerData.name,
                     power: Math.floor(playerData.power / 10000),
                     kingwar: playerCommon.areastarName(playerData.kingwar),
-                    union: playerData.uName,
                     last: duration.desc,
                     lastColor: duration.color,
                 });

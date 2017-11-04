@@ -284,31 +284,25 @@ input[type='checkbox']{
 }
 .div_player_item_name{
     display: inline-block;
-    width: 29%;
+    width: 31%;
 }
 .div_player_item_name_content{
 }
 .div_player_item_power{
     display: inline-block;
-    width: 14%;
+    width: 16%;
 }
 .div_player_item_power_content{
 }
 .div_player_item_kingwar{
     display: inline-block;
-    width: 15%;
+    width: 19%;
 }
 .div_player_item_kingwar_content{
 }
-.div_player_item_union_name{
-    display: inline-block;
-    width: 15%;
-}
-.div_player_item_union_name_content{
-}
 .div_player_item_last{
     display: inline-block;
-    width: 10%;
+    width: 16%;
 }
 .div_player_item_last_content{
     font-size: 0.55rem;
