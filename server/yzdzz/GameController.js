@@ -1,5 +1,6 @@
 
 require("../Base");
+require("../Select");
 require("./GameConnection");
 
 Base.extends("AccountManager", {
@@ -88,11 +89,11 @@ Base.extends("GameController", {
     },
     refreshAutomation:function(conn, autoConfigs, done) {
         var next = coroutine(function*() {
-            console.log("refreshAutomation..");
+            console.log("refreshAutomation..", conn.getGameInfo().name);
             for (var op in autoConfigs) {
                 var config = autoConfigs[op];
                 if (!config.disabled) {
-                    console.log("auto", op, config);
+                    //console.log("auto", op, config);
                     yield conn[op].call(conn, config, next);
                 }
             }
@@ -192,7 +193,7 @@ Base.extends("GameController", {
     },
     refreshPlayers:function(conn, refreshData, done) {
         var next = coroutine(function*() {
-            console.log("refreshPlayers..");
+            console.log("refreshPlayers..", conn.getGameInfo().name);
             var data = yield conn.getUnion(next); // dummy
             var data = yield conn.getUnionList(next);
             if (!data.unions) {
@@ -291,7 +292,7 @@ Base.extends("GameController", {
     },
     refreshKingwar:function(conn, refreshData, done) {
         var next = coroutine(function*() {
-            console.log("refreshKingwar..");
+            console.log("refreshKingwar..", conn.getGameInfo().name);
             var validator = conn.getValidator();
             if (this.constantKingwar && !validator.checkDaily("refreshKingwar")) {
                 return safe(done)();
@@ -324,7 +325,7 @@ Base.extends("GameController", {
             var realData = this.kingwarRefs[realKey];
             refreshData.refData = realData;
             if (realKey != refreshData.key) {
-                console.log("kingwar search key({0}) doesn't equal to result key({1})".format(refreshData.key, realKey));
+                this.errLog("mismatch", "kingwar search key({0}) doesn't equal to result key({1})".format(refreshData.key, realKey));
             }
 
             var players = [];
@@ -354,7 +355,9 @@ Base.extends("GameController", {
         this.refreshUnique = mark;
         var next = coroutine(function*() {
             while(this.refreshUnique === mark) {
+                var startTime = new Date().getTime();
                 this.refreshingState = true;
+                var select = new Select();
                 for (var accountGameKey in this.refreshData) {
                     if (this.refreshUnique !== mark) {
                         break;
@@ -371,32 +374,17 @@ Base.extends("GameController", {
                     }
 
                     if (executables.length > 0) {
-                        var conn = this.accountManager.connectAccount(refreshInfo.account, refreshInfo.validator);
-                        if (!conn) {
-                            this.errLog("connectAccount", "account:{0}".format(refreshInfo.account));
-                            continue;
-                        }
-                        var data = yield conn.loginAccount(next);
-                        if (!data.success) {
-                            this.errLog("loginAccount", "account({0}), server({1})".format(conn.getUsername(), refreshInfo.server));
-                            continue;
-                        }
-                        var data = yield conn.loginGame(refreshInfo.server, next);
-                        if (!data.success) {
-                            this.errLog("loginGame", "account({0}), server({1})".format(conn.getUsername(), refreshInfo.server));
-                            continue;
-                        }
-                        for (var i = 0; i < executables.length; ++i) {
-                            yield executables[i](conn, next);
-                        }
-                        conn.quit();
+                        this.refreshForPlayer(refreshInfo, executables, select.setup());
                     }
                 }
+                yield select.all(next);
                 this.refreshingState = false;
+                var endTime = new Date().getTime();
                 if (mark.callback) {
                     yield mark.callback(next);
                 }
-                console.log("waiting {0} seconds...".format(interval));
+                var period = (endTime - startTime) / 1000;
+                console.log("taking {0} seconds. waiting {1} seconds...".format(period, interval));
                 yield setTimeout(next, interval * 1000);
             }
             console.log("refreshing quit!");
@@ -407,6 +395,21 @@ Base.extends("GameController", {
     },
     isRefreshing:function() {
         return this.refreshingState;
+    },
+    stopRefresh:function(key) {
+        var refreshInfo = this.refreshData[key.key];
+        if (refreshInfo && refreshInfo.funcs && refreshInfo.funcs.length > 0) {
+            for (var i = 0; i < refreshInfo.funcs.length; ++i) {
+                if (refreshInfo.funcs[i] === key.obj) {
+                    refreshInfo.funcs.splice(i, 1);
+                    if (refreshInfo.funcs.length == 0) {
+                        delete this.refreshData[key.key];
+                    }
+                    return true;
+                }
+            }
+        }
+        return false;
     },
 
     errLog:function(action, state) {
@@ -449,20 +452,28 @@ Base.extends("GameController", {
         }
         return false;
     },
-    // API
-    stopRefresh:function(key) {
-        var refreshInfo = this.refreshData[key.key];
-        if (refreshInfo && refreshInfo.funcs && refreshInfo.funcs.length > 0) {
-            for (var i = 0; i < refreshInfo.funcs.length; ++i) {
-                if (refreshInfo.funcs[i] === key.obj) {
-                    refreshInfo.funcs.splice(i, 1);
-                    if (refreshInfo.funcs.length == 0) {
-                        delete this.refreshData[key.key];
-                    }
-                    return true;
-                }
+    refreshForPlayer:function(refreshInfo, executables, done) {
+        var next = coroutine(function*() {
+            var conn = this.accountManager.connectAccount(refreshInfo.account, refreshInfo.validator);
+            if (!conn) {
+                this.errLog("connectAccount", "account:{0}".format(refreshInfo.account));
+                return safe(done)();
             }
-        }
-        return false;
+            var data = yield conn.loginAccount(next);
+            if (!data.success) {
+                this.errLog("loginAccount", "account({0}), server({1})".format(conn.getUsername(), refreshInfo.server));
+                return safe(done)();
+            }
+            var data = yield conn.loginGame(refreshInfo.server, next);
+            if (!data.success) {
+                this.errLog("loginGame", "account({0}), server({1})".format(conn.getUsername(), refreshInfo.server));
+                return safe(done)();
+            }
+            for (var i = 0; i < executables.length; ++i) {
+                yield executables[i](conn, next);
+            }
+            conn.quit();
+            safe(done)();
+        }, this);
     },
 });
