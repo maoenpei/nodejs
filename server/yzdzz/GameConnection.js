@@ -1480,7 +1480,11 @@ Base.extends("GameConnection", {
     registerMessages:function() {
         this.regMsg("MsgBox", "message", (data) => {});
         this.regMsg("Chat", "msg", (data) => {});
-        this.regMsg("Role", "kick", (data) => { this.quit(); safe(this.events["break"])(); });
+        this.regMsg("Role", "kick", (data) => {
+            console.log("User Kicked!", (this.gameInfo ? this.gameInfo.name : this.username));
+            this.quit();
+            safe(this.events["break"])();
+        });
         this.regMsg("UnionRace", "notify", (data) => {});
         this.regMsg("UnionWar", "kill", (data) => {});
         this.regMsg("UnionWar", "sync", (data) => {});

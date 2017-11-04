@@ -358,6 +358,7 @@ Base.extends("GameController", {
                 var startTime = new Date().getTime();
                 this.refreshingState = true;
                 var select = new Select();
+                console.log("refreshing loop!", new Date());
                 for (var accountGameKey in this.refreshData) {
                     if (this.refreshUnique !== mark) {
                         break;
@@ -382,6 +383,7 @@ Base.extends("GameController", {
                     }
                 }
                 yield select.all(next);
+                console.log("refreshing all done!", new Date());
                 this.refreshingState = false;
                 var endTime = new Date().getTime();
                 if (mark.callback) {
@@ -483,6 +485,7 @@ Base.extends("GameController", {
             for (var i = 0; i < executables.length; ++i) {
                 yield executables[i](conn, next);
             }
+            console.log("player quiting!", conn.getGameInfo().name);
             conn.quit();
             safe(done)();
         }, this);
