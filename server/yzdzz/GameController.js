@@ -55,13 +55,13 @@ Base.extends("GameController", {
 
     // API
     setPlayerAutomation:function(playerData, intervalCount, autoConfigs) {
-        return this.appendRefresh(playerData, intervalCount, (conn, done) => {
+        return this.appendRefresh(playerData, intervalCount, "automation", (conn, done) => {
             this.refreshAutomation(conn, autoConfigs, done);
         });
     },
     // API
-    modifyPlayerAutomation:function(key, intervalCount, autoConfigs) {
-        return this.modifyRefresh(key, intervalCount, (conn, done) => {
+    modifyPlayerAutomation:function(key, autoConfigs) {
+        return this.modifyRefresh(key, (conn, done) => {
             this.refreshAutomation(conn, autoConfigs, done);
         });
     },
@@ -103,7 +103,7 @@ Base.extends("GameController", {
 
     // API
     setPlayerListAccount:function(playerData, intervalCount, unionCount, minPower, limitPower, limitDay) {
-        return this.appendRefresh(playerData, intervalCount, (conn, done) => {
+        return this.appendRefresh(playerData, intervalCount, "playerlist", (conn, done) => {
             this.refreshPlayers(conn, {
                 server: playerData.server,
                 minPower: minPower * 10000,
@@ -246,7 +246,7 @@ Base.extends("GameController", {
     // API
     setKingwarAccount:function(playerData, intervalCount, area, star) {
         var key = area * 100 + star;
-        return this.appendRefresh(playerData, intervalCount, (conn, done) => {
+        return this.appendRefresh(playerData, intervalCount, "kingwar", (conn, done) => {
             this.refreshKingwar(conn, {
                 key: key,
                 area:area,
@@ -346,11 +346,11 @@ Base.extends("GameController", {
     },
 
     // API
-    startRefresh:function(interval, callback) {
+    startRefresh:function(interval, refreshType, callback) {
         if (this.refreshUnique) {
             return;
         }
-        console.log("refreshing start!");
+        console.log("refreshing start!", refreshType);
         var mark = { callback: callback };
         this.refreshUnique = mark;
         var next = coroutine(function*() {
@@ -366,11 +366,12 @@ Base.extends("GameController", {
                     var refreshInfo = this.refreshData[accountGameKey];
                     var executables = [];
                     for (var i = 0; i < refreshInfo.funcs.length; ++i) {
-                        var item = refreshInfo.funcs[i];
-                        if (item.index == 0) {
-                            executables.push(item.func);
+                        var funcItem = refreshInfo.funcs[i];
+                        var matchType = !refreshType || refreshType.indexOf(funcItem.refresh) >= 0;
+                        if (funcItem.index == 0 && matchType) {
+                            executables.push(funcItem.func);
                         }
-                        item.index = (item.index + 1) % item.count;
+                        funcItem.index = (funcItem.index + 1) % funcItem.count;
                     }
 
                     if (executables.length > 0) {
@@ -386,6 +387,7 @@ Base.extends("GameController", {
                 var period = (endTime - startTime) / 1000;
                 console.log("taking {0} seconds. waiting {1} seconds...".format(period, interval));
                 yield setTimeout(next, interval * 1000);
+                refreshType = null;
             }
             console.log("refreshing quit!");
         }, this);
@@ -415,7 +417,7 @@ Base.extends("GameController", {
     errLog:function(action, state) {
         console.log("Failed to get task '{0}', detail:'{1}'".format(action, state));
     },
-    appendRefresh:function(playerData, count, func) {
+    appendRefresh:function(playerData, count, refreshType, func) {
         var accountGameKey = playerData.account + "$" + playerData.server;
         var refreshInfo = this.refreshData[accountGameKey];
         refreshInfo = (refreshInfo ? refreshInfo : {
@@ -426,6 +428,7 @@ Base.extends("GameController", {
         });
         var funcObj = {
             func:func,
+            refresh: refreshType,
             count: count,
             index: 0,
         };
@@ -436,16 +439,21 @@ Base.extends("GameController", {
             obj: funcObj,
         };
     },
-    modifyRefresh:function(key, count, func) {
+    modifyRefresh:function(key, func) {
         var refreshInfo = this.refreshData[key.key];
         if (refreshInfo && refreshInfo.funcs && refreshInfo.funcs.length > 0) {
             for (var i = 0; i < refreshInfo.funcs.length; ++i) {
-                if (refreshInfo.funcs[i] === key.obj) {
-                    refreshInfo.funcs.splice(i, 1, {
+                var funcObj = refreshInfo.funcs[i];
+                if (funcObj === key.obj) {
+                    // must create a new instance in case old one is still being used.
+                    funcObj = {
                         func: func,
-                        count: count,
+                        refresh: funcObj.refresh,
+                        count: funcObj.count,
                         index: 0,
-                    });
+                    };
+                    key.obj = funcObj;
+                    refreshInfo.funcs.splice(i, 1, funcObj);
                     return true;
                 }
             }

@@ -22,12 +22,18 @@ Base.extends("Select", {
             console.log("Error: Mode already selected.");
             return later(callback, null);
         }
+        if (this.barriers.length == 0) {
+            return later(callback, null);
+        }
         this.mode = 1;
         this.callback = callback;
     },
     all:function(callback) {
         if (this.mode != 0) {
             console.log("Error: Mode already selected.");
+            return later(callback, null);
+        }
+        if (this.barriers.length == 0) {
             return later(callback, null);
         }
         this.mode = 2;

@@ -318,7 +318,8 @@ function clickRefresh() {
             }
         });
     };
-    requestPost("manrefresh", {integrity:true}, function(json) {
+    var funcKey = StorageItem().defaultFunc;
+    requestPost("manrefresh", {integrity:true, func:funcKey}, function(json) {
         if (json.success) {
             setTimeout(refreshState, 1000);
             alert("后台开始更新数据，完成后将会自动刷新!");

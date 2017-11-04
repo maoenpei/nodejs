@@ -14,13 +14,20 @@ GAME_UNIONS_CONFIG = "GameUnions.d";
 
 var allFuncs = [
     {name:"refresh", authBase:2},
-    {name:"kingwar", authBase:1},
-    {name:"playerlist", authBase:1},
+    {name:"kingwar", authBase:1, refreshType:"kingwar", },
+    {name:"playerlist", authBase:1, refreshType:"kingwar;playerlist", },
     {name:"serverInfo", authBase:1},
-    {name:"automation", authBase:2},
+    {name:"automation", authBase:2, refreshType:"automation", },
     {name:"setting", authBase:3},
     {name:"users", authBase:3},
 ];
+var allFuncStr = ";";
+var allFuncMap = {};
+for (var i = 0; i < allFuncs.length; ++i) {
+    var funcItem = allFuncs[i];
+    allFuncStr += funcItem.name + ";";
+    allFuncMap[funcItem.name] = funcItem;
+}
 
 $HttpModel.addClass({
     _constructor:function(httpServer) {
@@ -33,6 +40,7 @@ $HttpModel.addClass({
         this.playersMd5 = "";
         this.unionMd5 = "";
         this.onRefreshEnd = [];
+        this.delayRefresh = "";
 
         httpServer.registerCommand("addaccount", this);
         httpServer.registerCommand("delaccount", this);
@@ -103,11 +111,11 @@ $HttpModel.addClass({
                 var kingwarConfig = settingStates.kingwar[playerKey];
                 this.startRefreshKingwar(playerKey, kingwarConfig.area, kingwarConfig.star);
             }
-            this.doRefresh();
+            this.doRefresh(allFuncStr);
             safe(done)();
         }, this);
     },
-    doRefresh:function() {
+    doRefresh:function(refreshType) {
         var invokeNoConflictions = () => {
             if (this.onRefreshEnd.length > 0) {
                 for (var i = 0; i < this.onRefreshEnd.length; ++i) {
@@ -146,7 +154,7 @@ $HttpModel.addClass({
             }, this);
         };
         this.controller.cancelRefresh();
-        this.controller.startRefresh(RefreshInterval, refreshCallback);
+        this.controller.startRefresh(RefreshInterval, refreshType, refreshCallback);
     },
     noConfliction:function(fun) {
         if (this.controller.isRefreshing()) {
@@ -166,7 +174,7 @@ $HttpModel.addClass({
         }
         var autoConfigs = this.generateConfig(automationConfig, false);
         if (playerData.refreshAutomationKey) {
-            this.controller.modifyPlayerAutomation(playerData.refreshAutomationKey, 3, autoConfigs);
+            this.controller.modifyPlayerAutomation(playerData.refreshAutomationKey, autoConfigs);
         } else {
             playerData.refreshAutomationKey =
                 this.controller.setPlayerAutomation(playerData, 3, autoConfigs);
@@ -833,14 +841,31 @@ $HttpModel.addClass({
             }
 
             var json = yield requestor.visitBodyJson(next);
-            if (!json || !json.integrity) {
+            if (!json || !json.integrity || !json.func) {
                 responder.addError("Parameter data not correct.");
                 return responder.respondJson({}, done);
             }
 
-            var delay = this.noConfliction((delayed) => {
-                this.doRefresh();
-            });
+            var func = json.func;
+            var funcItem = allFuncMap[func];
+            if (!funcItem || !funcItem.refreshType) {
+                responder.addError("Not valid func.");
+                return responder.respondJson({}, done);
+            }
+
+            var delay = this.delayRefresh != "";
+            if (!delay) {
+                delay = this.noConfliction((delayed) => {
+                    var refreshType = (delayed ? this.delayRefresh : funcItem.refreshType);
+                    this.delayRefresh = "";
+                    console.log("delayRefresh end");
+                    this.doRefresh(refreshType);
+                });
+            }
+            if (delay) {
+                this.delayRefresh += ";" + funcItem.refreshType;
+                console.log("delayRefresh", this.delayRefresh);
+            }
 
             responder.respondJson({
                 success: true,
