@@ -1,5 +1,6 @@
 
 require("../Base");
+require("../Heartbeat");
 require("../Select");
 require("./GameConnection");
 
@@ -46,6 +47,7 @@ Base.extends("GameController", {
         this.refreshUnique = null;
         this.refreshData = {};
         this.refreshingState = false;
+        this.heartbeat = new Heartbeat();
         this.initKingwar();
         this.initPlayers();
     },
@@ -350,20 +352,22 @@ Base.extends("GameController", {
         if (this.refreshUnique) {
             return;
         }
+        this.heartbeat.setup(interval * 2, () => {
+            console.log("========================= refreshing loop dead! ===========================");
+            this.cancelRefresh();
+            this.startRefresh(interval, null, callback);
+        });
         console.log("refreshing start!", refreshType);
-        var mark = { callback: callback };
-        this.refreshUnique = mark;
+        var refreshUnique = { callback: callback };
+        this.refreshUnique = refreshUnique;
         var next = coroutine(function*() {
-            while(this.refreshUnique === mark) {
+            while(this.refreshUnique === refreshUnique) {
+                this.heartbeat.beat();
                 var startTime = new Date().getTime();
                 this.refreshingState = true;
                 var select = new Select();
                 console.log("refreshing loop!", new Date());
                 for (var accountGameKey in this.refreshData) {
-                    if (this.refreshUnique !== mark) {
-                        break;
-                    }
-
                     var refreshInfo = this.refreshData[accountGameKey];
                     var executables = [];
                     for (var i = 0; i < refreshInfo.funcs.length; ++i) {
@@ -384,11 +388,18 @@ Base.extends("GameController", {
                 }
                 console.log("refreshing player start!", new Date());
                 yield select.all(next);
+                if (this.refreshUnique !== refreshUnique) {
+                    break;
+                }
                 console.log("refreshing all done!", new Date());
                 this.refreshingState = false;
+
                 var endTime = new Date().getTime();
-                if (mark.callback) {
-                    yield mark.callback(next);
+                if (refreshUnique.callback) {
+                    yield refreshUnique.callback(next);
+                    if (this.refreshUnique !== refreshUnique) {
+                        break;
+                    }
                 }
                 var period = (endTime - startTime) / 1000;
                 console.log("taking {0} seconds. waiting {1} seconds...".format(period, interval), new Date());
@@ -399,6 +410,7 @@ Base.extends("GameController", {
         }, this);
     },
     cancelRefresh:function() {
+        this.heartbeat.cancel();
         this.refreshUnique = null;
     },
     isRefreshing:function() {

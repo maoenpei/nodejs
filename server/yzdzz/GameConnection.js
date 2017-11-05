@@ -57,6 +57,7 @@ Base.extends("GameConnection", {
 
         this.recvCallbacks = {};
         this.commonCallbacks = {};
+        this.kickCallback = null;
         this.events = {};
         this.quickRegs = {};
         this.registerMessages();
@@ -85,8 +86,10 @@ Base.extends("GameConnection", {
     },
 
     quit:function() {
-        this.sock.end();
-        this.sock = null;
+        if (this.sock) {
+            this.sock.end();
+            this.sock = null;
+        }
     },
     loginAccount:function(done) {
         var next = coroutine(function*() {
@@ -452,6 +455,9 @@ Base.extends("GameConnection", {
                     next(data);
                 }
             });
+            this.regKick(() => {
+                next(null);
+            });
             yield this.sendNotify("UnionWar", "occupy", {id:landId, pos:pos}, next);
             var data = yield; // wait for msg received
             this.unregMsg(ckey);
@@ -626,6 +632,9 @@ Base.extends("GameConnection", {
         var next = coroutine(function*() {
             for (var i = 0; i < count; ++i) {
                 var data = yield this.sendMsg("Maze", "search", null, next);
+                if (!data) {
+                    return safe(done)({});
+                }
             }
             return safe(done)({
                 success:true,
@@ -1172,10 +1181,13 @@ Base.extends("GameConnection", {
                 if (config.fightPlayer && data.fight_num < fightMax) {
                     var fightItem = data.list[data.list.length - 1];
                     if (fightItem.cpi > this.gameInfo.power) {
+                        fightItem = null;
                         var data_refresh = yield this.sendMsg("Arena", "refresh", null, next);
-                        fightItem = data_refresh.list[data_refresh.list.length - 1];
-                        if (fightItem.cpi > this.gameInfo.power) {
-                            fightItem = null;
+                        if (data_refresh && data_refresh.list) {
+                            fightItem = data_refresh.list[data_refresh.list.length - 1];
+                            if (fightItem.cpi > this.gameInfo.power) {
+                                fightItem = null;
+                            }
                         }
                     }
                     if (fightItem) {
@@ -1259,12 +1271,12 @@ Base.extends("GameConnection", {
                     // auto rank reward
                     for (var i = 1; i <= 3; ++i) {
                         var data_rank = yield this.sendMsg("KingWar", "areaRank", {areaid:i}, next);
-                        if (data_rank.state == 1) {
+                        if (data_rank && data_rank.state == 1) {
                             var data_fetch = yield this.sendMsg("KingWar", "fetchAreaRes", {areaid:i}, next);
                         }
                     }
                     var data_emperor = yield this.sendMsg("KingWar", "emperorRank", null, next);
-                    if (data_emperor.state == 1) {
+                    if (data_emperor && data_emperor.state == 1) {
                         var data_fetch = yield this.sendMsg("KingWar", "fetchEmperorRes", null, next);
                     }
                 }
@@ -1431,6 +1443,10 @@ Base.extends("GameConnection", {
         if (!this.sock) {
             return later(callback, null);
         }
+        this.regKick(() => {
+            console.log("reply null by kick!");
+            safe(callback)(null);
+        });
         var key = c + "." + m;
         var callbackArray = this.recvCallbacks[key];
         callbackArray = (callbackArray ? callbackArray : []);
@@ -1478,12 +1494,21 @@ Base.extends("GameConnection", {
         }
         delete this.quickRegs[ckey];
     },
+    regKick:function(callback) {
+        this.kickCallback = (data) => {
+            this.kickCallback = null;
+            safe(callback)(data);
+        };
+    },
     registerMessages:function() {
         this.regMsg("MsgBox", "message", (data) => {});
         this.regMsg("Chat", "msg", (data) => {});
         this.regMsg("Role", "kick", (data) => {
             console.log("User Kicked!", (this.gameInfo ? this.gameInfo.name : this.username));
             this.quit();
+            if (this.kickCallback) {
+                safe(this.kickCallback)(data);
+            }
             safe(this.events["break"])();
         });
         this.regMsg("UnionRace", "notify", (data) => {});
