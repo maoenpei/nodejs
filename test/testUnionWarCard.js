@@ -8,7 +8,7 @@ var isWeekend = new Date().getDay() == 0;
 console.log("isWeekend", isWeekend, new Date().getDay());
 
 var throwCard = true;
-var occupyGem = true;
+var occupyGem = false;
 
 var accounts = [
     {u:"eyexiaohao001", p:"123456"},

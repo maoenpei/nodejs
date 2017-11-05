@@ -11,8 +11,8 @@ var isWeekend = new Date().getDay() == 0;
 var accounts = [
     {u:"18551855876", p:"sdw123456"},
     {u:"tree44", p:"12345678"},
-    {u:"15171335812", p:"12345678"},
-    {u:"18983624927", p:"123456"},
+    //{u:"15171335812", p:"12345678"},
+    //{u:"18983624927", p:"123456"},
     {u:"18757594952", p:"123456"},
     {u:"15831667796", p:"123456"},
     {u:"14741221200", p:"long123"},
@@ -23,7 +23,7 @@ var accounts = [
 
 var selfUnion = "b275705814a85d98";
 
-var landTargets = (isWeekend ? [7, 3, 2, 1, 4, 5, 6, 8, 9] : [4, 1, 3, 2, 5, 6, 7, 8, 9]);
+var landTargets = (isWeekend ? [7, 3, 2, 1] : [4, 1, 3, 2]);
 
 var friendUnion = ["b26d0533bba85c43"];
 var enemyUnion = [];

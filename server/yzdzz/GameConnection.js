@@ -17,7 +17,8 @@ Base.extends("GameValidator", {
         if (timeDiff < 10 || timeDiff + 10 > secOfDay) {
             return false;
         }
-        var lastDay = (this.setDay[name] ? this.setDay[name] : -1);
+        var lastDay = this.setDay[name];
+        lastDay = (typeof(lastDay) != "undefined" ? lastDay : -1);
         var currDay = currTime.getDay();
         if (lastDay == currDay) {
             return false;
@@ -29,7 +30,8 @@ Base.extends("GameValidator", {
         this.setDay = {};
     },
     checkHourly:function(name) {
-        var lastHour = (this.setHour[name] ? this.setHour[name] : -1);
+        var lastHour = this.setHour[name];
+        lastHour = (typeof(lastHour) != "undefined" ? lastHour : -1);
         var currHour = new Date().getHours();
         if (lastHour == currHour) {
             return false;
