@@ -372,14 +372,16 @@ Base.extends("GameController", {
                     var executables = [];
                     for (var i = 0; i < refreshInfo.funcs.length; ++i) {
                         var funcItem = refreshInfo.funcs[i];
-                        var matchType = !refreshType || refreshType.indexOf(funcItem.refresh) >= 0;
-                        if (matchType && refreshType) {
-                            funcItem.index = 0;
+                        var matchType = refreshType && refreshType.indexOf(funcItem.refresh) >= 0;
+                        if (!refreshType || matchType) {
+                            if (matchType) {
+                                funcItem.index = 0;
+                            }
+                            if (funcItem.index == 0) {
+                                executables.push(funcItem.func);
+                            }
+                            funcItem.index = (funcItem.index + 1) % funcItem.count;
                         }
-                        if (funcItem.index == 0) {
-                            executables.push(funcItem.func);
-                        }
-                        funcItem.index = (funcItem.index + 1) % funcItem.count;
                     }
 
                     if (executables.length > 0) {
