@@ -48,7 +48,7 @@ Base.extends("$FileManager", {
     getLastModified:function(path, done) {
         var filepath = this.RootDirectory + path;
         fs.stat(filepath, (err, st) => {
-            safe(done)(st.mtime);
+            safe(done)(st ? st.mtime : null);
         });
     },
     visitDir:function(path, done) {

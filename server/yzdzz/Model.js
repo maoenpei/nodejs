@@ -186,7 +186,7 @@ $HttpModel.addClass({
             var refreshKey = playerData.refreshAutomationKey;
             playerData.refreshAutomationKey = null;
             this.noConfliction(() => {
-                this.controller.stopRefresh(refreshKey);
+                this.controller.unsetPlayer(refreshKey);
             });
         }
     },
@@ -196,7 +196,7 @@ $HttpModel.addClass({
             return;
         }
         playerData.refreshPlayerKey =
-            this.controller.setPlayerListAccount(playerData, 1, 10, 300, 800, 20);
+            this.controller.setPlayerListing(playerData, 1, 10, 300, 800, 20);
     },
     stopRefreshPlayerinfo:function(playerKey) {
         var playerData = this.players[playerKey];
@@ -204,7 +204,7 @@ $HttpModel.addClass({
             var refreshKey = playerData.refreshPlayerKey;
             playerData.refreshPlayerKey = null;
             this.noConfliction(() => {
-                this.controller.stopRefresh(refreshKey);
+                this.controller.unsetPlayer(refreshKey);
             });
         }
     },
@@ -214,7 +214,7 @@ $HttpModel.addClass({
             return;
         }
         playerData.refreshKingwarKey =
-            this.controller.setKingwarAccount(playerData, 1, area, star);
+            this.controller.setPlayerKingwar(playerData, 1, area, star);
     },
     stopRefreshKingwar:function(playerKey) {
         var playerData = this.players[playerKey];
@@ -222,7 +222,7 @@ $HttpModel.addClass({
             var refreshKey = playerData.refreshKingwarKey;
             playerData.refreshKingwarKey = null;
             this.noConfliction(() => {
-                this.controller.stopRefresh(refreshKey);
+                this.controller.unsetPlayer(refreshKey);
             });
         }
     },

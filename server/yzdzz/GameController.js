@@ -89,22 +89,9 @@ Base.extends("GameController", {
             });
         }, this);
     },
-    refreshAutomation:function(conn, autoConfigs, done) {
-        var next = coroutine(function*() {
-            console.log("refreshAutomation..", conn.getGameInfo().name);
-            for (var op in autoConfigs) {
-                var config = autoConfigs[op];
-                if (!config.disabled) {
-                    //console.log("auto", op, config);
-                    yield conn[op].call(conn, config, next);
-                }
-            }
-            safe(done)();
-        }, this);
-    },
 
     // API
-    setPlayerListAccount:function(playerData, intervalCount, unionCount, minPower, limitPower, limitDay) {
+    setPlayerListing:function(playerData, intervalCount, unionCount, minPower, limitPower, limitDay) {
         return this.appendRefresh(playerData, intervalCount, "playerlist", (conn, done) => {
             this.refreshPlayers(conn, {
                 server: playerData.server,
@@ -115,15 +102,12 @@ Base.extends("GameController", {
             }, done);
         });
     },
-    // API
     getPlayers:function() {
         return this.allPlayers;
     },
-    // API
     getUnions:function() {
         return this.allUnions;
     },
-    // API
     getSortedPlayers:function(count) {
         var sortedPlayerIds = this.sortedPlayerIds;
         var allPlayerIds = {};
@@ -179,7 +163,6 @@ Base.extends("GameController", {
         }
         return sortedPlayers;
     },
-    //API
     setMaxPowers:function(allPowerMax) {
         for (var playerId in allPowerMax) {
             var playerInfo = this.allPlayers[playerId];
@@ -188,65 +171,9 @@ Base.extends("GameController", {
             this.allPlayers[playerId] = playerInfo;
         }
     },
-    initPlayers:function() {
-        this.allUnions = {};
-        this.allPlayers = {};
-        this.sortedPlayerIds = [];
-    },
-    refreshPlayers:function(conn, refreshData, done) {
-        var next = coroutine(function*() {
-            console.log("refreshPlayers..", conn.getGameInfo().name);
-            var data = yield conn.getUnion(next); // dummy
-            var data = yield conn.getUnionList(next);
-            if (!data.unions) {
-                this.errLog("getUnionList", "none");
-                return safe(done)();
-            }
-            var limitMilliSeconds = refreshData.limitDay * 24 * 3600 * 1000
-            for (var i = 0; i < data.unions.length; ++i) {
-                var unionItem = data.unions[i];
-                this.allUnions[unionItem.unionId] = {
-                    server: refreshData.server,
-                    name: unionItem.name,
-                    short: unionItem.short,
-                };
-                if (i < refreshData.unionCount) {
-                    var playersData = yield conn.getUnionPlayers(unionItem.unionId, next);
-                    if (!playersData.players) {
-                        this.errLog("getUnionPlayers", "none");
-                        return safe(done)();
-                    }
-                    var now = new Date().getTime();
-                    for (var j = 0; j < playersData.players.length; ++j) {
-                        var playerItem = playersData.players[j];
-                        var playerData = this.allPlayers[playerItem.playerId];
-                        var lastPower = (playerData ? playerData.maxPower : 0);
-                        var maxPower = (playerItem.power > lastPower ? playerItem.power : lastPower);
-                        if (maxPower <= refreshData.minPower) {
-                            continue;
-                        }
-                        var t = playerItem.lastLogin.getTime();
-                        if (maxPower <= refreshData.limitPower && now - t > limitMilliSeconds) {
-                            continue;
-                        }
-                        this.allPlayers[playerItem.playerId] = {
-                            server: refreshData.server,
-                            unionId: unionItem.unionId,
-                            name: playerItem.name,
-                            power: playerItem.power,
-                            maxPower: maxPower,
-                            level: playerItem.level,
-                            lastLogin: playerItem.lastLogin,
-                        };
-                    }
-                }
-            }
-            safe(done)();
-        }, this);
-    },
 
     // API
-    setKingwarAccount:function(playerData, intervalCount, area, star) {
+    setPlayerKingwar:function(playerData, intervalCount, area, star) {
         var key = area * 100 + star;
         return this.appendRefresh(playerData, intervalCount, "kingwar", (conn, done) => {
             this.refreshKingwar(conn, {
@@ -259,7 +186,6 @@ Base.extends("GameController", {
             }, done);
         });
     },
-    // API
     getKingwar:function() {
         var areastars = {};
         for (var key in this.kingwarRefs) {
@@ -278,76 +204,23 @@ Base.extends("GameController", {
         }
         return areastars;
     },
-    initKingwar:function() {
-        this.constantKingwar = false;
-        this.playerToKingwar = {};
-        this.kingwarRefs = {};
-        for (var area = 1; area <= 3; ++area) {
-            for (var star = 1; star <= 10; ++star) {
-                var key = area * 100 + star;
-                this.kingwarRefs[key] = {
-                    constant:false,
-                    players:[],
-                };
-            }
-        }
-    },
-    refreshKingwar:function(conn, refreshData, done) {
-        var next = coroutine(function*() {
-            console.log("refreshKingwar..", conn.getGameInfo().name);
-            var validator = conn.getValidator();
-            if (this.constantKingwar && !validator.checkDaily("refreshKingwar")) {
-                return safe(done)();
-            }
-            var data = yield conn.getKingWar(next);
-            var constant = !data.allowJoin;
-            if (this.constantKingwar && !constant) {
-                this.constantKingwar = false;
-                this.playerToKingwar = {};
-            } else if (!this.constantKingwar && constant) {
-                this.constantKingwar = true;
-            }
-            if (!data.joined && data.allowJoin) {
-                var joinData = yield conn.joinKingWar(refreshData.area, refreshData.star, next);
-                if (!joinData.success) {
-                    this.errLog("joinKingWar", "server({2}) area({0}), star({1})".format(refreshData.area, refreshData.star, refreshData.server));
-                    return safe(done)();
-                }
-            }
-            if (refreshData.refData.constant && constant) {
-                return safe(done)();
-            }
-            var data = yield conn.getKingWarPlayers(next);
-            if (!data.players) {
-                this.errLog("getKingWarPlayers", "server({2}) area({0}), star({1})".format(refreshData.area, refreshData.star, refreshData.server));
-                return safe(done)();
-            }
-
-            var realKey = data.areaId * 100 + data.starId;
-            var realData = this.kingwarRefs[realKey];
-            refreshData.refData = realData;
-            if (realKey != refreshData.key) {
-                this.errLog("mismatch", "kingwar search key({0}) doesn't equal to result key({1})".format(refreshData.key, realKey));
-            }
-
-            var players = [];
-            for (var i = 0; i < data.players.length; ++i) {
-                var playerData = data.players[i];
-                players.push({
-                    playerId: playerData.playerId,
-                    union: playerData.union,
-                    name: playerData.name,
-                    power: playerData.power,
-                });
-                this.playerToKingwar[playerData.playerId] = realKey;
-            }
-            realData.constant = constant;
-            realData.players = players;
-            safe(done)();
-        }, this);
-    },
 
     // API
+    unsetPlayer:function(key) {
+        var refreshInfo = this.refreshData[key.key];
+        if (refreshInfo && refreshInfo.funcs && refreshInfo.funcs.length > 0) {
+            for (var i = 0; i < refreshInfo.funcs.length; ++i) {
+                if (refreshInfo.funcs[i] === key.obj) {
+                    refreshInfo.funcs.splice(i, 1);
+                    if (refreshInfo.funcs.length == 0) {
+                        delete this.refreshData[key.key];
+                    }
+                    return true;
+                }
+            }
+        }
+        return false;
+    },
     startRefresh:function(interval, refreshType, callback) {
         if (this.refreshUnique) {
             return;
@@ -418,22 +291,145 @@ Base.extends("GameController", {
     isRefreshing:function() {
         return this.refreshingState;
     },
-    stopRefresh:function(key) {
-        var refreshInfo = this.refreshData[key.key];
-        if (refreshInfo && refreshInfo.funcs && refreshInfo.funcs.length > 0) {
-            for (var i = 0; i < refreshInfo.funcs.length; ++i) {
-                if (refreshInfo.funcs[i] === key.obj) {
-                    refreshInfo.funcs.splice(i, 1);
-                    if (refreshInfo.funcs.length == 0) {
-                        delete this.refreshData[key.key];
-                    }
-                    return true;
+
+    // Private
+    refreshAutomation:function(conn, autoConfigs, done) {
+        var next = coroutine(function*() {
+            console.log("refreshAutomation..", conn.getGameInfo().name);
+            for (var op in autoConfigs) {
+                var config = autoConfigs[op];
+                if (!config.disabled) {
+                    //console.log("auto", op, config);
+                    yield conn[op].call(conn, config, next);
                 }
             }
-        }
-        return false;
+            safe(done)();
+        }, this);
     },
+    initPlayers:function() {
+        this.allUnions = {};
+        this.allPlayers = {};
+        this.sortedPlayerIds = [];
+    },
+    refreshPlayers:function(conn, refreshData, done) {
+        var next = coroutine(function*() {
+            console.log("refreshPlayers..", conn.getGameInfo().name);
+            var data = yield conn.getUnion(next); // dummy
+            var data = yield conn.getUnionList(next);
+            if (!data.unions) {
+                this.errLog("getUnionList", "none");
+                return safe(done)();
+            }
+            var limitMilliSeconds = refreshData.limitDay * 24 * 3600 * 1000
+            for (var i = 0; i < data.unions.length; ++i) {
+                var unionItem = data.unions[i];
+                this.allUnions[unionItem.unionId] = {
+                    server: refreshData.server,
+                    name: unionItem.name,
+                    short: unionItem.short,
+                };
+                if (i < refreshData.unionCount) {
+                    var playersData = yield conn.getUnionPlayers(unionItem.unionId, next);
+                    if (!playersData.players) {
+                        this.errLog("getUnionPlayers", "none");
+                        return safe(done)();
+                    }
+                    var now = new Date().getTime();
+                    for (var j = 0; j < playersData.players.length; ++j) {
+                        var playerItem = playersData.players[j];
+                        var playerData = this.allPlayers[playerItem.playerId];
+                        var lastPower = (playerData ? playerData.maxPower : 0);
+                        var maxPower = (playerItem.power > lastPower ? playerItem.power : lastPower);
+                        if (maxPower <= refreshData.minPower) {
+                            continue;
+                        }
+                        var t = playerItem.lastLogin.getTime();
+                        if (maxPower <= refreshData.limitPower && now - t > limitMilliSeconds) {
+                            continue;
+                        }
+                        this.allPlayers[playerItem.playerId] = {
+                            server: refreshData.server,
+                            unionId: unionItem.unionId,
+                            name: playerItem.name,
+                            power: playerItem.power,
+                            maxPower: maxPower,
+                            level: playerItem.level,
+                            lastLogin: playerItem.lastLogin,
+                        };
+                    }
+                }
+            }
+            safe(done)();
+        }, this);
+    },
+    initKingwar:function() {
+        this.constantKingwar = false;
+        this.playerToKingwar = {};
+        this.kingwarRefs = {};
+        for (var area = 1; area <= 3; ++area) {
+            for (var star = 1; star <= 10; ++star) {
+                var key = area * 100 + star;
+                this.kingwarRefs[key] = {
+                    constant:false,
+                    players:[],
+                };
+            }
+        }
+    },
+    refreshKingwar:function(conn, refreshData, done) {
+        var next = coroutine(function*() {
+            console.log("refreshKingwar..", conn.getGameInfo().name);
+            var validator = conn.getValidator();
+            if (this.constantKingwar && !validator.checkDaily("refreshKingwar")) {
+                return safe(done)();
+            }
+            var data = yield conn.getKingWar(next);
+            var constant = !data.allowJoin;
+            if (this.constantKingwar && !constant) {
+                this.constantKingwar = false;
+                this.playerToKingwar = {};
+            } else if (!this.constantKingwar && constant) {
+                this.constantKingwar = true;
+            }
+            if (!data.joined && data.allowJoin) {
+                var joinData = yield conn.joinKingWar(refreshData.area, refreshData.star, next);
+                if (!joinData.success) {
+                    this.errLog("joinKingWar", "server({2}) area({0}), star({1})".format(refreshData.area, refreshData.star, refreshData.server));
+                    return safe(done)();
+                }
+            }
+            if (refreshData.refData.constant && constant) {
+                return safe(done)();
+            }
+            var data = yield conn.getKingWarPlayers(next);
+            if (!data.players) {
+                this.errLog("getKingWarPlayers", "server({2}) area({0}), star({1})".format(refreshData.area, refreshData.star, refreshData.server));
+                return safe(done)();
+            }
 
+            var realKey = data.areaId * 100 + data.starId;
+            var realData = this.kingwarRefs[realKey];
+            refreshData.refData = realData;
+            if (realKey != refreshData.key) {
+                this.errLog("mismatch", "kingwar search key({0}) doesn't equal to result key({1})".format(refreshData.key, realKey));
+            }
+
+            var players = [];
+            for (var i = 0; i < data.players.length; ++i) {
+                var playerData = data.players[i];
+                players.push({
+                    playerId: playerData.playerId,
+                    union: playerData.union,
+                    name: playerData.name,
+                    power: playerData.power,
+                });
+                this.playerToKingwar[playerData.playerId] = realKey;
+            }
+            realData.constant = constant;
+            realData.players = players;
+            safe(done)();
+        }, this);
+    },
     errLog:function(action, state) {
         console.log("Failed to get task '{0}', detail:'{1}'".format(action, state));
     },
