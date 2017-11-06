@@ -111,19 +111,22 @@ Base.extends("GameConnection", {
                 this.servers = cachedServers;
             } else {
                 var serverList = null;
+                var timeDiff = 0;
                 var lastModified = yield $FileManager.getLastModified("/data/ServerCache.d", next);
-                var timeDiff = new Date().getTime() - lastModified.getTime();
-                console.log("Cache timeDiff:", timeDiff);
-                var data = yield $FileManager.visitFile("/data/ServerCache.d", next);
-                if (!data || timeDiff > 7 * 24 * 3600 * 1000) {
+                if (lastModified) {
+                    timeDiff = new Date().getTime() - lastModified.getTime();
+                    console.log("Cache timeDiff:", timeDiff);
+                }
+                if (!lastModified || timeDiff > 7 * 24 * 3600 * 1000) {
                     var obj = null;
                     while(!obj) {
                         obj = yield GameHTTP.servers(this.accountInfo.accountId, next);
                     }
                     serverList = obj.list;
-                    data = JSON.stringify(obj.list, null, 2);
+                    var data = JSON.stringify(obj.list, null, 2);
                     yield $FileManager.saveFile("/data/ServerCache.d", data, next);
                 } else {
+                    var data = yield $FileManager.visitFile("/data/ServerCache.d", next);
                     serverList = JSON.parse(data);
                 }
 
