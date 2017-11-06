@@ -115,7 +115,6 @@ Base.extends("GameConnection", {
                 var lastModified = yield $FileManager.getLastModified("/data/ServerCache.d", next);
                 if (lastModified) {
                     timeDiff = new Date().getTime() - lastModified.getTime();
-                    console.log("Cache timeDiff:", timeDiff);
                 }
                 if (!lastModified || timeDiff > 7 * 24 * 3600 * 1000) {
                     var obj = null;
