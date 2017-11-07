@@ -11,8 +11,8 @@ var isWeekend = new Date().getDay() == 0;
 var accounts = [
     {u:"18551855876", p:"sdw123456"},
     {u:"tree44", p:"12345678"},
-    //{u:"15171335812", p:"12345678"},
-    //{u:"18983624927", p:"123456"},
+    {u:"15171335812", p:"12345678"},
+    {u:"18983624927", p:"123456"},
     {u:"18757594952", p:"123456"},
     {u:"15831667796", p:"123456"},
     {u:"14741221200", p:"long123"},
@@ -54,6 +54,10 @@ var next = coroutine(function*() {
             }
             for (var j = 0; j < landTargets.length; ++j) {
                 var landId = landTargets[j];
+                if (data.lands[landId]) {
+                    console.log("land occupied:", landId);
+                    continue;
+                }
                 var data = yield conn.enterUnionWar(landId, next);
                 if (data.mineArray) {
                     // use card

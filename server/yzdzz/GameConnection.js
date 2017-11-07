@@ -343,8 +343,20 @@ Base.extends("GameConnection", {
                 return safe(done)({});
             }
             var isOpen = Number(data.open) == 1;
+            var lands = {};
+            if (isOpen) {
+                var data = yield this.sendMsg("UnionWar", "enter", null, next);
+                if (!data || !data.list) {
+                    return safe(done)({});
+                }
+                for (var i = 0; i < data.list.length; ++i) {
+                    var item = data.list[i];
+                    lands[item.id] = !!item.owner;
+                }
+            }
             return safe(done)({
                 isOpen: isOpen,
+                lands: lands,
             });
         }, this);
     },
@@ -402,10 +414,6 @@ Base.extends("GameConnection", {
     },
     enterUnionWar:function(landId, done) {
         var next = coroutine(function*() {
-            var data = yield this.sendMsg("UnionWar", "enter", null, next);
-            if (!data || !data.list) {
-                return safe(done)({});
-            }
             var data = yield this.sendMsg("UnionWar", "enterland", {id:landId}, next);
             if (!data || !data.gems) {
                 return safe(done)({});
