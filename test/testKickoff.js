@@ -2,6 +2,8 @@
 require("../server/FileManager");
 require("../server/yzdzz/GameController");
 
+$FileManager.RootDirectory = __dirname + "/..";
+
 var accounts = [
     {u:"eyexiaohao005", p:"123456"},
 ];

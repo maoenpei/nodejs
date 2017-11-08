@@ -2,6 +2,7 @@
 require("../Base");
 require("../Heartbeat");
 require("../Select");
+require("../TimingManager");
 require("./GameConnection");
 
 Base.extends("AccountManager", {
