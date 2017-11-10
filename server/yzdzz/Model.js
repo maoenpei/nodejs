@@ -1,6 +1,7 @@
 
 require("../Base");
 require("../LoginManager");
+require("../Mutex");
 require("../StateManager");
 require("./GameController");
 
@@ -153,11 +154,11 @@ $HttpModel.addClass({
                 safe(done)();
             }, this);
         };
-        this.controller.cancelRefresh();
-        this.controller.startRefresh(RefreshInterval, refreshType, refreshCallback);
+        this.controller.cancelPeriodic();
+        this.controller.startPeriodic(RefreshInterval, refreshType, refreshCallback);
     },
     noConfliction:function(fun) {
-        if (this.controller.isRefreshing()) {
+        if (this.controller.duringPeriodic()) {
             this.onRefreshEnd.push(fun);
             return true;
         } else {
@@ -177,7 +178,7 @@ $HttpModel.addClass({
             this.controller.modifyPlayerAutomation(playerData.refreshAutomationKey, autoConfigs);
         } else {
             playerData.refreshAutomationKey =
-                this.controller.setPlayerAutomation(playerData, 3, autoConfigs);
+                this.controller.setPlayerAutomation(playerData, autoConfigs);
         }
     },
     stopRefreshAutomation:function(playerKey) {
@@ -196,7 +197,7 @@ $HttpModel.addClass({
             return;
         }
         playerData.refreshPlayerKey =
-            this.controller.setPlayerListing(playerData, 1, 10, 300, 800, 20);
+            this.controller.setPlayerListing(playerData, 10, 300, 800, 20);
     },
     stopRefreshPlayerinfo:function(playerKey) {
         var playerData = this.players[playerKey];
@@ -214,7 +215,7 @@ $HttpModel.addClass({
             return;
         }
         playerData.refreshKingwarKey =
-            this.controller.setPlayerKingwar(playerData, 1, area, star);
+            this.controller.setPlayerKingwar(playerData, area, star);
     },
     stopRefreshKingwar:function(playerKey) {
         var playerData = this.players[playerKey];
@@ -306,6 +307,7 @@ $HttpModel.addClass({
             account: this.accounts[accountKey].account,
             server: server,
             validator: new GameValidator(),
+            mutex: new Mutex(),
         };
     },
     delPlayer:function(playerKey) {
@@ -810,7 +812,7 @@ $HttpModel.addClass({
 
             responder.respondJson({
                 success: true,
-                isRefresh: this.controller.isRefreshing(),
+                isRefresh: this.controller.duringPeriodic(),
             }, done);
         }, this);
     },

@@ -44,33 +44,37 @@ Base.extends("AccountManager", {
 Base.extends("GameController", {
     _constructor:function() {
         this.accountManager = new AccountManager();
+        this.timingManager = new TimingManager();
 
         this.refreshUnique = null;
         this.refreshData = {};
         this.refreshingState = false;
         this.heartbeat = new Heartbeat();
         this.initKingwar();
-        this.initPlayers();
+        this.initPlayerListing();
     },
     getAccountManager:function() {
         return this.accountManager;
     },
 
     // API
-    setPlayerAutomation:function(playerData, intervalCount, autoConfigs) {
-        return this.appendRefresh(playerData, intervalCount, "automation", (conn, done) => {
+    setPlayerAutomation:function(playerData, autoConfigs) {
+        var key = this.appendRefresh(playerData, "automation", (conn, done) => {
             this.refreshAutomation(conn, autoConfigs, done);
         });
+        this.stateRefresh(key, 1);
+        return key;
     },
     // API
     modifyPlayerAutomation:function(key, autoConfigs) {
-        return this.modifyRefresh(key, (conn, done) => {
+        return this.funcRefresh(key, (conn, done) => {
             this.refreshAutomation(conn, autoConfigs, done);
         });
     },
     // API
     manualPlayerAutomation:function(playerData, autoConfigs, done) {
         var next = coroutine(function*() {
+            yield playerData.mutex.lock(next);
             var conn = this.accountManager.connectAccount(playerData.account, playerData.validator);
             if (!conn) {
                 return safe(done)({});
@@ -85,6 +89,7 @@ Base.extends("GameController", {
             }
             yield this.refreshAutomation(conn, autoConfigs, next);
             conn.quit();
+            playerData.mutex.unlock();
             safe(done)({
                 success: true,
             });
@@ -92,9 +97,9 @@ Base.extends("GameController", {
     },
 
     // API
-    setPlayerListing:function(playerData, intervalCount, unionCount, minPower, limitPower, limitDay) {
-        return this.appendRefresh(playerData, intervalCount, "playerlist", (conn, done) => {
-            this.refreshPlayers(conn, {
+    setPlayerListing:function(playerData, unionCount, minPower, limitPower, limitDay) {
+        var key = this.appendRefresh(playerData, "playerlist", (conn, done) => {
+            this.refreshPlayerListing(conn, {
                 server: playerData.server,
                 minPower: minPower * 10000,
                 unionCount: unionCount,
@@ -102,6 +107,8 @@ Base.extends("GameController", {
                 limitDay: limitDay,
             }, done);
         });
+        this.stateRefresh(key, 1);
+        return key;
     },
     getPlayers:function() {
         return this.allPlayers;
@@ -174,18 +181,20 @@ Base.extends("GameController", {
     },
 
     // API
-    setPlayerKingwar:function(playerData, intervalCount, area, star) {
-        var key = area * 100 + star;
-        return this.appendRefresh(playerData, intervalCount, "kingwar", (conn, done) => {
+    setPlayerKingwar:function(playerData, area, star) {
+        var kingwarKey = area * 100 + star;
+        var key = this.appendRefresh(playerData, "kingwar", (conn, done) => {
             this.refreshKingwar(conn, {
-                key: key,
+                kingwarKey: kingwarKey,
                 area:area,
                 star:star,
                 server:playerData.server,
 
-                refData:this.kingwarRefs[key],
+                refData:this.kingwarRefs[kingwarKey],
             }, done);
         });
+        this.stateRefresh(key, 1);
+        return key;
     },
     getKingwar:function() {
         var areastars = {};
@@ -208,28 +217,16 @@ Base.extends("GameController", {
 
     // API
     unsetPlayer:function(key) {
-        var refreshInfo = this.refreshData[key.key];
-        if (refreshInfo && refreshInfo.funcs && refreshInfo.funcs.length > 0) {
-            for (var i = 0; i < refreshInfo.funcs.length; ++i) {
-                if (refreshInfo.funcs[i] === key.obj) {
-                    refreshInfo.funcs.splice(i, 1);
-                    if (refreshInfo.funcs.length == 0) {
-                        delete this.refreshData[key.key];
-                    }
-                    return true;
-                }
-            }
-        }
-        return false;
+        return this.removeRefresh(key);
     },
-    startRefresh:function(interval, refreshType, callback) {
+    startPeriodic:function(interval, refreshType, callback) {
         if (this.refreshUnique) {
             return;
         }
         this.heartbeat.setup(interval * 2, () => {
             console.log("========================= refreshing loop dead! ===========================");
-            this.cancelRefresh();
-            this.startRefresh(interval, null, callback);
+            this.cancelPeriodic();
+            this.startPeriodic(interval, null, callback);
         });
         console.log("refreshing start!", refreshType);
         var refreshUnique = { callback: callback };
@@ -239,35 +236,20 @@ Base.extends("GameController", {
                 this.heartbeat.beat();
                 var startTime = new Date().getTime();
                 this.refreshingState = true;
-                var select = new Select();
                 console.log("refreshing loop!", new Date());
-                for (var accountGameKey in this.refreshData) {
-                    var refreshInfo = this.refreshData[accountGameKey];
-                    var executables = [];
-                    for (var i = 0; i < refreshInfo.funcs.length; ++i) {
-                        var funcItem = refreshInfo.funcs[i];
-                        var matchType = refreshType && refreshType.indexOf(funcItem.refresh) >= 0;
-                        if (!refreshType || matchType) {
-                            if (matchType) {
-                                funcItem.index = 0;
-                            }
-                            if (funcItem.index == 0) {
-                                executables.push(funcItem.func);
-                            }
-                            funcItem.index = (funcItem.index + 1) % funcItem.count;
-                        }
+                yield this.refreshAllPlayers((funcObj) => {
+                    if (funcObj.state != 1) {
+                        return false;
                     }
-
-                    if (executables.length > 0) {
-                        this.refreshForPlayer(refreshInfo, executables, select.setup());
+                    var matchType = refreshType && refreshType.indexOf(funcObj.refresh) >= 0;
+                    if (!refreshType || matchType) {
+                        return true;
                     }
-                }
-                console.log("refreshing player start!", new Date());
-                yield select.all(next);
+                    return false;
+                }, next);
                 if (this.refreshUnique !== refreshUnique) {
                     break;
                 }
-                console.log("refreshing all done!", new Date());
                 this.refreshingState = false;
 
                 var endTime = new Date().getTime();
@@ -285,15 +267,128 @@ Base.extends("GameController", {
             console.log("refreshing quit!");
         }, this);
     },
-    cancelRefresh:function() {
+    cancelPeriodic:function() {
         this.heartbeat.cancel();
         this.refreshUnique = null;
     },
-    isRefreshing:function() {
+    duringPeriodic:function() {
         return this.refreshingState;
     },
 
     // Private
+    appendRefresh:function(playerData, refreshType, func) {
+        var accountGameKey = playerData.account + "$" + playerData.server;
+        var refreshInfo = this.refreshData[accountGameKey];
+        refreshInfo = (refreshInfo ? refreshInfo : {
+            account: playerData.account,
+            server: playerData.server,
+            funcs: [],
+            validator: playerData.validator,
+            mutex: playerData.mutex,
+        });
+        var funcObj = {
+            func:func,
+            refresh: refreshType,
+            state: 0,
+        };
+        refreshInfo.funcs.push(funcObj);
+        this.refreshData[accountGameKey] = refreshInfo;
+        return {
+            key: accountGameKey,
+            obj: funcObj,
+        };
+    },
+    removeRefresh:function(key) {
+        var findInfo = this.findRefresh(key);
+        if (findInfo) {
+            findInfo.refreshInfo.funcs.splice(findInfo.index, 1);
+            if (findInfo.refreshInfo.funcs.length == 0) {
+                delete this.refreshData[key.key];
+            }
+            return true;
+        }
+        return false;
+    },
+    findRefresh:function(key) {
+        var refreshInfo = this.refreshData[key.key];
+        if (refreshInfo && refreshInfo.funcs && refreshInfo.funcs.length > 0) {
+            for (var i = 0; i < refreshInfo.funcs.length; ++i) {
+                if (refreshInfo.funcs[i] === key.obj) {
+                    return {
+                        refreshInfo: refreshInfo,
+                        index: i,
+                    };
+                }
+            }
+        }
+        return null;
+    },
+    stateRefresh:function(key, state) {
+        var findInfo = this.findRefresh(key);
+        if (findInfo) {
+            var funcObj = findInfo.refreshInfo.funcs[findInfo.index];
+            funcObj.state = state;
+        }
+    },
+    funcRefresh:function(key, func) {
+        var findInfo = this.findRefresh(key);
+        if (findInfo) {
+            var funcObj = findInfo.refreshInfo.funcs[findInfo.index];
+            // must create a new instance in case old one is still being used.
+            funcObj = clone(funcObj);
+            funcObj.func = func;
+            key.obj = funcObj;
+            findInfo.refreshInfo.funcs.splice(i, 1, funcObj);
+            return true;
+        }
+        return false;
+    },
+    refreshAllPlayers:function(check, done) {
+        var select = new Select();
+        for (var accountGameKey in this.refreshData) {
+            var refreshInfo = this.refreshData[accountGameKey];
+            var executables = [];
+            for (var i = 0; i < refreshInfo.funcs.length; ++i) {
+                var funcObj = refreshInfo.funcs[i];
+                if (check(funcObj)) {
+                    executables.push(funcObj.func);
+                }
+            }
+
+            if (executables.length > 0) {
+                this.refreshOnePlayer(refreshInfo, executables, select.setup());
+            }
+        }
+        select.all(done);
+    },
+    refreshOnePlayer:function(refreshInfo, executables, done) {
+        var next = coroutine(function*() {
+            yield refreshInfo.mutex.lock(next);
+            var conn = this.accountManager.connectAccount(refreshInfo.account, refreshInfo.validator);
+            if (!conn) {
+                this.errLog("connectAccount", "account:{0}".format(refreshInfo.account));
+                return safe(done)();
+            }
+            console.log("start -- player!", conn.getUsername(), refreshInfo.server);
+            var data = yield conn.loginAccount(next);
+            if (!data.success) {
+                this.errLog("loginAccount", "account({0}), server({1})".format(conn.getUsername(), refreshInfo.server));
+                return safe(done)();
+            }
+            var data = yield conn.loginGame(refreshInfo.server, next);
+            if (!data.success) {
+                this.errLog("loginGame", "account({0}), server({1})".format(conn.getUsername(), refreshInfo.server));
+                return safe(done)();
+            }
+            for (var i = 0; i < executables.length; ++i) {
+                yield executables[i](conn, next);
+            }
+            console.log("quit -- player!", conn.getUsername(), refreshInfo.server, conn.getGameInfo().name);
+            conn.quit();
+            refreshInfo.mutex.unlock();
+            safe(done)();
+        }, this);
+    },
     refreshAutomation:function(conn, autoConfigs, done) {
         var next = coroutine(function*() {
             console.log("refreshAutomation..", conn.getGameInfo().name);
@@ -307,14 +402,14 @@ Base.extends("GameController", {
             safe(done)();
         }, this);
     },
-    initPlayers:function() {
+    initPlayerListing:function() {
         this.allUnions = {};
         this.allPlayers = {};
         this.sortedPlayerIds = [];
     },
-    refreshPlayers:function(conn, refreshData, done) {
+    refreshPlayerListing:function(conn, refreshData, done) {
         var next = coroutine(function*() {
-            console.log("refreshPlayers..", conn.getGameInfo().name);
+            console.log("refreshPlayerListing..", conn.getGameInfo().name);
             var data = yield conn.getUnion(next); // dummy
             var data = yield conn.getUnionList(next);
             if (!data.unions) {
@@ -411,8 +506,8 @@ Base.extends("GameController", {
             var realKey = data.areaId * 100 + data.starId;
             var realData = this.kingwarRefs[realKey];
             refreshData.refData = realData;
-            if (realKey != refreshData.key) {
-                this.errLog("mismatch", "kingwar search key({0}) doesn't equal to result key({1})".format(refreshData.key, realKey));
+            if (realKey != refreshData.kingwarKey) {
+                this.errLog("mismatch", "kingwar search key({0}) doesn't equal to result key({1})".format(refreshData.kingwarKey, realKey));
             }
 
             var players = [];
@@ -433,74 +528,5 @@ Base.extends("GameController", {
     },
     errLog:function(action, state) {
         console.log("Failed to get task '{0}', detail:'{1}'".format(action, state));
-    },
-    appendRefresh:function(playerData, count, refreshType, func) {
-        var accountGameKey = playerData.account + "$" + playerData.server;
-        var refreshInfo = this.refreshData[accountGameKey];
-        refreshInfo = (refreshInfo ? refreshInfo : {
-            account: playerData.account,
-            server: playerData.server,
-            funcs: [],
-            validator: playerData.validator,
-        });
-        var funcObj = {
-            func:func,
-            refresh: refreshType,
-            count: count,
-            index: 0,
-        };
-        refreshInfo.funcs.push(funcObj);
-        this.refreshData[accountGameKey] = refreshInfo;
-        return {
-            key: accountGameKey,
-            obj: funcObj,
-        };
-    },
-    modifyRefresh:function(key, func) {
-        var refreshInfo = this.refreshData[key.key];
-        if (refreshInfo && refreshInfo.funcs && refreshInfo.funcs.length > 0) {
-            for (var i = 0; i < refreshInfo.funcs.length; ++i) {
-                var funcObj = refreshInfo.funcs[i];
-                if (funcObj === key.obj) {
-                    // must create a new instance in case old one is still being used.
-                    funcObj = {
-                        func: func,
-                        refresh: funcObj.refresh,
-                        count: funcObj.count,
-                        index: 0,
-                    };
-                    key.obj = funcObj;
-                    refreshInfo.funcs.splice(i, 1, funcObj);
-                    return true;
-                }
-            }
-        }
-        return false;
-    },
-    refreshForPlayer:function(refreshInfo, executables, done) {
-        var next = coroutine(function*() {
-            var conn = this.accountManager.connectAccount(refreshInfo.account, refreshInfo.validator);
-            if (!conn) {
-                this.errLog("connectAccount", "account:{0}".format(refreshInfo.account));
-                return safe(done)();
-            }
-            console.log("start -- player!", conn.getUsername(), refreshInfo.server);
-            var data = yield conn.loginAccount(next);
-            if (!data.success) {
-                this.errLog("loginAccount", "account({0}), server({1})".format(conn.getUsername(), refreshInfo.server));
-                return safe(done)();
-            }
-            var data = yield conn.loginGame(refreshInfo.server, next);
-            if (!data.success) {
-                this.errLog("loginGame", "account({0}), server({1})".format(conn.getUsername(), refreshInfo.server));
-                return safe(done)();
-            }
-            for (var i = 0; i < executables.length; ++i) {
-                yield executables[i](conn, next);
-            }
-            console.log("quit -- player!", conn.getUsername(), refreshInfo.server, conn.getGameInfo().name);
-            conn.quit();
-            safe(done)();
-        }, this);
     },
 });

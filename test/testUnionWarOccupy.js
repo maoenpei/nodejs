@@ -46,15 +46,15 @@ var next = coroutine(function*() {
             if (!data.success) {continue;}
             var data = yield conn.loginGame("s96", next);
             if (!data.success) {continue;}
-            var data = yield conn.getUnionWar(next);
-            if (!data.isOpen) {
+            var data_UnionWar = yield conn.getUnionWar(next);
+            if (!data_UnionWar.isOpen) {
                 console.log("union war closed");
                 conn.quit();
                 continue;
             }
             for (var j = 0; j < landTargets.length; ++j) {
                 var landId = landTargets[j];
-                if (data.lands[landId]) {
+                if (data_UnionWar.lands[landId]) {
                     console.log("land occupied:", landId);
                     continue;
                 }

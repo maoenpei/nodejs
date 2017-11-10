@@ -1,7 +1,7 @@
 
 require("./Base");
 
-Base.extends("$TimingManager", {
+Base.extends("TimingManager", {
     _constructor:function() {
         this.events = {};
         this.eventQueue = [];
