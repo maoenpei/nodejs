@@ -23,7 +23,7 @@ var accounts = [
 
 var selfUnion = "b275705814a85d98";
 
-var landTargets = (isWeekend ? [7, 3, 2, 1] : [4, 1, 3, 2]);
+var landTargets = (isWeekend ? [7, 3, 2, 1] : [4, 3, 1, 2]);
 
 var friendUnion = ["b26d0533bba85c43"];
 var enemyUnion = [];
@@ -97,6 +97,7 @@ var next = coroutine(function*() {
                         }
                     }
                     var selfOccupy = 100;
+                    var originOccupy = 100;
                     var bestOccupy = 100;
                     var bestFight = 100;
                     var worstFight = 100;
@@ -104,6 +105,7 @@ var next = coroutine(function*() {
                         var mineData = mineIndices[k];
                         if (conn.getGameInfo().playerId == mineData.playerId) {
                             selfOccupy = mineData.pos;
+                            originOccupy = mineData.pos;
                         }
                         if (mineData.mineLife > 0 && !mineData.playerId) {
                             if (mineData.pos < bestOccupy) {
@@ -126,6 +128,8 @@ var next = coroutine(function*() {
                     bestFight = (bestFight == 100 ? worstFight : bestFight);
                     if (bestFight != 100 && (selfOccupy == 100 || bestFight < selfOccupy)) {
                         var data_fire = yield conn.fire(landId, bestFight, next);
+                        // fire will lose current pos
+                        bestOccupy = (originOccupy < bestOccupy ? originOccupy : bestOccupy);
                         console.log("data_fire", data_fire);
                         if (data_fire.success) {
                             selfOccupy = 100;
