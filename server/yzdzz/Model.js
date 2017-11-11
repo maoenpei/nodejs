@@ -13,7 +13,7 @@ GAME_SETTING_CONFIG = "GameSetting.d";
 GAME_POWER_MAX_CONFIG = "GamePowerMax.d";
 GAME_UNIONS_CONFIG = "GameUnions.d";
 
-var allFuncs = [
+var AllFuncs = [
     {name:"refresh", authBase:2},
     {name:"kingwar", authBase:1, refreshType:"kingwar", },
     {name:"playerlist", authBase:1, refreshType:"kingwar;playerlist", },
@@ -22,12 +22,12 @@ var allFuncs = [
     {name:"setting", authBase:3},
     {name:"users", authBase:3},
 ];
-var allFuncStr = ";";
-var allFuncMap = {};
-for (var i = 0; i < allFuncs.length; ++i) {
-    var funcItem = allFuncs[i];
-    allFuncStr += funcItem.name + ";";
-    allFuncMap[funcItem.name] = funcItem;
+var AllFuncStr = ";";
+var AllFuncMap = {};
+for (var i = 0; i < AllFuncs.length; ++i) {
+    var funcItem = AllFuncs[i];
+    AllFuncStr += funcItem.name + ";";
+    AllFuncMap[funcItem.name] = funcItem;
 }
 
 $HttpModel.addClass({
@@ -112,7 +112,10 @@ $HttpModel.addClass({
                 var kingwarConfig = settingStates.kingwar[playerKey];
                 this.startRefreshKingwar(playerKey, kingwarConfig.area, kingwarConfig.star);
             }
-            this.doRefresh(allFuncStr);
+            var defaultsStates = $StateManager.getState(GAME_DEFAULTS_CONFIG);
+            this.controller.startDailyTask(defaultsStates.dailyTask);
+            this.controller.setRepeatRange(defaultsStates.repeatRange.start, defaultsStates.repeatRange.end);
+            this.doRefresh(AllFuncStr);
             safe(done)();
         }, this);
     },
@@ -849,7 +852,7 @@ $HttpModel.addClass({
             }
 
             var func = json.func;
-            var funcItem = allFuncMap[func];
+            var funcItem = AllFuncMap[func];
             if (!funcItem || !funcItem.refreshType) {
                 responder.addError("Not valid func.");
                 return responder.respondJson({}, done);
@@ -964,9 +967,9 @@ $HttpModel.addClass({
             }
 
             var funcs = [];
-            for (var i = 0; i < allFuncs.length; ++i) {
-                if (userData.auth >= allFuncs[i].authBase) {
-                    funcs.push(allFuncs[i].name);
+            for (var i = 0; i < AllFuncs.length; ++i) {
+                if (userData.auth >= AllFuncs[i].authBase) {
+                    funcs.push(AllFuncs[i].name);
                 }
             }
 

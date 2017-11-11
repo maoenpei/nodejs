@@ -46,32 +46,29 @@ Base.extends("GameController", {
         this.accountManager = new AccountManager();
         this.timingManager = new TimingManager();
 
-        this.refreshUnique = null;
         this.refreshData = {};
         this.refreshingState = false;
         this.heartbeat = new Heartbeat();
         this.initKingwar();
         this.initPlayerListing();
+        this.initPlayerAutomation();
     },
     getAccountManager:function() {
         return this.accountManager;
     },
 
-    // API
     setPlayerAutomation:function(playerData, autoConfigs) {
         var key = this.appendRefresh(playerData, "automation", (conn, done) => {
             this.refreshAutomation(conn, autoConfigs, done);
         });
-        this.stateRefresh(key, 1);
+        this.setRefreshState(key, 2);
         return key;
     },
-    // API
     modifyPlayerAutomation:function(key, autoConfigs) {
-        return this.funcRefresh(key, (conn, done) => {
+        return this.setRefreshFunc(key, (conn, done) => {
             this.refreshAutomation(conn, autoConfigs, done);
         });
     },
-    // API
     manualPlayerAutomation:function(playerData, autoConfigs, done) {
         var next = coroutine(function*() {
             yield playerData.mutex.lock(next);
@@ -96,7 +93,6 @@ Base.extends("GameController", {
         }, this);
     },
 
-    // API
     setPlayerListing:function(playerData, unionCount, minPower, limitPower, limitDay) {
         var key = this.appendRefresh(playerData, "playerlist", (conn, done) => {
             this.refreshPlayerListing(conn, {
@@ -107,7 +103,7 @@ Base.extends("GameController", {
                 limitDay: limitDay,
             }, done);
         });
-        this.stateRefresh(key, 1);
+        this.setRefreshState(key, 1);
         return key;
     },
     getPlayers:function() {
@@ -180,7 +176,6 @@ Base.extends("GameController", {
         }
     },
 
-    // API
     setPlayerKingwar:function(playerData, area, star) {
         var kingwarKey = area * 100 + star;
         var key = this.appendRefresh(playerData, "kingwar", (conn, done) => {
@@ -193,7 +188,7 @@ Base.extends("GameController", {
                 refData:this.kingwarRefs[kingwarKey],
             }, done);
         });
-        this.stateRefresh(key, 1);
+        this.setRefreshState(key, 1);
         return key;
     },
     getKingwar:function() {
@@ -215,12 +210,12 @@ Base.extends("GameController", {
         return areastars;
     },
 
-    // API
     unsetPlayer:function(key) {
         return this.removeRefresh(key);
     },
+
     startPeriodic:function(interval, refreshType, callback) {
-        if (this.refreshUnique) {
+        if (this.periodicUnique) {
             return;
         }
         this.heartbeat.setup(interval * 2, () => {
@@ -229,15 +224,16 @@ Base.extends("GameController", {
             this.startPeriodic(interval, null, callback);
         });
         console.log("refreshing start!", refreshType);
-        var refreshUnique = { callback: callback };
-        this.refreshUnique = refreshUnique;
+        var periodicUnique = { callback: callback };
+        this.periodicUnique = periodicUnique;
         var next = coroutine(function*() {
-            while(this.refreshUnique === refreshUnique) {
+            while(this.periodicUnique === periodicUnique) {
                 this.heartbeat.beat();
                 var startTime = new Date().getTime();
                 this.refreshingState = true;
                 console.log("refreshing loop!", new Date());
                 yield this.refreshAllPlayers((funcObj) => {
+                    console.log("funcObj in refresh", funcObj);
                     if (funcObj.state != 1) {
                         return false;
                     }
@@ -247,15 +243,15 @@ Base.extends("GameController", {
                     }
                     return false;
                 }, next);
-                if (this.refreshUnique !== refreshUnique) {
+                if (this.periodicUnique !== periodicUnique) {
                     break;
                 }
                 this.refreshingState = false;
 
                 var endTime = new Date().getTime();
-                if (refreshUnique.callback) {
-                    yield refreshUnique.callback(next);
-                    if (this.refreshUnique !== refreshUnique) {
+                if (periodicUnique.callback) {
+                    yield periodicUnique.callback(next);
+                    if (this.periodicUnique !== periodicUnique) {
                         break;
                     }
                 }
@@ -269,10 +265,57 @@ Base.extends("GameController", {
     },
     cancelPeriodic:function() {
         this.heartbeat.cancel();
-        this.refreshUnique = null;
+        this.periodicUnique = null;
     },
     duringPeriodic:function() {
         return this.refreshingState;
+    },
+
+    startDailyTask:function(dailyTimes) {
+        this.unsetEventKeys(this.dailyTasks);
+        this.dailyTasks = [];
+        var doDailyTask = () => {
+            console.log("daily task start!");
+            this.refreshAllPlayers((funcObj) => {
+                return funcObj.state == 2;
+            }, () => {
+                console.log("daily task end!");
+            });
+        };
+        for (var i = 0; i < dailyTimes.length; ++i) {
+            var dailyInfo = dailyTimes[i];
+            var eventKey = this.timingManager.setDailyEvent(dailyInfo.hour, dailyInfo.minute, dailyInfo.second, doDailyTask);
+            this.dailyTasks.push(eventKey);
+        }
+    },
+    cancelDailyTask:function() {
+        if (this.dailyTasks) {
+            this.unsetEventKeys(this.dailyTasks);
+            this.dailyTasks = null;
+        }
+    },
+
+    setRepeatRange:function(startTime, endTime) {
+        this.unsetEventKeys(this.repeatRanges);
+        this.repeatRanges = [];
+        var startKey = this.timingManager.setDailyEvent(startTime.hour, startTime.minute, startTime.second, () => {
+            console.log("refreshing automation for period start!");
+            this.setRefreshStatesOfType("automation", 1);
+        });
+        this.repeatRanges.push(startKey);
+        var endKey = this.timingManager.setDailyEvent(endTime.hour, endTime.minute, endTime.second, () => {
+            console.log("refreshing automation for period end!");
+            this.setRefreshStatesOfType("automation", 2);
+        });
+        this.repeatRanges.push(endKey);
+    },
+
+    unsetEventKeys:function(keyArray) {
+        if (keyArray) {
+            for (var i = 0; i < keyArray.length; ++i) {
+                this.timingManager.unsetEvent(keyArray[i]);
+            }
+        }
     },
 
     // Private
@@ -323,14 +366,25 @@ Base.extends("GameController", {
         }
         return null;
     },
-    stateRefresh:function(key, state) {
+    setRefreshState:function(key, state) {
         var findInfo = this.findRefresh(key);
         if (findInfo) {
             var funcObj = findInfo.refreshInfo.funcs[findInfo.index];
             funcObj.state = state;
         }
     },
-    funcRefresh:function(key, func) {
+    setRefreshStatesOfType:function(refreshType, state) {
+        for (var accountGameKey in this.refreshData) {
+            var refreshInfo = this.refreshData[accountGameKey];
+            for (var i = 0; i < refreshInfo.funcs.length; ++i) {
+                var funcObj = refreshInfo.funcs[i];
+                if (funcObj.refresh == refreshType) {
+                    funcObj.state = state;
+                }
+            }
+        }
+    },
+    setRefreshFunc:function(key, func) {
         var findInfo = this.findRefresh(key);
         if (findInfo) {
             var funcObj = findInfo.refreshInfo.funcs[findInfo.index];
@@ -343,14 +397,14 @@ Base.extends("GameController", {
         }
         return false;
     },
-    refreshAllPlayers:function(check, done) {
+    refreshAllPlayers:function(checkFun, done) {
         var select = new Select();
         for (var accountGameKey in this.refreshData) {
             var refreshInfo = this.refreshData[accountGameKey];
             var executables = [];
             for (var i = 0; i < refreshInfo.funcs.length; ++i) {
                 var funcObj = refreshInfo.funcs[i];
-                if (check(funcObj)) {
+                if (checkFun(funcObj)) {
                     executables.push(funcObj.func);
                 }
             }
@@ -388,6 +442,9 @@ Base.extends("GameController", {
             refreshInfo.mutex.unlock();
             safe(done)();
         }, this);
+    },
+
+    initPlayerAutomation:function() {
     },
     refreshAutomation:function(conn, autoConfigs, done) {
         var next = coroutine(function*() {

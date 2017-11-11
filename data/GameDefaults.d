@@ -10,4 +10,18 @@
         ,"autoArena":{"boxMax":6,"buyHeroSoul":true,"fightPlayer":true,"fightMax":10}
         ,"autoReward":{"nekoMax":4}
     }
+    ,"dailyTask":[
+        {"hour":0,"minute":0,"second":55}
+        ,{"hour":10,"minute":0,"second":55}
+        ,{"hour":12,"minute":0,"second":55}
+        ,{"hour":13,"minute":0,"second":55}
+        ,{"hour":17,"minute":0,"second":55}
+        ,{"hour":18,"minute":0,"second":55}
+        ,{"hour":21,"minute":0,"second":55}
+        ,{"hour":23,"minute":0,"second":55}
+    ]
+    ,"repeatRange":{
+        "start":{"hour":2,"minute":0,"second":0}
+        ,"end":{"hour":7,"minute":0,"second":0}
+    }
 }
