@@ -707,10 +707,6 @@ $HttpModel.addClass({
             var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
             var automationConfig = settingStates.automation[playerKey];
             automationConfig = (automationConfig ? automationConfig : { disabled: true, });
-            if (!automationConfig.disabled) {
-                responder.addError("Automation enabled config cannot do manual.");
-                return responder.respondJson({}, done);
-            }
 
             var autoConfigs = this.generateConfig(automationConfig, false);
             playerData.validator.resetDaily();

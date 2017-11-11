@@ -724,13 +724,9 @@ function displayAutomation() {
                         }
                     });
                     divAutoPlayerBlock.find(".div_auto_item_right").click(function() {
-                        if (!player.copy_configs.disabled) {
-                            alert("手动必须先禁用自动模式");
-                        } else {
-                            displayAutomationModel.manual(player, function(success) {
-                                alert(success ? "手动成功，请登陆游戏查看" : "手动失败");
-                            });
-                        }
+                        displayAutomationModel.manual(player, function(success) {
+                            alert(success ? "手动成功，请登陆游戏查看" : "手动失败");
+                        });
                     });
                     divAutoPlayerBlock.find(".clickable").click(function() {
                         displayConfig(player);
