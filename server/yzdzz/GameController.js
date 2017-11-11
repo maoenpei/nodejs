@@ -155,6 +155,7 @@ Base.extends("GameController", {
             var union = (player.unionId ? this.allUnions[player.unionId] : {});
             var kingwarKey = this.playerToKingwar[playerId];
             sortedPlayers.push({
+                key: playerId,
                 server: (player.server ? player.server : ""),
                 uName: (union.name ? union.name : ""),
                 uShort: (union.short ? union.short : ""),
@@ -233,7 +234,6 @@ Base.extends("GameController", {
                 this.refreshingState = true;
                 console.log("refreshing loop!", new Date());
                 yield this.refreshAllPlayers((funcObj) => {
-                    console.log("funcObj in refresh", funcObj);
                     if (funcObj.state != 1) {
                         return false;
                     }

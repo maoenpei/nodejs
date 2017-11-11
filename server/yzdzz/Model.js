@@ -43,6 +43,9 @@ $HttpModel.addClass({
         this.onRefreshEnd = [];
         this.delayRefresh = "";
 
+        this.randKey2PlayerId = {};
+        this.playerId2RandKey = {};
+
         httpServer.registerCommand("addaccount", this);
         httpServer.registerCommand("delaccount", this);
         httpServer.registerCommand("addplayer", this);
@@ -136,6 +139,12 @@ $HttpModel.addClass({
                     this.playersMd5 = md5;
                     var allPowerMax = $StateManager.getState(GAME_POWER_MAX_CONFIG);
                     for (var playerId in players) {
+                        if (!this.playerId2RandKey[playerId]) {
+                            var randKey = rkey();
+                            while(this.randKey2PlayerId[randKey]) { randKey = rkey(); }
+                            this.playerId2RandKey[playerId] = randKey;
+                            this.randKey2PlayerId[randKey] = playerId;
+                        }
                         allPowerMax[playerId] = {
                             name: players[playerId].name,
                             maxPower: players[playerId].maxPower,
@@ -896,6 +905,15 @@ $HttpModel.addClass({
             }
 
             var playersData = this.controller.getSortedPlayers(100);
+            for (var i = 0; i < playersData.length; ++i) {
+                var playerItem = playersData[i];
+                var randKey = this.playerId2RandKey[playerItem.key];
+                if (randKey) {
+                    playerItem.key = randKey;
+                } else {
+                    delete playerItem.key;
+                }
+            }
             var tag = this.getTag(playersData);
             if (!requestor.compareTags(tag)) {
                 responder.setCode(304);

@@ -883,7 +883,6 @@ function displayPlayerList() {
                     continue;
                 }
                 var duration = playerCommon.duration(playerData.last);
-                console.log(showQuit, duration.quit);
                 if (!showQuit && duration.quit) {
                     continue;
                 }
