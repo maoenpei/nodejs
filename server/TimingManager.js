@@ -7,6 +7,43 @@ Base.extends("TimingManager", {
         this.eventQueue = [];
         this.consuming = false;
     },
+    setWeeklyEvent:function(day, hour, minute, second, callback) {
+        return this.setEvent(() => {
+            var now = new Date();
+            var eventTime = new Date(now);
+            eventTime.setHours(hour, minute, second, 0);
+            var weekDay = eventTime.getDay();
+            var dayDiff = (day - weekDay) * 24 * 3600 * 1000;
+            var targetTime = eventTime.getTime() + dayDiff;
+            if (targetTime <= now.getTime()) {
+                targetTime += 7 * 24 * 3600 * 1000;
+            }
+            return targetTime;
+        }, callback);
+    },
+    setDailyEvent:function(hour, minute, second, callback) {
+        return this.setEvent(() => {
+            var now = new Date();
+            var eventTime = new Date(now);
+            eventTime.setHours(hour, minute, second, 0);
+            var targetTime = eventTime.getTime();
+            if (targetTime <= now.getTime()) {
+                targetTime += 24 * 3600 * 1000;
+            }
+            return targetTime;
+        }, callback);
+    },
+    unsetEvent:function(key) {
+        if (this.events[key]) {
+            delete this.events[key];
+            for (var i = 0; i < this.eventQueue.length; ++i) {
+                if (key == this.eventQueue[i].key) {
+                    this.eventQueue.splice(i, 1);
+                    break;
+                }
+            }
+        }
+    },
     consumeEvents:function() {
         if (this.consuming) {
             return;
@@ -62,43 +99,6 @@ Base.extends("TimingManager", {
         };
         this.queueEvent(key);
         return key;
-    },
-    setWeeklyEvent:function(day, hour, minute, second, callback) {
-        return this.setEvent(() => {
-            var now = new Date();
-            var eventTime = new Date(now);
-            eventTime.setHours(hour, minute, second, 0);
-            var weekDay = eventTime.getDay();
-            var dayDiff = (day - weekDay) * 24 * 3600 * 1000;
-            var targetTime = eventTime.getTime() + dayDiff;
-            if (targetTime <= now.getTime()) {
-                targetTime += 7 * 24 * 3600 * 1000;
-            }
-            return targetTime;
-        }, callback);
-    },
-    setDailyEvent:function(hour, minute, second, callback) {
-        return this.setEvent(() => {
-            var now = new Date();
-            var eventTime = new Date(now);
-            eventTime.setHours(hour, minute, second, 0);
-            var targetTime = eventTime.getTime();
-            if (targetTime <= now.getTime()) {
-                targetTime += 24 * 3600 * 1000;
-            }
-            return targetTime;
-        }, callback);
-    },
-    unsetEvent:function(key) {
-        if (this.events[key]) {
-            delete this.events[key];
-            for (var i = 0; i < this.eventQueue.length; ++i) {
-                if (key == this.eventQueue[i].key) {
-                    this.eventQueue.splice(i, 1);
-                    break;
-                }
-            }
-        }
     },
 });
 
