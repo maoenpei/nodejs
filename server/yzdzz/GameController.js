@@ -5,6 +5,14 @@ require("../Select");
 require("../TimingManager");
 require("./GameConnection");
 
+// states:
+// 0: 什么都不做
+// 1: 定期执行
+// 2: 执行每日任务
+// 3: 执行极限加入
+// 4: 极限加入已完成
+// 5: 执行极限刷新
+
 Base.extends("AccountManager", {
     _constructor:function() {
         this.accounts = {};
@@ -52,17 +60,23 @@ Base.extends("GameController", {
         this.initKingwar();
         this.initPlayerListing();
         this.initPlayerAutomation();
+        this.initTargeting();
     },
     getAccountManager:function() {
         return this.accountManager;
     },
 
+    setPlayerTargeting:function(playerData, targetingConfig) {
+        var key = this.appendRefresh(playerData, "targeting", 3, (conn, done) => {
+            this.refreshTargeting(conn, targetingConfig, key, done);
+        });
+        return key;
+    },
+
     setPlayerAutomation:function(playerData, autoConfigs) {
-        var key = this.appendRefresh(playerData, "automation", (conn, done) => {
+        return this.appendRefresh(playerData, "automation", 2, (conn, done) => {
             this.refreshAutomation(conn, autoConfigs, done);
         });
-        this.setRefreshState(key, 2);
-        return key;
     },
     modifyPlayerAutomation:function(key, autoConfigs) {
         return this.setRefreshFunc(key, (conn, done) => {
@@ -93,18 +107,16 @@ Base.extends("GameController", {
         }, this);
     },
 
-    setPlayerListing:function(playerData, unionCount, minPower, limitPower, limitDay) {
-        var key = this.appendRefresh(playerData, "playerlist", (conn, done) => {
+    setPlayerListing:function(playerData, listingConfig) {
+        return this.appendRefresh(playerData, "playerlist", 1, (conn, done) => {
             this.refreshPlayerListing(conn, {
                 server: playerData.server,
-                minPower: minPower * 10000,
-                unionCount: unionCount,
-                limitPower: limitPower * 10000,
-                limitDay: limitDay,
+                unionCount: listingConfig.unionCount,
+                minPower: listingConfig.minPower * 10000,
+                limitPower: listingConfig.limitPower * 10000,
+                limitDay: listingConfig.limitDay,
             }, done);
         });
-        this.setRefreshState(key, 1);
-        return key;
     },
     getPlayers:function() {
         return this.allPlayers;
@@ -177,20 +189,18 @@ Base.extends("GameController", {
         }
     },
 
-    setPlayerKingwar:function(playerData, area, star) {
-        var kingwarKey = area * 100 + star;
-        var key = this.appendRefresh(playerData, "kingwar", (conn, done) => {
+    setPlayerKingwar:function(playerData, kingwarConfig) {
+        var kingwarKey = kingwarConfig.area * 100 + kingwarConfig.star;
+        return this.appendRefresh(playerData, "kingwar", 1, (conn, done) => {
             this.refreshKingwar(conn, {
                 kingwarKey: kingwarKey,
-                area:area,
-                star:star,
+                area: kingwarConfig.area,
+                star: kingwarConfig.star,
                 server:playerData.server,
 
                 refData:this.kingwarRefs[kingwarKey],
             }, done);
         });
-        this.setRefreshState(key, 1);
-        return key;
     },
     getKingwar:function() {
         var areastars = {};
@@ -319,7 +329,7 @@ Base.extends("GameController", {
     },
 
     // Private
-    appendRefresh:function(playerData, refreshType, func) {
+    appendRefresh:function(playerData, refreshType, initState, func) {
         var accountGameKey = playerData.account + "$" + playerData.server;
         var refreshInfo = this.refreshData[accountGameKey];
         refreshInfo = (refreshInfo ? refreshInfo : {
@@ -332,7 +342,7 @@ Base.extends("GameController", {
         var funcObj = {
             func:func,
             refresh: refreshType,
-            state: 0,
+            state: initState,
         };
         refreshInfo.funcs.push(funcObj);
         this.refreshData[accountGameKey] = refreshInfo;
@@ -444,6 +454,67 @@ Base.extends("GameController", {
         }, this);
     },
 
+    joinByKingwarKey:function(conn, kingwarKey, done) {
+        var area = Math.floor(kingwarKey / 100);
+        var star = kingwarKey % 100;
+        conn.joinKingWar(area, star, done);
+    },
+    initTargeting:function() {
+        this.forceTargeting = false;
+        this.targetingHelp = [];
+        this.targetingFight = [];
+        this.targetingAll = [];
+    },
+    refreshTargeting:function(conn, targetingConfig, selfKey, done) {
+        var next = coroutine(function*() {
+            var kingwarKey = this.playerToKingwar[targetingConfig.reachPlayer];
+            if (kingwarKey) {
+                var data_join = yield this.joinByKingwarKey(conn, kingwarKey, next);
+            } else {
+                if (this.forceTargeting && targetingConfig.allowAssign) {
+                    var selfInfo = this.allPlayers[conn.getGameInfo().playerId];
+                    var currPower = conn.getGameInfo().power;
+                    var selfPower = (selfInfo ? selfInfo.maxPower : currPower);
+                    var joined = false;
+                    if (targetingConfig.fightForStar) {
+                        for (var i = 0; i < this.targetingFight.length; ++i) {
+                            var fightItem = this.targetingFight[i];
+                            if (selfPower - fightItem.maxPower > 500000) {
+                                var data_join = yield this.joinByKingwarKey(conn, fightItem.kingwarKey, next);
+                                joined = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!joined) {
+                        for (var i = 0; i < this.targetingHelp.length; ++i) {
+                            var helpItem = this.targetingHelp[i];
+                            if (currPower > helpItem.helpPower) {
+                                var data_join = yield this.joinByKingwarKey(conn, helpItem.kingwarKey, next);
+                                joined = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!joined) {
+                        for (var i = 0; i < this.targetingAll.length; ++i) {
+                            var someItem = this.targetingAll[i];
+                            if (currPower > someItem.minPower) {
+                                var data_join = yield this.joinByKingwarKey(conn, someItem.kingwarKey, next);
+                                joined = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            var data_kingwar = yield conn.getKingWar(next);
+            if (data_kingwar.joined) {
+                this.setRefreshState(selfKey, 4);
+            }
+            safe(done)();
+        }, this);
+    },
     initPlayerAutomation:function() {
     },
     refreshAutomation:function(conn, autoConfigs, done) {
@@ -545,8 +616,8 @@ Base.extends("GameController", {
                 this.constantKingwar = true;
             }
             if (!data.joined && data.allowJoin) {
-                var joinData = yield conn.joinKingWar(refreshData.area, refreshData.star, next);
-                if (!joinData.success) {
+                var data_join = yield conn.joinKingWar(refreshData.area, refreshData.star, next);
+                if (!data_join.success) {
                     this.errLog("joinKingWar", "server({2}) area({0}), star({1})".format(refreshData.area, refreshData.star, refreshData.server));
                     return safe(done)();
                 }

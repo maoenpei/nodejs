@@ -90,8 +90,8 @@ $HttpModel.addClass({
             delete settingStates.automation[playerKey];
             changed = true;
         }
-        if (settingStates.playerinfo[playerKey]) {
-            delete settingStates.playerinfo[playerKey];
+        if (settingStates.playerlisting[playerKey]) {
+            delete settingStates.playerlisting[playerKey];
             changed = true;
         }
         if (settingStates.kingwar[playerKey]) {
@@ -107,13 +107,13 @@ $HttpModel.addClass({
                 var automationConfig = settingStates.automation[playerKey];
                 this.startRefreshAutomation(playerKey, automationConfig);
             }
-            for (var playerKey in settingStates.playerinfo) {
-                var playerConfig = settingStates.playerinfo[playerKey];
-                this.startRefreshPlayerinfo(playerKey);
+            for (var playerKey in settingStates.playerlisting) {
+                var listingConfig = settingStates.playerlisting[playerKey];
+                this.startRefreshPlayerinfo(playerKey, listingConfig);
             }
             for (var playerKey in settingStates.kingwar) {
                 var kingwarConfig = settingStates.kingwar[playerKey];
-                this.startRefreshKingwar(playerKey, kingwarConfig.area, kingwarConfig.star);
+                this.startRefreshKingwar(playerKey, kingwarConfig);
             }
             var defaultsStates = $StateManager.getState(GAME_DEFAULTS_CONFIG);
             this.controller.startDailyTask(defaultsStates.dailyTask);
@@ -203,13 +203,13 @@ $HttpModel.addClass({
             });
         }
     },
-    startRefreshPlayerinfo:function(playerKey) {
+    startRefreshPlayerinfo:function(playerKey, listingConfig) {
         var playerData = this.players[playerKey];
         if (playerData.refreshPlayerKey) {
             return;
         }
         playerData.refreshPlayerKey =
-            this.controller.setPlayerListing(playerData, 10, 300, 800, 20);
+            this.controller.setPlayerListing(playerData, listingConfig);
     },
     stopRefreshPlayerinfo:function(playerKey) {
         var playerData = this.players[playerKey];
@@ -221,13 +221,13 @@ $HttpModel.addClass({
             });
         }
     },
-    startRefreshKingwar:function(playerKey, area, star) {
+    startRefreshKingwar:function(playerKey, kingwarConfig) {
         var playerData = this.players[playerKey];
         if (playerData.refreshKingwarKey) {
             return;
         }
         playerData.refreshKingwarKey =
-            this.controller.setPlayerKingwar(playerData, area, star);
+            this.controller.setPlayerKingwar(playerData, kingwarConfig);
     },
     stopRefreshKingwar:function(playerKey) {
         var playerData = this.players[playerKey];
