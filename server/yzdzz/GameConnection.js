@@ -1310,7 +1310,7 @@ Base.extends("GameConnection", {
                 if (data && data.list) {
                     for (var i = 0; i < data.list.length; ++i) {
                         var item = data.list[i];
-                        if (item.num == item.max) {
+                        if (item.num >= item.max) {
                             var data_reward = yield this.sendMsg("ActActive", "reward", { id:item.id }, next);
                         }
                     }
@@ -1354,7 +1354,7 @@ Base.extends("GameConnection", {
                         var splendidItem = data.list[i];
                         for (var j = 0; j < splendidItem.box.length; ++j) {
                             var boxItem = splendidItem.box[j];
-                            if (boxItem.num == boxItem.max && boxItem.done == 0) {
+                            if (boxItem.num >= boxItem.max && boxItem.done == 0) {
                                 var data_reward = yield this.sendMsg("ActSplendid", "reward", { actid: splendidItem.id, boxid: boxItem.id }, next);
                             }
                         }
