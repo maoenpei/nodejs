@@ -7,18 +7,22 @@ GAME_POWER_MAX_CONFIG = "GamePowerMax.d";
 $FileManager.RootDirectory = __dirname + "/..";
 
 var isWeekend = new Date().getDay() == 0;
+console.log("isWeekend", isWeekend);
 
 var accounts = [
     {u:"18551855876", p:"sdw123456"},
     {u:"tree44", p:"12345678"},
-    {u:"15171335812", p:"12345678"},
-    {u:"18983624927", p:"123456"},
     {u:"18757594952", p:"123456"},
     {u:"15831667796", p:"123456"},
     {u:"14741221200", p:"long123"},
     {u:"lv35679183", p:"zhangpeng1989"},
     {u:"13719987234", p:"xwWZT123"},
     {u:"13801890722", p:"Q950318my"},
+    {u:"13758796288", p:"087200"},
+    //{u:"15171335812", p:"12345678"},
+    //{u:"18983624927", p:"123456"},
+    {u:"13913945392", p:"816476"},
+    {u:"18367890817", p:"62252377"},
 ];
 
 var selfUnion = "b275705814a85d98";
@@ -89,7 +93,9 @@ var next = coroutine(function*() {
                         if (!data.hasSpeed) {
                             yield conn.setSpeed(true, next);
                         }
-                        mineIndices = data.mineArray;
+                        for (var k = 0; k < mineCount - 3; ++k) {
+                            mineIndices.push(data.mineArray[k]);
+                        }
                     } else {
                         var avoidCount = Math.floor(data.mineArray.length / 2);
                         for (var k = mineCount-1; k > avoidCount-1; --k) {
