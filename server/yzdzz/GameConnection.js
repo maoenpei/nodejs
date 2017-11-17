@@ -51,7 +51,7 @@ Base.extends("GameConnection", {
         this.password = password;
         this.validator = validator;
         this.accountInfo = null;
-        this.servers = [];
+        this.servers = {};
         this.serverInfo = null;
         this.gameInfo = null;
 
@@ -129,7 +129,7 @@ Base.extends("GameConnection", {
                     serverList = JSON.parse(data);
                 }
 
-                this.servers = [];
+                this.servers = {};
                 for (var key in serverList) {
                     var serverData = serverList[key];
                     var ipData = serverData.server.split(":");
@@ -139,7 +139,7 @@ Base.extends("GameConnection", {
                         port:Number(ipData[1]),
                         desc:serverData.short.toLowerCase(),
                     };
-                    this.servers.push(server);
+                    this.servers[server.desc] = server;
                 }
                 cachedServers = this.servers;
             }
@@ -156,9 +156,6 @@ Base.extends("GameConnection", {
             });
         }, this);
     },
-    servers:function() {
-        return this.servers;
-    },
     loginGame:function(desc, done) {
         var next = coroutine(function*() {
             if (!this.accountInfo) {
@@ -169,15 +166,8 @@ Base.extends("GameConnection", {
                 return safe(done)({});
             }
 
-            var server = null;
             desc = desc.toLowerCase();
-            for (var i = 0; i < this.servers.length; ++i) {
-                var serverItem = this.servers[i];
-                if (serverItem.desc == desc) {
-                    server = serverItem;
-                    break;
-                }
-            }
+            var server = this.servers[desc];
             if (!server) {
                 return safe(done)({});
             }
