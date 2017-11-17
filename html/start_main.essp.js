@@ -441,8 +441,25 @@ displayAutomationModel.get = function(callback) {
     $this = this;
     requestPost("listautomation", {}, function(json) {
         $this.accounts = json.accounts;
+        $this.players = json.players;
         callback(json);
     });
+}
+displayAutomationModel.getPlayerSelections = function() {
+    if (!this.selectablePlayers)
+    {
+        this.selectablePlayers = [
+            {key: "", display: "无目标"}
+        ];
+        for (var i = 0; i < this.players.length; ++i) {
+            var player = this.players[i];
+            this.selectablePlayers.push({
+                key: player.key,
+                display: player.server + "." + player.uShort + " " + player.name + " " + Math.floor(player.power / 10000) + "万",
+            });
+        }
+    }
+    return this.selectablePlayers;
 }
 displayAutomationModel.getValidServers = function(account) {
     var usedServers = {};
@@ -481,6 +498,12 @@ displayAutomationModel.toPlayer = function(server) {
     this.levels.splice(3, this.levels.length - 3);
     if (server) {
         this.levels[2] = server;
+    }
+}
+displayAutomationModel.toCatalog = function(catalog) {
+    this.levels.splice(4, this.levels.length - 4);
+    if (catalog) {
+        this.levels[3] = catalog;
     }
 }
 displayAutomationModel.addAccount = function(username, password, callback) {
@@ -547,10 +570,11 @@ displayAutomationModel.delPlayer = function(account, player, callback) {
         }
     });
 }
-displayAutomationModel.copyConfigs = function(player) {
+displayAutomationModel.backupPlayer = function(player) {
     player.copy_configs = deep_clone(player.configs);
+    player.copy_settings = deep_clone(player.settings);
 }
-displayAutomationModel.save = function(player, callback) {
+displayAutomationModel.saveConfig = function(player, callback) {
     $this = this;
     requestPost("playerautomation", { key: player.key, configs: player.copy_configs }, function(json) {
         if (json.success) {
@@ -562,10 +586,22 @@ displayAutomationModel.save = function(player, callback) {
         }
     });
 }
-displayAutomationModel.manual = function(player, callback) {
+displayAutomationModel.manualConfig = function(player, callback) {
     $this = this;
     requestPost("playermanual", { key: player.key }, function(json) {
         callback(json.success);
+    });
+}
+displayAutomationModel.saveSetting = function(player, callback) {
+    $this = this;
+    requestPost("playersetting", { key: player.key, settings: player.copy_settings }, function(json) {
+        if (json.success) {
+            player.settings = deep_clone(player.copy_settings);
+            callback(true);
+        } else {
+            player.copy_settings = deep_clone(player.settings);
+            callback(false);
+        }
     });
 }
 
@@ -579,6 +615,7 @@ function displayAutomation() {
 
         var lastAccount = null;
         var lastPlayer = null;
+        var lastCatalog = null;
 
         // add accounts
         var divAccountAddMask = divContentPanel.find(".div_automation_account_add_mask");
@@ -634,8 +671,9 @@ function displayAutomation() {
         var autoItemTemplate = templates.read(".hd_automation_item");
         var autoConfigPropTemplate = templates.read(".hd_automation_config_item");
         var autoPlayerServersTemplate = templates.read(".hd_automation_player_servers");
+        var autoSettingsTemplate = templates.read(".hd_automation_settings");
 
-        var allCommands = [displayAccounts, displayPlayers, displayConfig];
+        var allCommands = [displayAccounts, displayPlayers, displayCatalog, displayDetail];
         var displayCommands = function(extraCommand) {
             var levels = displayAutomationModel.getLevels();
             divSubtitleBar.html("");
@@ -676,7 +714,10 @@ function displayAutomation() {
             for (var i = 0; i < data.accounts.length; ++i) {
                 (function() {
                     var account = data.accounts[i];
-                    var divAutoAccountBlock = $(autoItemTemplate({name: account.username}));
+                    var divAutoAccountBlock = $(autoItemTemplate({
+                        name: account.username,
+                        hasDel: true,
+                    }));
                     divAutoAccountBlock.appendTo(divAutomationContent);
 
                     divAutoAccountBlock.find(".div_auto_item_delete").click(function() {
@@ -707,12 +748,9 @@ function displayAutomation() {
             for (var i = 0; i < lastAccount.players.length; ++i) {
                 (function() {
                     var player = lastAccount.players[i];
-                    displayAutomationModel.copyConfigs(player);
                     var divAutoPlayerBlock = $(autoItemTemplate({
                         name: player.server,
-                        hasCheck:true,
-                        enabled: !player.copy_configs.disabled,
-                        rightText: "手动",
+                        hasDel:true,
                     }));
                     divAutoPlayerBlock.appendTo(divAutomationContent);
 
@@ -723,46 +761,106 @@ function displayAutomation() {
                             });
                         }
                     });
-                    divAutoPlayerBlock.find(".div_auto_item_right").click(function() {
-                        displayAutomationModel.manual(player, function(success) {
-                            alert(success ? "手动成功，请登陆游戏查看" : "手动失败");
-                        });
-                    });
                     divAutoPlayerBlock.find(".clickable").click(function() {
-                        displayConfig(player);
-                    });
-                    var inputEnablePlayer = divAutoPlayerBlock.find(".input_check_auto_item");
-                    inputEnablePlayer.change(function() {
-                        player.copy_configs.disabled = (inputEnablePlayer.is(":checked") ? undefined : true);
-                        displayAutomationModel.save(player, function() {
-                            displayPlayers();
-                        });
+                        displayCatalog(player);
                     });
                 })();
             }
         }
-        function displayConfig(player) {
+        function displayCatalog(player) {
             displayAutomationModel.toPlayer(player ? player.server : null);
             lastPlayer = (player ? player : lastPlayer);
 
-            displayCommands({name: "保存", func: function() {
-                if (lastPlayer.copy_configs.disabled) {
-                    if (confirm("该配置尚未启用，需要启用吗？")) {
-                        lastPlayer.copy_configs.disabled = undefined;
-                    }
-                }
-                displayAutomationModel.save(lastPlayer, function(success) {
-                    if (success) {
-                        alert("保存成功!");
-                    } else {
-                        alert("保存失败!");
-                    }
-                    displayConfig();
-                });
-            }});
+            displayCommands();
 
             divAutomationContent.html("");
 
+            displayAutomationModel.backupPlayer(lastPlayer);
+
+            // configs
+            var divAutoConfigsBlock = $(autoItemTemplate({
+                name: "日常",
+                hasCheck: true,
+                enabled: !lastPlayer.copy_configs.disabled,
+                rightText: "手动",
+            }));
+            divAutoConfigsBlock.appendTo(divAutomationContent);
+
+            divAutoConfigsBlock.find(".clickable").click(function() {
+                displayDetail("configs");
+            });
+            divAutoConfigsBlock.find(".div_auto_item_right").click(function() {
+                displayAutomationModel.manualConfig(player, function(success) {
+                    alert(success ? "手动成功，请登陆游戏查看" : "手动失败");
+                });
+            });
+            var inputEnablePlayer = divAutoConfigsBlock.find(".input_check_auto_item");
+            inputEnablePlayer.change(function() {
+                player.copy_configs.disabled = (inputEnablePlayer.is(":checked") ? undefined : true);
+                displayAutomationModel.saveConfig(player, function() {
+                    displayCatalog();
+                });
+            });
+
+            // settings
+            var divAutoSettingsBlock = $(autoItemTemplate({name: "设置"}));
+            divAutoSettingsBlock.appendTo(divAutomationContent);
+
+            divAutoSettingsBlock.find(".clickable").click(function() {
+                displayDetail("settings");
+            });
+        }
+        var detailTypes = {
+            configs: { name: "日常", func: displayConfig, },
+            settings: { name: "设置", func: displaySetting, },
+        };
+        function displaySetting() {
+            displayCommands();
+
+            divAutomationContent.html("");
+            var templateData = {
+                players: displayAutomationModel.getPlayerSelections(),
+            };
+            var targeting = lastPlayer.copy_settings.targeting;
+            if (targeting) {
+                templateData.targeting = true;
+            }
+            var divAutoSettingContent = $(autoSettingsTemplate(templateData));
+            divAutoSettingContent.appendTo(divAutomationContent);
+
+            var configChanged = function() {
+                displayAutomationModel.saveSetting(lastPlayer, function(success) {
+                    displaySetting();
+                });
+            };
+
+            if (targeting) {
+                var divTargetingBlock = divAutoSettingContent.find(".div_auto_setting_targeting");
+                var selectSettingPlayer = divTargetingBlock.find(".select_auto_setting_players");
+                selectSettingPlayer.val(targeting.reachPLID);
+                selectSettingPlayer.change(function() {
+                    targeting.reachPLID = selectSettingPlayer.val();
+                    configChanged();
+                });
+                var inputSettingAssign = divTargetingBlock.find(".ctrl_setting_config_prop_assign");
+                if (targeting.allowAssign) {
+                    inputSettingAssign.attr("checked", "checked");
+                }
+                inputSettingAssign.change(function() {
+                    targeting.allowAssign = inputSettingAssign.is(":checked");
+                    configChanged();
+                });
+            }
+        }
+        function displayConfig() {
+            displayCommands();
+            var configChanged = function() {
+                displayAutomationModel.saveConfig(lastPlayer, function(success) {
+                    displayConfig();
+                });
+            };
+
+            divAutomationContent.html("");
             var configProps = displayAutomationModel.getConfigProps();
             for (var i = 0; i < configProps.length; ++i) {
                 (function() {
@@ -803,6 +901,7 @@ function displayAutomation() {
                     var inputEnableConfig = divConfigPropBlock.find(".input_check_auto_config");
                     inputEnableConfig.change(function() {
                         configValues.disabled = (inputEnableConfig.is(":checked") ? undefined : true);
+                        configChanged();
                     });
                     var controls = divConfigPropBlock.find(".ctrl_auto_config_prop");
                     for (var j = 0; j < configInfo.props.length; ++j) {
@@ -812,16 +911,24 @@ function displayAutomation() {
                             if (prop.type == "number") {
                                 inputPropertyBlock.change(function() {
                                     configValues[prop.name] = Number(inputPropertyBlock.val());
+                                    configChanged();
                                 });
                             } else if (prop.type == "check") {
                                 inputPropertyBlock.change(function() {
                                     configValues[prop.name] = inputPropertyBlock.is(":checked");
+                                    configChanged();
                                 });
                             }
                         })();
                     }
                 })();
             }
+        }
+        function displayDetail(catalog) {
+            displayAutomationModel.toCatalog((catalog ? detailTypes[catalog].name : null));
+            lastCatalog = (catalog ? catalog : lastCatalog);
+
+            detailTypes[lastCatalog].func();
         }
         displayAccounts();
     });

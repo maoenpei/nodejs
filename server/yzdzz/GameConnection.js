@@ -1430,6 +1430,8 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("ActGoblin", "refresh", null, next);
             //var data = yield this.sendMsg("League", "getWarInfo", null, next); // 国战信息
 
+            var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next);
+
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
             return safe(done)();

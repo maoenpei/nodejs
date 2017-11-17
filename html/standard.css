@@ -25,7 +25,8 @@ body{
 }
 .div_sub_title_bar{
     background-color: #bbb;
-    padding:0.2rem 0;
+    padding:0.3rem 0;
+    font-size: 0.7rem;
 }
 .div_content_panel{
     position:relative;
@@ -124,7 +125,7 @@ input[type='checkbox']{
 }
 .div_auto_navigate_extra{
     position: absolute;
-    right: 1rem;
+    right: 0.5rem;
 }
 .div_auto_item_block{
     margin: 0.2rem;
@@ -141,7 +142,7 @@ input[type='checkbox']{
     margin: 0.2rem;
     padding: 0.2rem;
 }
-.div_auto_config_name{
+.div_auto_config_name, .div_auto_setting_name{
     display: inline-block;
     color: #ff0;
     font-size: 0.8rem;
@@ -150,10 +151,11 @@ input[type='checkbox']{
 }
 .input_check_auto_config{
 }
-.div_auto_config_prop_name{
+.div_auto_config_prop_name, .div_auto_setting_prop_name{
     display: inline-block;
     font-size: 0.5rem;
     color: #070;
+    margin-right: 0.2rem;
 }
 
 .div_areastar_block{

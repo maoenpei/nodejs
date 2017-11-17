@@ -7,11 +7,11 @@ require("./GameConnection");
 
 // states:
 // 0: 什么都不做
-// 1: 定期执行
-// 2: 执行每日任务
-// 3: 执行极限加入
-// 4: 极限加入已完成
-// 5: 执行极限刷新
+// 1: 定期执行(kingwar/playerlist/automation)
+// 2: 执行每日任务(automation)
+// 3: 执行极限加入(targeting)
+// 4: 极限加入已完成(targeting)
+// 5: 执行极限刷新(kingwar)
 
 Base.extends("AccountManager", {
     _constructor:function() {
@@ -66,13 +66,6 @@ Base.extends("GameController", {
         return this.accountManager;
     },
 
-    setPlayerTargeting:function(playerData, targetingConfig) {
-        var key = this.appendRefresh(playerData, "targeting", 3, (conn, done) => {
-            this.refreshTargeting(conn, targetingConfig, key, done);
-        });
-        return key;
-    },
-
     setPlayerAutomation:function(playerData, autoConfigs) {
         return this.appendRefresh(playerData, "automation", 2, (conn, done) => {
             this.refreshAutomation(conn, autoConfigs, done);
@@ -107,10 +100,31 @@ Base.extends("GameController", {
         }, this);
     },
 
+    setPlayerTargeting:function(playerData, targetingConfig) {
+        var key = this.appendRefresh(playerData, "targeting", 3, (conn, done) => {
+            this.refreshTargeting(conn, targetingConfig, key, done);
+        });
+        return key;
+    },
+    modifyPlayerTargeting:function(key, targetingConfig) {
+        return this.setRefreshFunc(key, (conn, done) => {
+            this.refreshTargeting(conn, targetingConfig, key, done);
+        });
+    },
+
     setPlayerListing:function(playerData, listingConfig) {
         return this.appendRefresh(playerData, "playerlist", 1, (conn, done) => {
             this.refreshPlayerListing(conn, {
-                server: playerData.server,
+                unionCount: listingConfig.unionCount,
+                minPower: listingConfig.minPower * 10000,
+                limitPower: listingConfig.limitPower * 10000,
+                limitDay: listingConfig.limitDay,
+            }, done);
+        });
+    },
+    modifyPlayerListing:function(key, listingConfig) {
+        return this.setRefreshFunc(key, (conn, done) => {
+            this.refreshPlayerListing(conn, {
                 unionCount: listingConfig.unionCount,
                 minPower: listingConfig.minPower * 10000,
                 limitPower: listingConfig.limitPower * 10000,
@@ -197,6 +211,18 @@ Base.extends("GameController", {
                 area: kingwarConfig.area,
                 star: kingwarConfig.star,
                 server:playerData.server,
+
+                refData:this.kingwarRefs[kingwarKey],
+            }, done);
+        });
+    },
+    modifyPlayerKingwar:function(key, kingwarConfig) {
+        var kingwarKey = kingwarConfig.area * 100 + kingwarConfig.star;
+        return this.setRefreshFunc(key, (conn, done) => {
+            this.refreshKingwar(conn, {
+                kingwarKey: kingwarKey,
+                area: kingwarConfig.area,
+                star: kingwarConfig.star,
 
                 refData:this.kingwarRefs[kingwarKey],
             }, done);
@@ -320,6 +346,36 @@ Base.extends("GameController", {
         this.repeatRanges.push(endKey);
     },
 
+    setTargetingEvent:function(selfUnion, time, forceSec) {
+        this.unsetEventKeys(this.targetingTimes);
+        this.selfUnion = selfUnion;
+        this.targetingTimes = [];
+        var targetingKey = this.timingManager.setWeeklyEvent(time.day, time.hour, time.minute, time.second, () => {
+            this.setRefreshStatesOfType("kingwar", 5);
+            var next = coroutine(function*() {
+                while(!this.constantKingwar) {
+                    var currSec = new Date().getSeconds();
+                    this.forceTargeting = (currSec > forceSec);
+                    if (this.forceTargeting) {
+                        this.kingwarBrief = {};
+                        for (var kingwarKey in this.kingwarRefs) {
+                            this.kingwarBrief[kingwarKey] = this.getBriefKingwar(kingwarKey);
+                        }
+                        this.updateTargeting();
+                    }
+                    yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 3; }, next);
+                    if (this.forceTargeting) {
+                        break;
+                    }
+                    yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 5; }, next);
+                }
+                this.initTargeting();
+            }, this);
+        });
+        this.targetingTimes.push(targetingKey);
+    },
+
+    // Private timing helpers
     unsetEventKeys:function(keyArray) {
         if (keyArray) {
             for (var i = 0; i < keyArray.length; ++i) {
@@ -328,7 +384,7 @@ Base.extends("GameController", {
         }
     },
 
-    // Private
+    // Private refresh helpers
     appendRefresh:function(playerData, refreshType, initState, func) {
         var accountGameKey = playerData.account + "$" + playerData.server;
         var refreshInfo = this.refreshData[accountGameKey];
@@ -420,6 +476,7 @@ Base.extends("GameController", {
             }
 
             if (executables.length > 0) {
+                console.log("refresh for player", refreshInfo.account, refreshInfo.server, executables.length);
                 this.refreshOnePlayer(refreshInfo, executables, select.setup());
             }
         }
@@ -431,86 +488,220 @@ Base.extends("GameController", {
             var conn = this.accountManager.connectAccount(refreshInfo.account, refreshInfo.validator);
             if (!conn) {
                 this.errLog("connectAccount", "account:{0}".format(refreshInfo.account));
+                refreshInfo.mutex.unlock();
                 return safe(done)();
             }
-            console.log("start -- player!", conn.getUsername(), refreshInfo.server);
+            console.log("start -- player!", refreshInfo.account, refreshInfo.server);
             var data = yield conn.loginAccount(next);
             if (!data.success) {
-                this.errLog("loginAccount", "account({0}), server({1})".format(conn.getUsername(), refreshInfo.server));
+                this.errLog("loginAccount", "account({0}), server({1})".format(refreshInfo.account, refreshInfo.server));
+                refreshInfo.mutex.unlock();
                 return safe(done)();
             }
             var data = yield conn.loginGame(refreshInfo.server, next);
             if (!data.success) {
-                this.errLog("loginGame", "account({0}), server({1})".format(conn.getUsername(), refreshInfo.server));
+                this.errLog("loginGame", "account({0}), server({1})".format(refreshInfo.account, refreshInfo.server));
+                refreshInfo.mutex.unlock();
                 return safe(done)();
             }
             for (var i = 0; i < executables.length; ++i) {
                 yield executables[i](conn, next);
             }
-            console.log("quit -- player!", conn.getUsername(), refreshInfo.server, conn.getGameInfo().name);
+            console.log("quit -- player!", refreshInfo.account, refreshInfo.server, conn.getGameInfo().name);
             conn.quit();
             refreshInfo.mutex.unlock();
             safe(done)();
         }, this);
     },
 
+    // Private refresh operations
     joinByKingwarKey:function(conn, kingwarKey, done) {
         var area = Math.floor(kingwarKey / 100);
         var star = kingwarKey % 100;
         conn.joinKingWar(area, star, done);
     },
-    initTargeting:function() {
-        this.forceTargeting = false;
-        this.targetingHelp = [];
+    updateKingwarPlayers:function(kingwarKey, data) {
+        var refData = this.kingwarRefs[kingwarKey];
+        var players = [];
+        for (var i = 0; i < data.players.length; ++i) {
+            var playerData = data.players[i];
+            players.push({
+                playerId: playerData.playerId,
+                union: playerData.union,
+                name: playerData.name,
+                power: playerData.power,
+            });
+            this.playerToKingwar[playerData.playerId] = kingwarKey;
+        }
+        refData.players = players;
+    },
+    getBriefKingwar:function(kingwarKey) {
+        var refData = this.kingwarRefs[kingwarKey];
+        var selfMaxIndex = -1;
+        var selfMaxPower = 0;
+        var enemyMaxIndex = -1;
+        var enemyMaxPower = 2000000;
+        var playerCount = (refData.players.length <= 16 ? refData.players.length : 16);
+        var helpCount = (refData.players.length <= 16 ? 1 : 0);
+        for (var i = 0; i < playerCount; ++i) {
+            var item = refData.players[i];
+            var warPlayer = this.allPlayers[item.playerId];
+            if (warPlayer) {
+                if (warPlayer.unionId == this.selfUnion) {
+                    helpCount ++;
+                    if (warPlayer.maxPower > selfMaxPower) {
+                        selfMaxPower = warPlayer.maxPower;
+                        selfMaxIndex = i;
+                    }
+                } else if (warPlayer.maxPower > enemyMaxPower) {
+                    enemyMaxPower = warPlayer.maxPower;
+                    enemyMaxIndex = i;
+                }
+            } else {
+                if (item.power > enemyMaxPower) {
+                    enemyMaxPower = item.power;
+                    enemyMaxIndex = i;
+                }
+            }
+        }
+        var powerDiff = selfMaxPower - enemyMaxPower;
+        var brief = {
+            kingwarKey: kingwarKey,
+            count: refData.players.length,
+            helpCount: helpCount,
+            maxPower: (selfMaxPower > enemyMaxPower ? selfMaxPower : enemyMaxPower),
+            minPower: (refData.players.length < 16 ? 0 : refData.players[15].power),
+            helpPower: (refData.players.length < 10 ? 0 : refData.players[9].power),
+            powerDiff: powerDiff,
+            isOurs: powerDiff > 1000000,
+            isOthers: powerDiff <= -200000,
+            isMutual: powerDiff <= 1000000 && powerDiff > -200000,
+        };
+        return brief;
+    },
+    updateTargeting:function() {
         this.targetingFight = [];
+        this.targetingHelp = [];
         this.targetingAll = [];
+        for (var kingwarKey in this.kingwarBrief) {
+            var brief = this.kingwarBrief[kingwarKey];
+            var j;
+            for (j = 0; j < this.targetingAll.length; ++j) {
+                if (this.targetingAll[j].count > brief.count) {
+                    break;
+                }
+            }
+            this.targetingAll.splice(j, 0, brief);
+            if (brief.isOthers) {
+                for (j = 0; j < this.targetingFight.length; ++j) {
+                    if (this.targetingFight[j].maxPower < brief.maxPower) {
+                        break;
+                    }
+                }
+                this.targetingFight.splice(j, 0, brief);
+            }
+            if (brief.isMutual) {
+                for (j = 0; j < this.targetingHelp.length; ++j) {
+                    if (this.targetingHelp[j].helpCount > brief.helpCount) {
+                        break;
+                    }
+                }
+                this.targetingHelp.splice(j, 0, brief);
+            }
+        }
+    },
+    initTargeting:function() {
+        this.resetTargeting();
+
+        this.targetingFight = [];
+        this.targetingHelp = [];
+        this.targetingAll = [];
+    },
+    resetTargeting:function() {
+        this.forceTargeting = false;
+        this.kingwarBrief = {};
     },
     refreshTargeting:function(conn, targetingConfig, selfKey, done) {
         var next = coroutine(function*() {
-            var kingwarKey = this.playerToKingwar[targetingConfig.reachPlayer];
+            var kingwarKey = this.playerToKingwar[targetingConfig.reachPLID];
             if (kingwarKey) {
+                console.log("find target", targetingConfig.reachPLID, conn.getGameInfo().name);
                 var data_join = yield this.joinByKingwarKey(conn, kingwarKey, next);
             } else {
                 if (this.forceTargeting && targetingConfig.allowAssign) {
+                    /*
                     var selfInfo = this.allPlayers[conn.getGameInfo().playerId];
                     var currPower = conn.getGameInfo().power;
                     var selfPower = (selfInfo ? selfInfo.maxPower : currPower);
-                    var joined = false;
+                    var joinTarget = 0;
                     if (targetingConfig.fightForStar) {
                         for (var i = 0; i < this.targetingFight.length; ++i) {
                             var fightItem = this.targetingFight[i];
-                            if (selfPower - fightItem.maxPower > 500000) {
-                                var data_join = yield this.joinByKingwarKey(conn, fightItem.kingwarKey, next);
-                                joined = true;
+                            if (selfPower - fightItem.maxPower > 1000000) {
+                                joinTarget = fightItem.kingwarKey;
+                                fightItem.isOurs = true;
+                                fightItem.isOthers = false;
+                                fightItem.maxPower = selfPower;
+                                console.log("auto join by star", conn.getGameInfo().name, joinTarget, new Date());
+                                break;
+                            } else if (selfPower - fightItem.maxPower > -200000 && fightItem.helpCount >= 3) {
+                                joinTarget = fightItem.kingwarKey;
+                                fightItem.isMutual = true;
+                                fightItem.isOthers = false;
+                                fightItem.maxPower = (selfPower > fightItem.maxPower ? selfPower : fightItem.maxPower);
+                                console.log("auto join by star", conn.getGameInfo().name, joinTarget, new Date());
+                                break;
+                            } else if (selfPower - fightItem.maxPower > 400000 && fightItem.helpCount >= 1) {
+                                joinTarget = fightItem.kingwarKey;
+                                fightItem.isMutual = true;
+                                fightItem.isOthers = false;
+                                fightItem.maxPower = selfPower;
+                                console.log("auto join by star", conn.getGameInfo().name, joinTarget, new Date());
                                 break;
                             }
                         }
                     }
-                    if (!joined) {
+                    if (!joinTarget) {
                         for (var i = 0; i < this.targetingHelp.length; ++i) {
                             var helpItem = this.targetingHelp[i];
                             if (currPower > helpItem.helpPower) {
-                                var data_join = yield this.joinByKingwarKey(conn, helpItem.kingwarKey, next);
-                                joined = true;
+                                joinTarget = helpItem.kingwarKey;
+                                helpItem.helpCount ++;
+                                console.log("auto join by help", conn.getGameInfo().name, joinTarget, new Date());
                                 break;
                             }
                         }
                     }
-                    if (!joined) {
+                    if (!joinTarget) {
                         for (var i = 0; i < this.targetingAll.length; ++i) {
                             var someItem = this.targetingAll[i];
                             if (currPower > someItem.minPower) {
-                                var data_join = yield this.joinByKingwarKey(conn, someItem.kingwarKey, next);
-                                joined = true;
+                                joinTarget = someItem.kingwarKey;
+                                helpItem.helpCount ++;
+                                console.log("auto join by nothing", conn.getGameInfo().name, joinTarget, new Date());
                                 break;
                             }
                         }
                     }
+                    if (joinTarget) {
+                        this.updateTargeting();
+                        var data_join = yield this.joinByKingwarKey(conn, joinTarget, next);
+                    }
+                    */
                 }
             }
             var data_kingwar = yield conn.getKingWar(next);
             if (data_kingwar.joined) {
                 this.setRefreshState(selfKey, 4);
+                /*
+                var data = yield conn.getKingWarPlayers(next);
+                if (data.players) {
+                    var kingwarKey = data.areaId * 100 + data.starId;
+                    this.updateKingwarPlayers(kingwarKey, data);
+                    this.kingwarBrief[kingwarKey] = this.getBriefKingwar(kingwarKey);
+                    this.updateTargeting();
+                }
+                */
             }
             safe(done)();
         }, this);
@@ -544,11 +735,12 @@ Base.extends("GameController", {
                 this.errLog("getUnionList", "none");
                 return safe(done)();
             }
+            var server = conn.getServerInfo().desc;
             var limitMilliSeconds = refreshData.limitDay * 24 * 3600 * 1000
             for (var i = 0; i < data.unions.length; ++i) {
                 var unionItem = data.unions[i];
                 this.allUnions[unionItem.unionId] = {
-                    server: refreshData.server,
+                    server: server,
                     name: unionItem.name,
                     short: unionItem.short,
                 };
@@ -572,7 +764,7 @@ Base.extends("GameController", {
                             continue;
                         }
                         this.allPlayers[playerItem.playerId] = {
-                            server: refreshData.server,
+                            server: server,
                             unionId: unionItem.unionId,
                             name: playerItem.name,
                             power: playerItem.power,
@@ -603,6 +795,9 @@ Base.extends("GameController", {
     refreshKingwar:function(conn, refreshData, done) {
         var next = coroutine(function*() {
             console.log("refreshKingwar..", conn.getGameInfo().name);
+            var area = refreshData.area;
+            var star = refreshData.star;
+            var server = conn.getServerInfo().desc;
             var validator = conn.getValidator();
             if (this.constantKingwar && !validator.checkDaily("refreshKingwar")) {
                 return safe(done)();
@@ -612,13 +807,14 @@ Base.extends("GameController", {
             if (this.constantKingwar && !constant) {
                 this.constantKingwar = false;
                 this.playerToKingwar = {};
+                this.resetTargeting();
             } else if (!this.constantKingwar && constant) {
                 this.constantKingwar = true;
             }
             if (!data.joined && data.allowJoin) {
-                var data_join = yield conn.joinKingWar(refreshData.area, refreshData.star, next);
+                var data_join = yield conn.joinKingWar(area, star, next);
                 if (!data_join.success) {
-                    this.errLog("joinKingWar", "server({2}) area({0}), star({1})".format(refreshData.area, refreshData.star, refreshData.server));
+                    this.errLog("joinKingWar", "server({2}) area({0}), star({1})".format(area, star, server));
                     return safe(done)();
                 }
             }
@@ -627,7 +823,7 @@ Base.extends("GameController", {
             }
             var data = yield conn.getKingWarPlayers(next);
             if (!data.players) {
-                this.errLog("getKingWarPlayers", "server({2}) area({0}), star({1})".format(refreshData.area, refreshData.star, refreshData.server));
+                this.errLog("getKingWarPlayers", "server({2}) area({0}), star({1})".format(area, star, server));
                 return safe(done)();
             }
 
@@ -638,19 +834,8 @@ Base.extends("GameController", {
                 this.errLog("mismatch", "kingwar search key({0}) doesn't equal to result key({1})".format(refreshData.kingwarKey, realKey));
             }
 
-            var players = [];
-            for (var i = 0; i < data.players.length; ++i) {
-                var playerData = data.players[i];
-                players.push({
-                    playerId: playerData.playerId,
-                    union: playerData.union,
-                    name: playerData.name,
-                    power: playerData.power,
-                });
-                this.playerToKingwar[playerData.playerId] = realKey;
-            }
             realData.constant = constant;
-            realData.players = players;
+            this.updateKingwarPlayers(realKey, data);
             safe(done)();
         }, this);
     },

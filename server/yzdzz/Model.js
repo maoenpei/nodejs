@@ -50,6 +50,7 @@ $HttpModel.addClass({
         httpServer.registerCommand("delaccount", this);
         httpServer.registerCommand("addplayer", this);
         httpServer.registerCommand("delplayer", this);
+        httpServer.registerCommand("playersetting", this);
         httpServer.registerCommand("playerautomation", this);
         httpServer.registerCommand("playermanual", this);
         httpServer.registerCommand("listautomation", this);
@@ -90,8 +91,8 @@ $HttpModel.addClass({
             delete settingStates.automation[playerKey];
             changed = true;
         }
-        if (settingStates.playerlisting[playerKey]) {
-            delete settingStates.playerlisting[playerKey];
+        if (settingStates.listing[playerKey]) {
+            delete settingStates.listing[playerKey];
             changed = true;
         }
         if (settingStates.kingwar[playerKey]) {
@@ -107,17 +108,22 @@ $HttpModel.addClass({
                 var automationConfig = settingStates.automation[playerKey];
                 this.startRefreshAutomation(playerKey, automationConfig);
             }
-            for (var playerKey in settingStates.playerlisting) {
-                var listingConfig = settingStates.playerlisting[playerKey];
-                this.startRefreshPlayerinfo(playerKey, listingConfig);
+            for (var playerKey in settingStates.listing) {
+                var listingConfig = settingStates.listing[playerKey];
+                this.startRefreshListing(playerKey, listingConfig);
             }
             for (var playerKey in settingStates.kingwar) {
                 var kingwarConfig = settingStates.kingwar[playerKey];
                 this.startRefreshKingwar(playerKey, kingwarConfig);
             }
+            for (var playerKey in settingStates.targeting) {
+                var targetingConfig = settingStates.targeting[playerKey];
+                this.startRefreshTargeting(playerKey, targetingConfig);
+            }
             var defaultsStates = $StateManager.getState(GAME_DEFAULTS_CONFIG);
             this.controller.startDailyTask(defaultsStates.dailyTask);
             this.controller.setRepeatRange(defaultsStates.repeatRange.start, defaultsStates.repeatRange.end);
+            this.controller.setTargetingEvent(defaultsStates.targeting.selfUnion, defaultsStates.targeting.weekly, defaultsStates.targeting.forceSec);
             this.doRefresh(AllFuncStr);
             safe(done)();
         }, this);
@@ -182,8 +188,7 @@ $HttpModel.addClass({
     startRefreshAutomation:function(playerKey, automationConfig) {
         var playerData = this.players[playerKey];
         if (automationConfig.disabled) {
-            this.stopRefreshAutomation(playerKey);
-            return;
+            return this.stopRefreshAutomation(playerKey);
         }
         var autoConfigs = this.generateConfig(automationConfig, false);
         if (playerData.refreshAutomationKey) {
@@ -203,37 +208,64 @@ $HttpModel.addClass({
             });
         }
     },
-    startRefreshPlayerinfo:function(playerKey, listingConfig) {
+    startRefreshTargeting:function(playerKey, targetingConfig) {
         var playerData = this.players[playerKey];
-        if (playerData.refreshPlayerKey) {
-            return;
+        if (!targetingConfig.reachPLID && !targetingConfig.allowAssign) {
+            return this.stopRefreshTargeting(playerKey);
         }
-        playerData.refreshPlayerKey =
-            this.controller.setPlayerListing(playerData, listingConfig);
+        if (playerData.refreshTargetingKey) {
+            this.controller.modifyPlayerTargeting(playerData.refreshTargetingKey, targetingConfig);
+        } else {
+            playerData.refreshTargetingKey =
+                this.controller.setPlayerTargeting(playerData, targetingConfig);
+        }
     },
-    stopRefreshPlayerinfo:function(playerKey) {
+    stopRefreshTargeting:function(playerKey) {
         var playerData = this.players[playerKey];
-        if (playerData.refreshPlayerKey) {
-            var refreshKey = playerData.refreshPlayerKey;
-            playerData.refreshPlayerKey = null;
-            this.noConfliction(() => {
-                this.controller.unsetPlayer(refreshKey);
-            });
+        if (playerData.refreshTargetingKey) {
+            this.controller.unsetPlayer(playerData.refreshTargetingKey);
+            playerData.refreshTargetingKey = null;
         }
     },
     startRefreshKingwar:function(playerKey, kingwarConfig) {
         var playerData = this.players[playerKey];
-        if (playerData.refreshKingwarKey) {
-            return;
+        if (kingwarConfig.area == 0 || kingwarConfig.star == 0) {
+            return this.stopRefreshKingwar(playerKey);
         }
-        playerData.refreshKingwarKey =
-            this.controller.setPlayerKingwar(playerData, kingwarConfig);
+        if (playerData.refreshKingwarKey) {
+            this.controller.modifyPlayerKingwar(playerData.refreshKingwarKey, kingwarConfig);
+        } else {
+            playerData.refreshKingwarKey =
+                this.controller.setPlayerKingwar(playerData, kingwarConfig);
+        }
     },
     stopRefreshKingwar:function(playerKey) {
         var playerData = this.players[playerKey];
         if (playerData.refreshKingwarKey) {
             var refreshKey = playerData.refreshKingwarKey;
             playerData.refreshKingwarKey = null;
+            this.noConfliction(() => {
+                this.controller.unsetPlayer(refreshKey);
+            });
+        }
+    },
+    startRefreshListing:function(playerKey, listingConfig) {
+        var playerData = this.players[playerKey];
+        if (listingConfig.minPower == 0 || listingConfig.limitPower == 0) {
+            return this.stopRefreshListing(playerKey);
+        }
+        if (playerData.refreshPlayerKey) {
+            this.controller.modifyPlayerListing(playerData.refreshPlayerKey, listingConfig);
+        } else {
+            playerData.refreshPlayerKey =
+                this.controller.setPlayerListing(playerData, listingConfig);
+        }
+    },
+    stopRefreshListing:function(playerKey) {
+        var playerData = this.players[playerKey];
+        if (playerData.refreshPlayerKey) {
+            var refreshKey = playerData.refreshPlayerKey;
+            playerData.refreshPlayerKey = null;
             this.noConfliction(() => {
                 this.controller.unsetPlayer(refreshKey);
             });
@@ -324,7 +356,8 @@ $HttpModel.addClass({
     },
     delPlayer:function(playerKey) {
         this.stopRefreshAutomation(playerKey);
-        this.stopRefreshPlayerinfo(playerKey);
+        this.stopRefreshTargeting(playerKey);
+        this.stopRefreshListing(playerKey);
         this.stopRefreshKingwar(playerKey);
         delete this.players[playerKey];
     },
@@ -353,6 +386,90 @@ $HttpModel.addClass({
             }
         }
         return playerIndex;
+    },
+    getSettingAutomation:function(playerKey) {
+        var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
+        var automationConfig = settingStates.automation[playerKey];
+        automationConfig = (automationConfig ? automationConfig : { disabled: true, });
+        return this.generateConfig(automationConfig, true);
+    },
+    setSettingAutomation:function(playerKey, automationConfig) {
+        var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
+        settingStates.automation[playerKey] = automationConfig;
+        this.startRefreshAutomation(playerKey, automationConfig);
+    },
+    getSettingTyped:function(settingType, playerKey) {
+        var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
+        var settingBlock = settingStates[settingType];
+        if (settingBlock) {
+            var setting = settingBlock[playerKey];
+            if (!setting) {
+                return {};
+            } else {
+                var result = {};
+                for (var key in setting) {
+                    var tail = key.length > 4 && key.substr(key.length - 4);
+                    if (tail == "PLID") {
+                        result[key] = this.playerId2RandKey[setting[key]];
+                    } else {
+                        result[key] = setting[key];
+                    }
+                }
+                return result;
+            }
+        }
+    },
+    compareSetting:function(configA, configB) {
+        if (!configB) {
+            return false;
+        }
+        for (var key in configA) {
+            if (typeof(configA[key]) != typeof(configB[key]) || configA[key] != configB[key]) {
+                return false;
+            }
+        }
+        return true;
+    },
+    setSettingKingwar:function(playerKey, kingwar) {
+        var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
+        var kingwarConfig = {
+            area: (typeof(kingwar.area) == "number" && kingwar.area >= 1 && kingwar.area <= 3 ? kingwar.area : 0),
+            star: (typeof(kingwar.star) == "number" && kingwar.star >= 1 && kingwar.star <= 10 ? kingwar.star : 0),
+        };
+        if (compareSetting(kingwarConfig, settingStates.kingwar[playerKey])) {
+            return false;
+        }
+        settingStates.kingwar[playerKey] = kingwarConfig;
+        this.startRefreshKingwar(playerKey, kingwarConfig);
+        return true;
+    },
+    setSettingListing:function(playerKey, listing) {
+        var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
+        var listingConfig = {
+            unionCount: 10,
+            minPower: (typeof(listing.minPower) == "number" && listing.minPower > 10 && listing.minPower < 999 ? listing.minPower : 0),
+            limitPower: (typeof(listing.limitPower) == "number" && listing.limitPower > 50 && listing.limitPower < 9999 ? listing.limitPower : 0),
+            limitDay: 20,
+        };
+        if (compareSetting(listingConfig, settingStates.listing[playerKey])) {
+            return false;
+        }
+        settingStates.listing[playerKey] = listingConfig;
+        this.startRefreshListing(playerKey, listingConfig);
+        return true;
+    },
+    setSettingTargeting:function(playerKey, targeting) {
+        var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
+        var targetingConfig = {
+            allowAssign: (targeting.allowAssign ? true : false),
+            reachPLID: this.randKey2PlayerId[targeting.reachPLID] || "",
+        };
+        if (compareSetting(targetingConfig, settingStates.targeting[playerKey])) {
+            return false;
+        }
+        settingStates.targeting[playerKey] = targetingConfig;
+        this.startRefreshTargeting(playerKey, targetingConfig);
+        return true;
     },
 
     addaccount:function(requestor, responder, done) {
@@ -555,7 +672,7 @@ $HttpModel.addClass({
             responder.respondJson({
                 success: true,
                 key: playerKey,
-                configs: this.generateConfig({ disabled: true }, true),
+                configs: this.getSettingAutomation(playerKey),
             }, done);
         }, this);
     },
@@ -614,6 +731,68 @@ $HttpModel.addClass({
             }, done);
         }, this);
     },
+    playersetting:function(requestor, responder, done) {
+        var next = coroutine(function*() {
+            var obj = yield this.httpServer.tokenValid(requestor, next);
+            if (!obj) {
+                responder.addError("Not valid token for logout.");
+                return responder.respondJson({}, done);
+            }
+
+            var userStates = $StateManager.getState(USER_CONFIG);
+            var keyData = userStates.keys[obj.getSerial()];
+            if (!keyData || !keyData.userKey) {
+                responder.addError("Not an authorized user.");
+                return responder.respondJson({}, done);
+            }
+
+            var userData = userStates.users[keyData.userKey];
+            if (!userData || userData.auth < 2) {
+                responder.addError("Admin level not enough.");
+                return responder.respondJson({}, done);
+            }
+
+            var json = yield requestor.visitBodyJson(next);
+            if (!json || !json.key || !json.settings) {
+                responder.addError("Parameter data not correct.");
+                return responder.respondJson({}, done);
+            }
+
+            var playerKey = json.key;
+            var settings = json.settings;
+            var playerData = this.players[playerKey];
+            if (!playerData) {
+                responder.addError("Invalid player key.");
+                return responder.respondJson({}, done);
+            }
+
+            var playerBelong = this.getPlayerIndex(userData, playerKey);
+            if (playerBelong < 0) {
+                responder.addError("Player doesn't belong to user.");
+                return responder.respondJson({}, done);
+            }
+
+            var isAdmin = userData.auth >= 3;
+            var changed = false;
+            if (isAdmin && settings.kingwar) {
+                playerData.validator.resetDaily();
+                changed = this.setSettingKingwar(playerKey, settings.kingwar) || changed;
+            }
+            if (isAdmin && settings.listing) {
+                changed = this.setSettingListing(playerKey, settings.listing) || changed;
+            }
+            if (settings.targeting) {
+                changed = this.setSettingTargeting(playerKey, settings.targeting) || changed;
+            }
+            if (changed) {
+                yield $StateManager.commitState(GAME_SETTING_CONFIG, next);
+            }
+
+            responder.respondJson({
+                success: true,
+            }, done);
+        }, this);
+    },
     playerautomation:function(requestor, responder, done) {
         var next = coroutine(function*() {
             var obj = yield this.httpServer.tokenValid(requestor, next);
@@ -661,11 +840,9 @@ $HttpModel.addClass({
                 return responder.respondJson({}, done);
             }
 
-            var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
-            settingStates.automation[playerKey] = automationConfig;
             playerData.validator.resetDaily();
             playerData.validator.resetHourly();
-            this.startRefreshAutomation(playerKey, automationConfig);
+            this.setSettingAutomation(playerKey, automationConfig);
             yield $StateManager.commitState(GAME_SETTING_CONFIG, next);
 
             responder.respondJson({
@@ -713,11 +890,7 @@ $HttpModel.addClass({
                 return responder.respondJson({}, done);
             }
 
-            var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
-            var automationConfig = settingStates.automation[playerKey];
-            automationConfig = (automationConfig ? automationConfig : { disabled: true, });
-
-            var autoConfigs = this.generateConfig(automationConfig, false);
+            var autoConfigs = this.getSettingAutomation(playerKey);
             playerData.validator.resetDaily();
             playerData.validator.resetHourly();
             var data = yield this.controller.manualPlayerAutomation(playerData, autoConfigs, next);
@@ -749,7 +922,7 @@ $HttpModel.addClass({
                 return responder.respondJson({}, done);
             }
 
-            var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
+            var isAdmin = userData.auth >= 3;
             var accounts = [];
             if (userData.accounts) {
                 for (var i = 0; i < userData.accounts.length; ++i) {
@@ -768,21 +941,40 @@ $HttpModel.addClass({
                     var playerData = this.players[playerKey];
                     for (var j = 0; j < accounts.length; ++j) {
                         if (playerData.accountKey == accounts[j].key) {
-                            var automationConfig = settingStates.automation[playerKey];
-                            automationConfig = (automationConfig ? automationConfig : { disabled: true, });
                             accounts[j].players.push({
                                 server: playerData.server,
                                 key: playerKey,
-                                configs: this.generateConfig(automationConfig, true),
+                                configs: this.getSettingAutomation(playerKey),
+                                settings: {
+                                    kingwar: (isAdmin ? this.getSettingTyped("kingwar", playerKey) : undefined),
+                                    listing: (isAdmin ? this.getSettingTyped("listing", playerKey) : undefined),
+                                    targeting: this.getSettingTyped("targeting", playerKey),
+                                },
                             });
                             break;
                         }
                     }
                 }
             }
+            var players = [];
+            var playersData = this.controller.getSortedPlayers(40);
+            for (var i = 0; i < playersData.length; ++i) {
+                var playerItem = playersData[i];
+                var rawKey = this.playerId2RandKey[playerItem.key];
+                if (rawKey) {
+                    players.push({
+                        key: rawKey,
+                        server: playerItem.server,
+                        uShort: playerItem.uShort,
+                        name: playerItem.name,
+                        power: playerItem.power,
+                    });
+                }
+            }
 
             responder.respondJson({
                 accounts: accounts,
+                players: players,
             }, done);
         }, this);
     },
@@ -904,15 +1096,18 @@ $HttpModel.addClass({
                 return responder.respondJson({}, done);
             }
 
+            var players = [];
             var playersData = this.controller.getSortedPlayers(100);
             for (var i = 0; i < playersData.length; ++i) {
                 var playerItem = playersData[i];
-                var randKey = this.playerId2RandKey[playerItem.key];
-                if (randKey) {
-                    playerItem.key = randKey;
-                } else {
-                    delete playerItem.key;
-                }
+                players.push({
+                    server: playerItem.server,
+                    uShort: playerItem.uShort,
+                    name: playerItem.name,
+                    power: playerItem.power,
+                    last: playerItem.last,
+                    kingwar: playerItem.kingwar,
+                });
             }
             var tag = this.getTag(playersData);
             if (!requestor.compareTags(tag)) {
@@ -922,7 +1117,7 @@ $HttpModel.addClass({
 
             responder.setTag(tag);
             responder.respondJson({
-                players: playersData,
+                players: players,
             }, done);
         }, this);
     },
