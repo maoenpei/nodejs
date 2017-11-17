@@ -275,8 +275,8 @@ $HttpModel.addClass({
     generateConfig:function(automationConfig, needDisabled) {
         var defaultsStates = $StateManager.getState(GAME_DEFAULTS_CONFIG);
         var autoConfigs = {};
-        if (needDisabled) {
-            autoConfigs.disabled = automationConfig.disabled;
+        if (needDisabled && automationConfig.disabled) {
+            autoConfigs.disabled = true;
         }
         for (var configType in defaultsStates.automation) {
             var config = automationConfig[configType];
@@ -297,7 +297,9 @@ $HttpModel.addClass({
     validateConfig:function(autoConfigs) {
         var defaultsStates = $StateManager.getState(GAME_DEFAULTS_CONFIG);
         var automationConfig = {};
-        automationConfig.disabled = (autoConfigs.disabled ? true : undefined);
+        if (autoConfigs.disabled) {
+            automationConfig.disabled = true;
+        }
         for (var configType in defaultsStates.automation) {
             var config = autoConfigs[configType];
             if (config) {

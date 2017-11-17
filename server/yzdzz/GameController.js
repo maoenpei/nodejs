@@ -712,6 +712,9 @@ Base.extends("GameController", {
         var next = coroutine(function*() {
             console.log("refreshAutomation..", conn.getGameInfo().name);
             for (var op in autoConfigs) {
+                if (op == "disabled") {
+                    continue;
+                }
                 var config = autoConfigs[op];
                 if (!config.disabled) {
                     //console.log("auto", op, config);
