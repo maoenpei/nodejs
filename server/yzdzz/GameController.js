@@ -231,13 +231,13 @@ Base.extends("GameController", {
     },
     getKingwar:function() {
         var areastars = {};
-        for (var key in this.kingwarRefs) {
-            var data = this.kingwarRefs[key];
-            areastars[key] = [];
+        for (var kingwarKey in this.kingwarRefs) {
+            var data = this.kingwarRefs[kingwarKey];
+            areastars[kingwarKey] = [];
             for (var i = 0; i < data.players.length; ++i) {
                 var warPlayer = data.players[i];
                 var extraPlayerData = this.allPlayers[warPlayer.playerId];
-                areastars[key].push({
+                areastars[kingwarKey].push({
                     union: warPlayer.union,
                     power: warPlayer.power,
                     name: (extraPlayerData && extraPlayerData.name ? extraPlayerData.name : warPlayer.name),

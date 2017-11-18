@@ -10,6 +10,9 @@
         ,"autoArena":{"boxMax":6,"buyHeroSoul":true,"fightPlayer":true,"fightMax":10}
         ,"autoReward":{"nekoMax":4}
     }
+    ,"periodic":{
+        "interval":360
+    }
     ,"dailyTask":[
         {"hour":0,"minute":0,"second":55}
         ,{"hour":9,"minute":0,"second":55}

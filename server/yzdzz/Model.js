@@ -5,8 +5,6 @@ require("../Mutex");
 require("../StateManager");
 require("./GameController");
 
-var RefreshInterval = 60 * 6;
-
 GAME_ACCOUNTS_CONFIG = "GameAcounts.d";
 GAME_DEFAULTS_CONFIG = "GameDefaults.d";
 GAME_SETTING_CONFIG = "GameSetting.d";
@@ -131,10 +129,11 @@ $HttpModel.addClass({
     doRefresh:function(refreshType) {
         var invokeNoConflictions = () => {
             if (this.onRefreshEnd.length > 0) {
-                for (var i = 0; i < this.onRefreshEnd.length; ++i) {
-                    this.onRefreshEnd[i](true);
-                }
+                var onRefreshEnd = this.onRefreshEnd;
                 this.onRefreshEnd = [];
+                for (var i = 0; i < onRefreshEnd.length; ++i) {
+                    onRefreshEnd[i](true);
+                }
             }
         }
         var refreshCallback = (done) => {
@@ -172,8 +171,9 @@ $HttpModel.addClass({
                 safe(done)();
             }, this);
         };
+        var defaultsStates = $StateManager.getState(GAME_DEFAULTS_CONFIG);
         this.controller.cancelPeriodic();
-        this.controller.startPeriodic(RefreshInterval, refreshType, refreshCallback);
+        this.controller.startPeriodic(defaultsStates.periodic.interval, refreshType, refreshCallback);
     },
     noConfliction:function(fun) {
         if (this.controller.duringPeriodic()) {

@@ -1507,6 +1507,9 @@ Base.extends("GameConnection", {
             safe(callback)(data);
         };
     },
+    unregKick:function() {
+        this.kickCallback = null;
+    },
     registerMessages:function() {
         this.regMsg("MsgBox", "message", (data) => {});
         this.regMsg("Chat", "msg", (data) => {});
