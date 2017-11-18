@@ -464,7 +464,7 @@ displayAutomationModel.getPlayerSelections = function() {
 displayAutomationModel.getKingwarStars = function() {
     if (!this.allStars) {
         this.allStars = [];
-        for (var i = 1; i <= 10; ++i) {
+        for (var i = 10; i >= 1; --i) {
             this.allStars.push({
                 value: i,
                 desc: String(i) + "星",
