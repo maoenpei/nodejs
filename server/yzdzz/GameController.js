@@ -17,6 +17,7 @@ require("./GameConnection");
 Base.extends("AccountManager", {
     _constructor:function() {
         this.accounts = {};
+        this.unifyLock = new Mutex();
     },
     add:function(username, password) {
         var accountKey = rkey();
@@ -44,7 +45,7 @@ Base.extends("AccountManager", {
             return null;
         }
 
-        var accountObj = new GameConnection(accountData.username, accountData.password, validator);
+        var accountObj = new GameConnection(accountData.username, accountData.password, this.unifyLock, validator);
         return accountObj;
     },
 });

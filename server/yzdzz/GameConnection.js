@@ -46,9 +46,10 @@ Base.extends("GameValidator", {
 
 var cachedServers = null;
 Base.extends("GameConnection", {
-    _constructor:function(username, password, validator) {
+    _constructor:function(username, password, managerLock, validator) {
         this.username = username;
         this.password = password;
+        this.managerLock = managerLock;
         this.validator = validator;
         this.accountInfo = null;
         this.servers = {};
@@ -107,6 +108,7 @@ Base.extends("GameConnection", {
             };
 
             // server list
+            yield this.managerLock.lock(next);
             if (cachedServers) {
                 this.servers = cachedServers;
             } else {
@@ -143,6 +145,7 @@ Base.extends("GameConnection", {
                 }
                 cachedServers = this.servers;
             }
+            this.managerLock.unlock();
 
             {
                 var result = yield GameHTTP.stat(this.accountInfo.accountId, "active", next);
