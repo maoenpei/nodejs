@@ -59,7 +59,7 @@ Base.extends("GameConnection", {
 
         this.recvCallbacks = {};
         this.commonCallbacks = {};
-        this.kickCallback = null;
+        this.kickCallbacks = {};
         this.events = {};
         this.quickRegs = {};
         this.registerMessages();
@@ -460,12 +460,13 @@ Base.extends("GameConnection", {
                     next(data);
                 }
             });
-            this.regKick(() => {
+            var kickKey = this.regKick(() => {
                 next(null);
             });
             yield this.sendNotify("UnionWar", "occupy", {id:landId, pos:pos}, next);
             var data = yield; // wait for msg received
             this.unregMsg(ckey);
+            this.unregKick(kickKey);
             if (!data) {
                 return safe(done)({});
             }
@@ -521,7 +522,7 @@ Base.extends("GameConnection", {
         }, this);
     },
 
-    getKingWar:function(done) {
+    getKingWarState:function(done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("KingWar", "getinfo", null, next);
             if (!data) {
@@ -1450,14 +1451,17 @@ Base.extends("GameConnection", {
         if (!this.sock) {
             return later(callback, null);
         }
-        this.regKick(() => {
+        var kickKey = this.regKick(() => {
             console.log("reply null by kick!");
             safe(callback)(null);
         });
         var key = c + "." + m;
         var callbackArray = this.recvCallbacks[key];
         callbackArray = (callbackArray ? callbackArray : []);
-        callbackArray.push(callback);
+        callbackArray.push((data) => {
+            this.unregKick(kickKey);
+            safe(callback)(data);
+        });
         this.recvCallbacks[key] = callbackArray;
         GameSock.send(this.sock, c, m, data);
     },
@@ -1502,13 +1506,15 @@ Base.extends("GameConnection", {
         delete this.quickRegs[ckey];
     },
     regKick:function(callback) {
-        this.kickCallback = (data) => {
-            this.kickCallback = null;
-            safe(callback)(data);
-        };
+        var kickKey = rkey();
+        while(this.kickCallbacks[kickKey]) { kickKey = rkey(); }
+        this.kickCallbacks[kickKey] = callback;
+        return kickKey;
     },
-    unregKick:function() {
-        this.kickCallback = null;
+    unregKick:function(kickKey) {
+        if (this.kickCallbacks[kickKey]) {
+            delete this.kickCallbacks[kickKey];
+        }
     },
     registerMessages:function() {
         this.regMsg("MsgBox", "message", (data) => {});
@@ -1516,8 +1522,10 @@ Base.extends("GameConnection", {
         this.regMsg("Role", "kick", (data) => {
             console.log("User Kicked!", (this.gameInfo ? this.gameInfo.name : this.username));
             this.quit();
-            if (this.kickCallback) {
-                safe(this.kickCallback)(data);
+            var kickCallbacks = this.kickCallbacks;
+            this.kickCallbacks = [];
+            for (var kickKey in kickCallbacks) {
+                safe(kickCallbacks[kickKey])(data);
             }
             safe(this.events["break"])();
         });

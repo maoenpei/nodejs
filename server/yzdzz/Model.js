@@ -8,6 +8,8 @@ require("./GameController");
 GAME_ACCOUNTS_CONFIG = "GameAcounts.d";
 GAME_DEFAULTS_CONFIG = "GameDefaults.d";
 GAME_SETTING_CONFIG = "GameSetting.d";
+
+GAME_KINGWAR_CONFIG = "GameKingwar.d";
 GAME_POWER_MAX_CONFIG = "GamePowerMax.d";
 GAME_UNIONS_CONFIG = "GameUnions.d";
 
@@ -38,6 +40,7 @@ $HttpModel.addClass({
 
         this.playersMd5 = "";
         this.unionMd5 = "";
+        this.kingwarMd5 = "";
         this.onRefreshEnd = [];
         this.delayRefresh = "";
 
@@ -73,10 +76,12 @@ $HttpModel.addClass({
             }
             yield $StateManager.openState(GAME_SETTING_CONFIG, null, next);
             yield $StateManager.openState(GAME_DEFAULTS_CONFIG, null, next);
+            yield $StateManager.openState(GAME_KINGWAR_CONFIG, null, next);
             yield $StateManager.openState(GAME_POWER_MAX_CONFIG, null, next);
+            yield $StateManager.openState(GAME_UNIONS_CONFIG, null, next);
+
             var allPowerMax = $StateManager.getState(GAME_POWER_MAX_CONFIG);
             this.controller.setMaxPowers(allPowerMax);
-            yield $StateManager.openState(GAME_UNIONS_CONFIG, null, next);
 
             yield this.startRefreshSettings(next);
             safe(done)();
@@ -166,6 +171,16 @@ $HttpModel.addClass({
                         allUnions[unionId] = unions[unionId];
                     }
                     yield $StateManager.commitState(GAME_UNIONS_CONFIG, next);
+                }
+                var kingwarPlayers = this.controller.getKingwarPlayers();
+                var md5 = this.getTag(kingwarPlayers);
+                if (this.kingwarMd5 != md5) {
+                    this.kingwarMd5 = md5;
+                    var allKingwars = $StateManager.getState(GAME_KINGWAR_CONFIG);
+                    for (var kingwarKey in kingwarPlayers) {
+                        allKingwars[kingwarKey] = kingwarPlayers[kingwarKey];
+                    }
+                    yield $StateManager.commitState(GAME_KINGWAR_CONFIG, next);
                 }
                 invokeNoConflictions();
                 safe(done)();

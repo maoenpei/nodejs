@@ -247,6 +247,18 @@ Base.extends("GameController", {
         }
         return areastars;
     },
+    getKingwarPlayers:function() {
+        var kingwarPlayers = {};
+        for (var kingwarKey in this.kingwarRefs) {
+            var data = this.kingwarRefs[kingwarKey];
+            kingwarPlayers[kingwarKey] = [];
+            for (var i = 0; i < data.players.length; ++i) {
+                var warPlayer = data.players[i];
+                kingwarPlayers[kingwarKey].push(warPlayer.playerId);
+            }
+        }
+        return kingwarPlayers;
+    },
 
     unsetPlayer:function(key) {
         return this.removeRefresh(key);
@@ -718,7 +730,7 @@ Base.extends("GameController", {
                     }
                 }
             }
-            var data_kingwar = yield conn.getKingWar(next);
+            var data_kingwar = yield conn.getKingWarState(next);
             if (data_kingwar.joined) {
                 this.setRefreshState(selfKey, 4);
             }
@@ -839,7 +851,7 @@ Base.extends("GameController", {
             if (this.constantKingwar && !validator.checkDaily("refreshKingwar")) {
                 return safe(done)();
             }
-            var data = yield conn.getKingWar(next);
+            var data = yield conn.getKingWarState(next);
             var constant = !data.allowJoin;
             if (this.constantKingwar && !constant) {
                 this.constantKingwar = false;
