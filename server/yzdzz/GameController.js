@@ -2,6 +2,7 @@
 require("../Base");
 require("../Heartbeat");
 require("../Select");
+require("../TaskManager");
 require("../TimingManager");
 require("./GameConnection");
 
@@ -101,14 +102,14 @@ Base.extends("GameController", {
     },
 
     setPlayerTargeting:function(playerData, targetingConfig) {
-        var key = this.appendRefresh(playerData, "targeting", 3, (conn, done) => {
-            this.refreshTargeting(conn, targetingConfig, key, done);
+        var key = this.appendRefresh(playerData, "targeting", 3, (conn, done, taskItem) => {
+            this.refreshTargeting(conn, targetingConfig, key, taskItem, done);
         });
         return key;
     },
     modifyPlayerTargeting:function(key, targetingConfig) {
-        return this.setRefreshFunc(key, (conn, done) => {
-            this.refreshTargeting(conn, targetingConfig, key, done);
+        return this.setRefreshFunc(key, (conn, done, taskItem) => {
+            this.refreshTargeting(conn, targetingConfig, key, taskItem, done);
         });
     },
 
@@ -346,30 +347,31 @@ Base.extends("GameController", {
         this.repeatRanges.push(endKey);
     },
 
-    setTargetingEvent:function(selfUnion, time, forceSec) {
+    setTargetingEvent:function(selfUnion, time, forceSec, assignPeriodic) {
         this.unsetEventKeys(this.targetingTimes);
         this.selfUnion = selfUnion;
         this.targetingTimes = [];
         var targetingKey = this.timingManager.setWeeklyEvent(time.day, time.hour, time.minute, time.second, () => {
+            this.initTargeting();
             this.setRefreshStatesOfType("kingwar", 5);
+            var forceTime = new Date();
+            forceTime.setSeconds(forceSec);
             var next = coroutine(function*() {
-                while(!this.constantKingwar) {
-                    var currSec = new Date().getSeconds();
-                    this.forceTargeting = (currSec > forceSec);
-                    if (this.forceTargeting) {
-                        this.kingwarBrief = {};
-                        for (var kingwarKey in this.kingwarRefs) {
-                            this.kingwarBrief[kingwarKey] = this.getBriefKingwar(kingwarKey);
-                        }
-                        this.updateTargeting();
-                    }
+                var forceTargeting = false;
+                while(!this.constantKingwar && !forceTargeting) {
                     yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 3; }, next);
-                    if (this.forceTargeting) {
-                        break;
-                    }
+                    yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 5; }, next);
+                    forceTargeting = (new Date() > forceTime);
+                }
+                while (!this.constantKingwar)
+                {
+                    var kingwarTaskManager = new TaskManager((tasks, total) => {
+
+                    });
+                    yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 3; }, next, kingwarTaskManager);
                     yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 5; }, next);
                 }
-                this.initTargeting();
+                this.setRefreshStatesOfType("kingwar", 1);
             }, this);
         });
         this.targetingTimes.push(targetingKey);
@@ -463,7 +465,7 @@ Base.extends("GameController", {
         }
         return false;
     },
-    refreshAllPlayers:function(checkFun, done) {
+    refreshAllPlayers:function(checkFun, done, taskManager) {
         var select = new Select();
         for (var accountGameKey in this.refreshData) {
             var refreshInfo = this.refreshData[accountGameKey];
@@ -477,231 +479,80 @@ Base.extends("GameController", {
 
             if (executables.length > 0) {
                 console.log("refresh for player", refreshInfo.account, refreshInfo.server, executables.length);
-                this.refreshOnePlayer(refreshInfo, executables, select.setup());
+                this.refreshOnePlayer(refreshInfo, executables, select.setup(), (taskManager ? taskManager.addTask() : undefined));
             }
         }
         select.all(done);
     },
-    refreshOnePlayer:function(refreshInfo, executables, done) {
+    refreshOnePlayer:function(refreshInfo, executables, done, taskItem) {
         var next = coroutine(function*() {
             yield refreshInfo.mutex.lock(next);
+            var doEnd = (unexpected) => {
+                if (unexpected && taskItem) {
+                    taskItem.giveup();
+                }
+                refreshInfo.mutex.unlock();
+                safe(done)();
+            };
             var conn = this.accountManager.connectAccount(refreshInfo.account, refreshInfo.validator);
             if (!conn) {
                 this.errLog("connectAccount", "account:{0}".format(refreshInfo.account));
-                refreshInfo.mutex.unlock();
-                return safe(done)();
+                return doEnd(true);
             }
             console.log("start -- player!", refreshInfo.account, refreshInfo.server);
             var data = yield conn.loginAccount(next);
             if (!data.success) {
                 this.errLog("loginAccount", "account({0}), server({1})".format(refreshInfo.account, refreshInfo.server));
-                refreshInfo.mutex.unlock();
-                return safe(done)();
+                return doEnd(true);
             }
             var data = yield conn.loginGame(refreshInfo.server, next);
             if (!data.success) {
                 this.errLog("loginGame", "account({0}), server({1})".format(refreshInfo.account, refreshInfo.server));
-                refreshInfo.mutex.unlock();
-                return safe(done)();
+                return doEnd(true);
             }
             for (var i = 0; i < executables.length; ++i) {
-                yield executables[i](conn, next);
+                yield executables[i](conn, next, taskItem);
             }
             console.log("quit -- player!", refreshInfo.account, refreshInfo.server, conn.getGameInfo().name);
             conn.quit();
-            refreshInfo.mutex.unlock();
-            safe(done)();
+            doEnd();
         }, this);
     },
 
     // Private refresh operations
+    initTargeting:function() {
+    },
     joinByKingwarKey:function(conn, kingwarKey, done) {
         var area = Math.floor(kingwarKey / 100);
         var star = kingwarKey % 100;
         conn.joinKingWar(area, star, done);
     },
-    updateKingwarPlayers:function(kingwarKey, data) {
-        var refData = this.kingwarRefs[kingwarKey];
-        var players = [];
-        for (var i = 0; i < data.players.length; ++i) {
-            var playerData = data.players[i];
-            players.push({
-                playerId: playerData.playerId,
-                union: playerData.union,
-                name: playerData.name,
-                power: playerData.power,
-            });
-            this.playerToKingwar[playerData.playerId] = kingwarKey;
-        }
-        refData.players = players;
-    },
-    getBriefKingwar:function(kingwarKey) {
-        var refData = this.kingwarRefs[kingwarKey];
-        var selfMaxIndex = -1;
-        var selfMaxPower = 0;
-        var enemyMaxIndex = -1;
-        var enemyMaxPower = 2000000;
-        var playerCount = (refData.players.length <= 16 ? refData.players.length : 16);
-        var helpCount = (refData.players.length <= 16 ? 1 : 0);
-        for (var i = 0; i < playerCount; ++i) {
-            var item = refData.players[i];
-            var warPlayer = this.allPlayers[item.playerId];
-            if (warPlayer) {
-                if (warPlayer.unionId == this.selfUnion) {
-                    helpCount ++;
-                    if (warPlayer.maxPower > selfMaxPower) {
-                        selfMaxPower = warPlayer.maxPower;
-                        selfMaxIndex = i;
-                    }
-                } else if (warPlayer.maxPower > enemyMaxPower) {
-                    enemyMaxPower = warPlayer.maxPower;
-                    enemyMaxIndex = i;
-                }
-            } else {
-                if (item.power > enemyMaxPower) {
-                    enemyMaxPower = item.power;
-                    enemyMaxIndex = i;
-                }
-            }
-        }
-        var powerDiff = selfMaxPower - enemyMaxPower;
-        var brief = {
-            kingwarKey: kingwarKey,
-            count: refData.players.length,
-            helpCount: helpCount,
-            maxPower: (selfMaxPower > enemyMaxPower ? selfMaxPower : enemyMaxPower),
-            minPower: (refData.players.length < 16 ? 0 : refData.players[15].power),
-            helpPower: (refData.players.length < 10 ? 0 : refData.players[9].power),
-            powerDiff: powerDiff,
-            isOurs: powerDiff > 1000000,
-            isOthers: powerDiff <= -200000,
-            isMutual: powerDiff <= 1000000 && powerDiff > -200000,
-        };
-        return brief;
-    },
-    updateTargeting:function() {
-        this.targetingFight = [];
-        this.targetingHelp = [];
-        this.targetingAll = [];
-        for (var kingwarKey in this.kingwarBrief) {
-            var brief = this.kingwarBrief[kingwarKey];
-            var j;
-            for (j = 0; j < this.targetingAll.length; ++j) {
-                if (this.targetingAll[j].count > brief.count) {
-                    break;
-                }
-            }
-            this.targetingAll.splice(j, 0, brief);
-            if (brief.isOthers) {
-                for (j = 0; j < this.targetingFight.length; ++j) {
-                    if (this.targetingFight[j].maxPower < brief.maxPower) {
-                        break;
-                    }
-                }
-                this.targetingFight.splice(j, 0, brief);
-            }
-            if (brief.isMutual) {
-                for (j = 0; j < this.targetingHelp.length; ++j) {
-                    if (this.targetingHelp[j].helpCount > brief.helpCount) {
-                        break;
-                    }
-                }
-                this.targetingHelp.splice(j, 0, brief);
-            }
-        }
-    },
-    initTargeting:function() {
-        this.resetTargeting();
-
-        this.targetingFight = [];
-        this.targetingHelp = [];
-        this.targetingAll = [];
-    },
-    resetTargeting:function() {
-        this.forceTargeting = false;
-        this.kingwarBrief = {};
-    },
-    refreshTargeting:function(conn, targetingConfig, selfKey, done) {
+    refreshTargeting:function(conn, targetingConfig, selfKey, taskItem, done) {
         var next = coroutine(function*() {
+            console.log("refreshTargeting..", conn.getGameInfo().name);
             var kingwarKey = this.playerToKingwar[targetingConfig.reachPLID];
             if (kingwarKey) {
-                console.log("find target", targetingConfig.reachPLID, conn.getGameInfo().name);
+                console.log("find target", kingwarKey, targetingConfig.reachPLID, conn.getGameInfo().name);
                 var data_join = yield this.joinByKingwarKey(conn, kingwarKey, next);
             } else {
-                if (this.forceTargeting && targetingConfig.allowAssign) {
-                    /*
-                    var selfInfo = this.allPlayers[conn.getGameInfo().playerId];
-                    var currPower = conn.getGameInfo().power;
-                    var selfPower = (selfInfo ? selfInfo.maxPower : currPower);
-                    var joinTarget = 0;
-                    if (targetingConfig.fightForStar) {
-                        for (var i = 0; i < this.targetingFight.length; ++i) {
-                            var fightItem = this.targetingFight[i];
-                            if (selfPower - fightItem.maxPower > 1000000) {
-                                joinTarget = fightItem.kingwarKey;
-                                fightItem.isOurs = true;
-                                fightItem.isOthers = false;
-                                fightItem.maxPower = selfPower;
-                                console.log("auto join by star", conn.getGameInfo().name, joinTarget, new Date());
-                                break;
-                            } else if (selfPower - fightItem.maxPower > -200000 && fightItem.helpCount >= 3) {
-                                joinTarget = fightItem.kingwarKey;
-                                fightItem.isMutual = true;
-                                fightItem.isOthers = false;
-                                fightItem.maxPower = (selfPower > fightItem.maxPower ? selfPower : fightItem.maxPower);
-                                console.log("auto join by star", conn.getGameInfo().name, joinTarget, new Date());
-                                break;
-                            } else if (selfPower - fightItem.maxPower > 400000 && fightItem.helpCount >= 1) {
-                                joinTarget = fightItem.kingwarKey;
-                                fightItem.isMutual = true;
-                                fightItem.isOthers = false;
-                                fightItem.maxPower = selfPower;
-                                console.log("auto join by star", conn.getGameInfo().name, joinTarget, new Date());
-                                break;
-                            }
+                if (taskItem){
+                    if (targetingConfig.allowAssign) {
+                        var playerId = conn.getGameInfo().playerId;
+                        var playerItem = this.allPlayers[playerId];
+                        var power = (playerItem ? playerItem.maxPower : conn.getGameInfo().power);
+                        var kingwarKey = yield taskItem.getAssignment(power, next);
+                        if (kingwarKey) {
+                            console.log("assign target", kingwarKey, conn.getGameInfo().name);
+                            var data_join = yield this.joinByKingwarKey(conn, kingwarKey, next);
                         }
+                    } else {
+                        taskItem.giveup();
                     }
-                    if (!joinTarget) {
-                        for (var i = 0; i < this.targetingHelp.length; ++i) {
-                            var helpItem = this.targetingHelp[i];
-                            if (currPower > helpItem.helpPower) {
-                                joinTarget = helpItem.kingwarKey;
-                                helpItem.helpCount ++;
-                                console.log("auto join by help", conn.getGameInfo().name, joinTarget, new Date());
-                                break;
-                            }
-                        }
-                    }
-                    if (!joinTarget) {
-                        for (var i = 0; i < this.targetingAll.length; ++i) {
-                            var someItem = this.targetingAll[i];
-                            if (currPower > someItem.minPower) {
-                                joinTarget = someItem.kingwarKey;
-                                helpItem.helpCount ++;
-                                console.log("auto join by nothing", conn.getGameInfo().name, joinTarget, new Date());
-                                break;
-                            }
-                        }
-                    }
-                    if (joinTarget) {
-                        this.updateTargeting();
-                        var data_join = yield this.joinByKingwarKey(conn, joinTarget, next);
-                    }
-                    */
                 }
             }
             var data_kingwar = yield conn.getKingWar(next);
             if (data_kingwar.joined) {
                 this.setRefreshState(selfKey, 4);
-                /*
-                var data = yield conn.getKingWarPlayers(next);
-                if (data.players) {
-                    var kingwarKey = data.areaId * 100 + data.starId;
-                    this.updateKingwarPlayers(kingwarKey, data);
-                    this.kingwarBrief[kingwarKey] = this.getBriefKingwar(kingwarKey);
-                    this.updateTargeting();
-                }
-                */
             }
             safe(done)();
         }, this);
@@ -795,6 +646,21 @@ Base.extends("GameController", {
             }
         }
     },
+    updateKingwarPlayers:function(kingwarKey, data) {
+        var refData = this.kingwarRefs[kingwarKey];
+        var players = [];
+        for (var i = 0; i < data.players.length; ++i) {
+            var playerData = data.players[i];
+            players.push({
+                playerId: playerData.playerId,
+                union: playerData.union,
+                name: playerData.name,
+                power: playerData.power,
+            });
+            this.playerToKingwar[playerData.playerId] = kingwarKey;
+        }
+        refData.players = players;
+    },
     refreshKingwar:function(conn, refreshData, done) {
         var next = coroutine(function*() {
             console.log("refreshKingwar..", conn.getGameInfo().name);
@@ -810,7 +676,6 @@ Base.extends("GameController", {
             if (this.constantKingwar && !constant) {
                 this.constantKingwar = false;
                 this.playerToKingwar = {};
-                this.resetTargeting();
             } else if (!this.constantKingwar && constant) {
                 this.constantKingwar = true;
             }
