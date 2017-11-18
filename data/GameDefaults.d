@@ -26,7 +26,7 @@
     }
     ,"targeting":{
         "selfUnion": "b275705814a85d98"
-        ,"weekly":{"day":2,"hour":23,"minute":59,"second":10}
+        ,"time":{"day":2,"hour":23,"minute":59,"second":10}
         ,"forceSec":45
     }
 }

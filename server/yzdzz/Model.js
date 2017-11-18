@@ -123,7 +123,7 @@ $HttpModel.addClass({
             var defaultsStates = $StateManager.getState(GAME_DEFAULTS_CONFIG);
             this.controller.startDailyTask(defaultsStates.dailyTask);
             this.controller.setRepeatRange(defaultsStates.repeatRange.start, defaultsStates.repeatRange.end);
-            this.controller.setTargetingEvent(defaultsStates.targeting.selfUnion, defaultsStates.targeting.weekly, defaultsStates.targeting.forceSec);
+            this.controller.setTargetingEvent(defaultsStates.targeting);
             this.doRefresh(AllFuncStr);
             safe(done)();
         }, this);
@@ -465,8 +465,9 @@ $HttpModel.addClass({
     setSettingTargeting:function(playerKey, targeting) {
         var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
         var targetingConfig = {
-            allowAssign: (targeting.allowAssign ? true : false),
             reachPLID: this.randKey2PlayerId[targeting.reachPLID] || "",
+            allowAssign: (targeting.allowAssign ? true : false),
+            minStar: (targeting.minStar ? Number(targeting.minStar) : 0),
         };
         if (this.compareSetting(targetingConfig, settingStates.targeting[playerKey])) {
             return false;

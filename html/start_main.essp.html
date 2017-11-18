@@ -67,6 +67,14 @@
                     <div class="div_auto_setting_prop_name">允许系统分配</div>
                     <input type="checkbox" class="ctrl_setting_config_prop_assign">
                 </div>
+                <div class="div_auto_setting_detail">
+                    <div class="div_auto_setting_prop_name">最低可接受帝侯</div>
+                    <select class="select_auto_setting_minstar">
+                        {{#each stars}}
+                        <option value="{{value}}">{{desc}}</option>
+                        {{/each}}
+                    </select>
+                </div>
             </div>
         </div>
     {{/if}}

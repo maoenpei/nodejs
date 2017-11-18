@@ -461,6 +461,18 @@ displayAutomationModel.getPlayerSelections = function() {
     }
     return this.selectablePlayers;
 }
+displayAutomationModel.getKingwarStars = function() {
+    if (!this.allStars) {
+        this.allStars = [];
+        for (var i = 1; i <= 10; ++i) {
+            this.allStars.push({
+                value: i,
+                desc: String(i) + "星",
+            });
+        }
+    }
+    return this.allStars;
+}
 displayAutomationModel.getValidServers = function(account) {
     var usedServers = {};
     for (var i = 0; i < account.players.length; ++i) {
@@ -820,6 +832,7 @@ function displayAutomation() {
             divAutomationContent.html("");
             var templateData = {
                 players: displayAutomationModel.getPlayerSelections(),
+                stars: displayAutomationModel.getKingwarStars(),
             };
             var targeting = lastPlayer.copy_settings.targeting;
             if (targeting) {
@@ -848,6 +861,12 @@ function displayAutomation() {
                 }
                 inputSettingAssign.change(function() {
                     targeting.allowAssign = inputSettingAssign.is(":checked");
+                    configChanged();
+                });
+                var selectSettingMinstar = divTargetingBlock.find(".select_auto_setting_minstar");
+                selectSettingMinstar.val(targeting.minStar);
+                selectSettingMinstar.change(function() {
+                    targeting.minStar = selectSettingMinstar.val();
                     configChanged();
                 });
             }
