@@ -458,7 +458,7 @@ Base.extends("GameController", {
             funcObj = clone(funcObj);
             funcObj.func = func;
             key.obj = funcObj;
-            findInfo.refreshInfo.funcs.splice(i, 1, funcObj);
+            findInfo.refreshInfo.funcs.splice(findInfo.index, 1, funcObj);
             return true;
         }
         return false;

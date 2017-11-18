@@ -438,9 +438,10 @@ $HttpModel.addClass({
             area: (typeof(kingwar.area) == "number" && kingwar.area >= 1 && kingwar.area <= 3 ? kingwar.area : 0),
             star: (typeof(kingwar.star) == "number" && kingwar.star >= 1 && kingwar.star <= 10 ? kingwar.star : 0),
         };
-        if (compareSetting(kingwarConfig, settingStates.kingwar[playerKey])) {
+        if (this.compareSetting(kingwarConfig, settingStates.kingwar[playerKey])) {
             return false;
         }
+        console.log("set kingwar for player", playerKey);
         settingStates.kingwar[playerKey] = kingwarConfig;
         this.startRefreshKingwar(playerKey, kingwarConfig);
         return true;
@@ -453,9 +454,10 @@ $HttpModel.addClass({
             limitPower: (typeof(listing.limitPower) == "number" && listing.limitPower > 50 && listing.limitPower < 9999 ? listing.limitPower : 0),
             limitDay: 20,
         };
-        if (compareSetting(listingConfig, settingStates.listing[playerKey])) {
+        if (this.compareSetting(listingConfig, settingStates.listing[playerKey])) {
             return false;
         }
+        console.log("set listing for player", playerKey);
         settingStates.listing[playerKey] = listingConfig;
         this.startRefreshListing(playerKey, listingConfig);
         return true;
@@ -466,9 +468,10 @@ $HttpModel.addClass({
             allowAssign: (targeting.allowAssign ? true : false),
             reachPLID: this.randKey2PlayerId[targeting.reachPLID] || "",
         };
-        if (compareSetting(targetingConfig, settingStates.targeting[playerKey])) {
+        if (this.compareSetting(targetingConfig, settingStates.targeting[playerKey])) {
             return false;
         }
+        console.log("set targeting for player", playerKey);
         settingStates.targeting[playerKey] = targetingConfig;
         this.startRefreshTargeting(playerKey, targetingConfig);
         return true;
