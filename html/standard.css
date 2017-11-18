@@ -267,7 +267,7 @@ input[type='checkbox']{
     font-size: 0.8rem;
     margin-top: 0.3rem;
     background-color: rgba(0, 0, 0, 0.4);
-    padding: 0.1rem;
+    padding: 0.05rem;
 }
 .div_player_list{
     color: #ff5;
@@ -278,6 +278,12 @@ input[type='checkbox']{
     background-color: #aaa;
     font-size: 0.7rem;
 }
+.div_player_item_index{
+    display: inline-block;
+    width: 10%;
+}
+.div_player_item_index_content{
+}
 .div_player_item_union{
     display: inline-block;
     width: 10%;
@@ -286,7 +292,7 @@ input[type='checkbox']{
 }
 .div_player_item_name{
     display: inline-block;
-    width: 31%;
+    width: 28%;
 }
 .div_player_item_name_content{
 }
@@ -298,16 +304,16 @@ input[type='checkbox']{
 }
 .div_player_item_kingwar{
     display: inline-block;
-    width: 19%;
+    width: 15%;
 }
 .div_player_item_kingwar_content{
 }
 .div_player_item_last{
     display: inline-block;
-    width: 16%;
+    width: 13%;
 }
 .div_player_item_last_content{
-    font-size: 0.55rem;
+    font-size: 0.5rem;
 }
 .div_show_kingwar, .div_show_quit{
     position:fixed;

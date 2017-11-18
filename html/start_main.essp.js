@@ -1013,6 +1013,7 @@ function displayPlayerList() {
                     continue;
                 }
                 playerInfo.push({
+                    index: i+1,
                     union_short: playerData.server + "." + playerData.uShort,
                     name: playerData.name,
                     power: Math.floor(playerData.power / 10000),
