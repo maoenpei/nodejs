@@ -258,6 +258,7 @@ Base.extends("GameController", {
                 kingwarPlayers[kingwarKey].push({
                     playerId: warPlayer.playerId,
                     power: warPlayer.power,
+                    union: warPlayer.union,
                 });
             }
         }
