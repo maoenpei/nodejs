@@ -207,10 +207,7 @@ Base.extends("GameController", {
     },
     restorePlayers:function(allPowerMax) {
         for (var playerId in allPowerMax) {
-            var playerInfo = this.allPlayers[playerId];
-            playerInfo = (playerInfo ? playerInfo : {});
-            playerInfo.maxPower = allPowerMax[playerId].maxPower;
-            this.allPlayers[playerId] = playerInfo;
+            this.allPlayers[playerId] = allPowerMax[playerId];
         }
     },
 
@@ -430,6 +427,7 @@ Base.extends("GameController", {
             brief.kingwarKey = kingwarKey;
             brief.area = areaStar.area;
             brief.star = areaStar.star;
+            console.log("-- kingwar assignment -- brief", brief);
             var insertIndex = 0;
             for (var i = 0; i < kingwarOrder.length; ++i) {
                 if (areaStar.star > kingwarOrder[i].star) {
@@ -473,6 +471,7 @@ Base.extends("GameController", {
             for (var j = 0; j < kingwarOrder.length; ++j) {
                 var brief = kingwarOrder[j];
                 if (canJoin(taskItem, brief)) {
+                    console.log("-- kingwar assignment -- possible", taskItem.power, brief.kingwarKey);
                     brief.possible.push(taskItem);
                 }
             }
@@ -487,6 +486,7 @@ Base.extends("GameController", {
                     for (var j = 0; j < validBrief.possible.length; ++j) {
                         var taskItem = validBrief.possible[j];
                         if (!taskItem.assign || validBrief.star > taskItem.assign.star) {
+                            console.log("-- kingwar assignment -- try", taskItem.power, validBrief.kingwarKey);
                             var tmpBrief = taskItem.assign;
                             taskItem.assign = validBrief;
                             taskItem.newAdded = true;
@@ -513,12 +513,14 @@ Base.extends("GameController", {
         var kingwarOrder = this.getKingwarOrder(defaults);
         var tasksOrder = this.getTasksOrder(tasks);
         // try fight
+        console.log("-- kingwar assignment -- try fight");
         this.tryKingwarAssignment(kingwarOrder, tasksOrder, (taskItem, brief) => {
             return brief.star >= taskItem.minStar && brief.mutual <= 1 && taskItem.power * 0.96 > brief.otherMax;
         });
         // try help
+        console.log("-- kingwar assignment -- try help");
         this.tryKingwarAssignment(kingwarOrder, tasksOrder, (taskItem, brief) => {
-            return brief.star >= taskItem.minStar && brief.mutual == 2 && taskItem.power < brief.ourMax * 0.7 && brief.helpCount < 3;
+            return brief.star >= taskItem.minStar && brief.mutual == 2 && taskItem.power < brief.ourMax * 0.8 && brief.helpCount < 3;
         });
         
         var restNumber = 0;
@@ -530,12 +532,14 @@ Base.extends("GameController", {
         }
         if (restNumber >= 8) {
             // try fight
+            console.log("-- kingwar assignment -- try fight Z");
             this.tryKingwarAssignment(kingwarOrder, tasksOrder, (taskItem, brief) => {
                 return brief.star >= taskItem.minStar && brief.mutual <= 1 && taskItem.power * 1.01 > brief.otherMax;
             });
             // try help
+            console.log("-- kingwar assignment -- try help Z");
             this.tryKingwarAssignment(kingwarOrder, tasksOrder, (taskItem, brief) => {
-                return brief.star >= taskItem.minStar && brief.mutual == 2 && taskItem.power < brief.ourMax * 0.8 && brief.helpCount < 3;
+                return brief.star >= taskItem.minStar && brief.mutual == 2 && taskItem.power < brief.ourMax * 0.9 && brief.helpCount < 3;
             });
         }
 
@@ -732,7 +736,7 @@ Base.extends("GameController", {
             console.log("refreshTargeting..", conn.getGameInfo().name);
             var kingwarKey = this.playerToKingwar[targetingConfig.reachPLID];
             if (kingwarKey) {
-                console.log("find target", kingwarKey, targetingConfig.reachPLID, conn.getGameInfo().name);
+                console.log("-- kingwar assignment -- find target", kingwarKey, targetingConfig.reachPLID, conn.getGameInfo().name);
                 var areaStar = this.getAreaStar(kingwarKey);
                 var data_join = yield conn.joinKingWar(areaStar.area, areaStar.star, next);
             } else {
@@ -743,7 +747,7 @@ Base.extends("GameController", {
                         var power = (playerItem ? playerItem.maxPower : conn.getGameInfo().power);
                         var kingwarKey = yield taskItem.getAssignment({power: power, minStar: targetingConfig.minStar}, next);
                         if (kingwarKey) {
-                            console.log("assign target", kingwarKey, conn.getGameInfo().name);
+                            console.log("-- kingwar assignment -- assign target", kingwarKey, Math.floor(power / 10000), conn.getGameInfo().name);
                             var areaStar = this.getAreaStar(kingwarKey);
                             var data_join = yield conn.joinKingWar(areaStar.area, areaStar.star, next);
                         }
