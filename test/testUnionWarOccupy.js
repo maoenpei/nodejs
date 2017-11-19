@@ -28,6 +28,7 @@ var accounts = [
 var selfUnion = "b275705814a85d98";
 
 var landTargets = (isWeekend ? [7, 3, 2, 1] : [4, 3, 1, 2]);
+//var landTargets = (isWeekend ? [7, 1, 2, 3] : [4, 3, 1, 2]);
 
 var friendUnion = ["b26d0533bba85c43"];
 var enemyUnion = [];
@@ -123,7 +124,7 @@ var next = coroutine(function*() {
                                 worstFight = mineData.pos;
                             }
                             maxPowerPlayer = allPowerMax[mineData.playerId];
-                            if (!maxPowerPlayer || conn.getGameInfo().power + 200000 > allPowerMax[mineData.playerId].maxPower){
+                            if (!maxPowerPlayer || conn.getGameInfo().power + 200000 > maxPowerPlayer.maxPower){
                                 if (mineData.pos < bestFight) {
                                     bestFight = mineData.pos;
                                 }

@@ -864,7 +864,7 @@ function displayAutomation() {
                     configChanged();
                 });
                 var selectSettingMinstar = divTargetingBlock.find(".select_auto_setting_minstar");
-                selectSettingMinstar.val(targeting.minStar);
+                selectSettingMinstar.val((targeting.minStar ? targeting.minStar : 1));
                 selectSettingMinstar.change(function() {
                     targeting.minStar = selectSettingMinstar.val();
                     configChanged();
