@@ -196,7 +196,7 @@ Base.extends("GameConnection", {
                 "channelUid":this.accountInfo.accountId,
                 "productId":182,
             }, next);
-            //yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
+            //yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvlogin.json", JSON.stringify(data, null, 2), next);
             if (!data || !data.uid) {
                 this.quit();
                 return safe(done)({});
@@ -215,6 +215,7 @@ Base.extends("GameConnection", {
                 arenaGlory: (data.arena_glory ? data.arena_glory : 0),
                 unionWarDouble: (data.union_war_double ? data.union_war_double : 0),
                 vip: data.vip,
+                friendWarVal: data.friendship,
 
                 hasRedPacket: !!(data.act_redpacket && data.act_redpacket > 0),
             };
@@ -845,6 +846,10 @@ Base.extends("GameConnection", {
                 var current = data.inspire;
                 for (var i = current; i < config.baseInspire; ++i) {
                     var data_inspire = yield this.sendMsg("FriendWar", "inspire", null, next);
+                    if (!data_inspire) {
+                        console.log("FriendWar inspire failed", i);
+                        break;
+                    }
                 }
                 var winNumber = data.win_num;
                 for (var i = data.fight_num; i < 7; ++i) {
@@ -859,6 +864,10 @@ Base.extends("GameConnection", {
                             } else {
                                 for (var k = 0; k < config.advanceInspire; ++k) {
                                     var data_inspire = yield this.sendMsg("FriendWar", "inspire", null, next);
+                                    if (!data_inspire) {
+                                        console.log("FriendWar inspire failed", k);
+                                        break;
+                                    }
                                 }
                                 break;
                             }
@@ -869,6 +878,16 @@ Base.extends("GameConnection", {
                 for (var i = 1; i <= 3; ++i) {
                     if (data.reward[i] != 1 && winNumber >= neededWin[i-1]) {
                         var data_reward = yield this.sendMsg("FriendWar", "reward", {id:i}, next);
+                    }
+                }
+                if (config.buyBlueCard && this.gameInfo.friendWarVal > 100) {
+                    var buyCount = Math.floor(this.gameInfo.friendWarVal / 100);
+                    for (var i = 0; i < buyCount; ++i) {
+                        var data_exchange = yield this.sendMsg("FriendWar", "exchange", {id:1}, next);
+                        if (!data_exchange) {
+                            console.log("FriendWar exchange failed", i, buyCount);
+                            break;
+                        }
                     }
                 }
             }
@@ -1085,11 +1104,11 @@ Base.extends("GameConnection", {
                 if (!data || !data.lands) {
                     return safe(done)({});
                 }
+                var data_like = yield this.sendMsg("UnionRace", "agree", null, next);
                 if (this.validator.checkDaily("autoUnion")) {
                     // auto thumb
                     var data_like = yield this.sendMsg("Union", "like", { unionid: data.id }, next);
                     var data_like = yield this.sendMsg("UnionWar", "agree", null, next);
-                    var data_like = yield this.sendMsg("UnionRace", "agree", null, next);
                     // auto donate
                     var data_home = yield this.sendMsg("Union", "home", null, next);
                     if (!data_home || !data_home.shop) {
@@ -1423,8 +1442,9 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("ActGoblin", "buy", {id:"2120004"}, next);
             //var data = yield this.sendMsg("ActGoblin", "refresh", null, next);
             //var data = yield this.sendMsg("League", "getWarInfo", null, next); // 国战信息
+            //var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next); //皇帝战
 
-            var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next);
+            
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);

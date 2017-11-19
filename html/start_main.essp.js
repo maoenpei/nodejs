@@ -411,6 +411,7 @@ var displayAutomationModel = {
         {name: "autoFriendWar", desc: "友谊战", props: [
             {name: "baseInspire", desc: "基础加成", type: "number", limit: [0, 6]},
             {name: "advanceInspire", desc: "补充加成", type: "number", limit: [0, 6]},
+            {name: "buyBlueCard", desc: "购买蓝色勇者卡", type: "check"},
         ]},
         {name: "autoLadder", desc: "晋级赛", props: [
             {name: "fightPlayer", desc: "是否攻击战力低的玩家", type: "check"},
