@@ -80,6 +80,8 @@ $HttpModel.addClass({
             yield $StateManager.openState(GAME_POWER_MAX_CONFIG, null, next);
             yield $StateManager.openState(GAME_UNIONS_CONFIG, null, next);
 
+            var allKingwars = $StateManager.getState(GAME_KINGWAR_CONFIG);
+            this.controller.setKingwarPlayers(allKingwars);
             var allPowerMax = $StateManager.getState(GAME_POWER_MAX_CONFIG);
             this.controller.setMaxPowers(allPowerMax);
 

@@ -174,6 +174,10 @@ Global.rkey = function() {
 	return Math.random().toString(36).substr(2);
 };
 
+Global.rand = function(num) {
+	return Math.round(Math.random() * num);
+};
+
 Global.stringToAscii = function(str) {
     var arr = [];
     for (var i = 0; i < str.length; ++i) {

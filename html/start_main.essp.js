@@ -353,7 +353,7 @@ playerCommon.unionColor = function(union) {
     if (union == "s96.火") {
         return "display_player_green";
     }
-    var serv = union.substr(0, 3);
+    var serv = (union ? union.substr(0, 3) : "");
     switch(serv) {
     case "s93":
         return "display_player_blue";
@@ -1051,7 +1051,7 @@ displayKingWarModel.get = function(callback) {
             for (var i = 0; i < areastarData.length; ++i) {
                 var player = areastarData[i];
                 player.showMax = player.maxPower > player.power + 200000;
-                player.unionShort = player.union.substr(4);
+                player.unionShort = (player.union ? player.union.substr(4) : "");
             }
         }
         callback(json);

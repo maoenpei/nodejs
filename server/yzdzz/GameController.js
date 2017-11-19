@@ -255,10 +255,21 @@ Base.extends("GameController", {
             kingwarPlayers[kingwarKey] = [];
             for (var i = 0; i < data.players.length; ++i) {
                 var warPlayer = data.players[i];
-                kingwarPlayers[kingwarKey].push(warPlayer.playerId);
+                kingwarPlayers[kingwarKey].push({
+                    playerId: warPlayer.playerId,
+                    power: warPlayer.power,
+                });
             }
         }
         return kingwarPlayers;
+    },
+    setKingwarPlayers:function(kingwarPlayers) {
+        for (var kingwarKey in kingwarPlayers) {
+            var players = kingwarPlayers[kingwarKey];
+            for (var i = 0; i < players.length; ++i) {
+                this.kingwarRefs[kingwarKey].players.push(players[i]);
+            }
+        }
     },
 
     unsetPlayer:function(key) {
