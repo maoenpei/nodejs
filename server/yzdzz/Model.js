@@ -81,9 +81,9 @@ $HttpModel.addClass({
             yield $StateManager.openState(GAME_UNIONS_CONFIG, null, next);
 
             var allKingwars = $StateManager.getState(GAME_KINGWAR_CONFIG);
-            this.controller.setKingwarPlayers(allKingwars);
+            this.controller.restoreKingwar(allKingwars);
             var allPowerMax = $StateManager.getState(GAME_POWER_MAX_CONFIG);
-            this.controller.setMaxPowers(allPowerMax);
+            this.controller.restorePlayers(allPowerMax);
 
             yield this.startRefreshSettings(next);
             safe(done)();
@@ -145,7 +145,7 @@ $HttpModel.addClass({
         }
         var refreshCallback = (done) => {
             var next = coroutine(function*() {
-                var players = this.controller.getPlayers();
+                var players = this.controller.savePlayers();
                 var md5 = this.getTag(players);
                 if (this.playersMd5 != md5) {
                     this.playersMd5 = md5;
@@ -157,10 +157,7 @@ $HttpModel.addClass({
                             this.playerId2RandKey[playerId] = randKey;
                             this.randKey2PlayerId[randKey] = playerId;
                         }
-                        allPowerMax[playerId] = {
-                            name: players[playerId].name,
-                            maxPower: players[playerId].maxPower,
-                        };
+                        allPowerMax[playerId] = players[playerId];
                     }
                     yield $StateManager.commitState(GAME_POWER_MAX_CONFIG, next);
                 }
@@ -174,7 +171,7 @@ $HttpModel.addClass({
                     }
                     yield $StateManager.commitState(GAME_UNIONS_CONFIG, next);
                 }
-                var kingwarPlayers = this.controller.getKingwarPlayers();
+                var kingwarPlayers = this.controller.saveKingwar();
                 var md5 = this.getTag(kingwarPlayers);
                 if (this.kingwarMd5 != md5) {
                     this.kingwarMd5 = md5;

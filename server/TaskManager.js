@@ -63,6 +63,6 @@ Base.extends("TaskManager", {
                 rawTasks.push(taskData.task);
             }
         }
-        safe(this.howtoAssign)(rawTasks, total);
+        later(this.howtoAssign, rawTasks, total);
     },
 });

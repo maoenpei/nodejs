@@ -134,8 +134,17 @@ Base.extends("GameController", {
             }, done);
         });
     },
-    getPlayers:function() {
-        return this.allPlayers;
+    savePlayers:function() {
+        var players = {};
+        for (var playerId in this.allPlayers) {
+            var player = this.allPlayers[playerId];
+            players[playerId] = {
+                name: player.name,
+                maxPower: player.maxPower,
+                unionId: player.unionId,
+            };
+        }
+        return players;
     },
     getUnions:function() {
         return this.allUnions;
@@ -196,7 +205,7 @@ Base.extends("GameController", {
         }
         return sortedPlayers;
     },
-    setMaxPowers:function(allPowerMax) {
+    restorePlayers:function(allPowerMax) {
         for (var playerId in allPowerMax) {
             var playerInfo = this.allPlayers[playerId];
             playerInfo = (playerInfo ? playerInfo : {});
@@ -248,7 +257,7 @@ Base.extends("GameController", {
         }
         return areastars;
     },
-    getKingwarPlayers:function() {
+    saveKingwar:function() {
         var kingwarPlayers = {};
         for (var kingwarKey in this.kingwarRefs) {
             var data = this.kingwarRefs[kingwarKey];
@@ -264,7 +273,7 @@ Base.extends("GameController", {
         }
         return kingwarPlayers;
     },
-    setKingwarPlayers:function(kingwarPlayers) {
+    restoreKingwar:function(kingwarPlayers) {
         for (var kingwarKey in kingwarPlayers) {
             var players = kingwarPlayers[kingwarKey];
             for (var i = 0; i < players.length; ++i) {
@@ -473,7 +482,7 @@ Base.extends("GameController", {
             if (brief.possible.length > 0) {
                 var validBrief = brief;
                 var isValid = true;
-                while(isValid) {
+                while(validBrief && isValid) {
                     isValid = false;
                     for (var j = 0; j < validBrief.possible.length; ++j) {
                         var taskItem = validBrief.possible[j];
