@@ -408,6 +408,7 @@ var displayAutomationModel = {
             {name: "vip", desc: "三卡", type: "check"},
             {name: "friend", desc: "好友送钻石", type: "check"},
             {name: "email", desc: "邮件", type: "check"},
+            {name: "tavern", desc: "契约之门", type: "check"},
             {name: "redpacket", desc: "红包", type: "check"},
         ]},
         {name: "autoForward", desc: "战斗，下一关", props: []},

@@ -203,19 +203,20 @@ Base.extends("GameConnection", {
             }
             this.gameInfo = {
                 playerId : data.uid,
-                name : data.role_name,
-                level : data.level,
-                gold : data.coin, // golden coin
-                colorDiamond : data.gold, // color diamond
-                whiteDiamond : data.ticket, // white diamond
-                power: data.cpi,
-                leagueMedal: data.league_medal,
-                crystal: data.crystal, // Kingwar crystal
-                arenaPoint: (data.arena_point ? data.arena_point : 0),
-                arenaGlory: (data.arena_glory ? data.arena_glory : 0),
-                unionWarDouble: (data.union_war_double ? data.union_war_double : 0),
-                vip: data.vip,
-                friendWarVal: data.friendship,
+                name : data.role_name, // 名字
+                level : data.level, // 等级
+                gold : data.coin, // 金币
+                colorDiamond : data.gold, // 彩钻
+                whiteDiamond : data.ticket, // 白钻
+                power: data.cpi, // 战力
+                leagueMedal: data.league_medal, // 国家勋章
+                crystal: data.crystal, // 帝国战水晶
+                arenaPoint: (data.arena_point ? data.arena_point : 0), // 竞技场积分
+                arenaGlory: (data.arena_glory ? data.arena_glory : 0), // 竞技场荣誉值
+                unionWarDouble: (data.union_war_double ? data.union_war_double : 0), // 领地锄头
+                vip: data.vip, // vip 等级
+                friendWarVal: data.friendship, //友谊值
+                redSoul: data.summon_soul, // 红魂
 
                 hasRedPacket: !!(data.act_redpacket && data.act_redpacket > 0),
             };
@@ -769,6 +770,29 @@ Base.extends("GameConnection", {
                     }
                 }
             }
+            if (config.tavern && this.validator.checkHourly("autoTavern")) {
+                var data = yield this.sendMsg("Tavern", "getinfo", null, next);
+                if (data) {
+                    if (data.freenum_1 == 1) {
+                        var data_start = yield this.sendMsg("Tavern", "start", {type:1,batch:0}, next);
+                    }
+                    if (data.freenum_2 == 1) {
+                        var data_start = yield this.sendMsg("Tavern", "start", {type:2,batch:0}, next);
+                    }
+                    if (data.daily == 1) {
+                        var data_gift = yield this.sendMsg("Tavern", "gift", {type:"daily"}, next);
+                    }
+                    if (data.weekend == 1) {
+                        var data_gift = yield this.sendMsg("Tavern", "gift", {type:"weekend"}, next);
+                    }
+                    if (data.charge == 1) {
+                        var data_gift = yield this.sendMsg("Tavern", "gift", {type:"charge"}, next);
+                    }
+                    if (data.all == 1) {
+                        var data_gift = yield this.sendMsg("Tavern", "gift", {type:"all"}, next);
+                    }
+                }
+            }
             // auto Red Packet
             if (config.redpacket && this.gameInfo.hasRedPacket && this.validator.checkDaily("autoRedPacket")) {
                 var data = yield this.sendMsg("ActRedpacket", "getInfo", null, next);
@@ -1269,7 +1293,7 @@ Base.extends("GameConnection", {
     autoReward:function(config, done) {
         var next = coroutine(function*() {
             if (this.validator.checkDaily("autoReward")) {
-                // auto collect card
+                // 特点头像
                 var data = yield this.sendMsg("ActCollectCard", "getinfo", null, next);
                 if (data && data.list) {
                     var collectable = [];
@@ -1295,10 +1319,10 @@ Base.extends("GameConnection", {
                         }
                     }
                 }
-                // auto kingwar
+                // 帝国战
                 var data = yield this.sendMsg("KingWar", "gift", null, next);
                 if (data && data.daily) {
-                    // auto daily
+                    // 每日奖励
                     if (data.done == 0) {
                         var data_daily = yield this.sendMsg("KingWar", "dailyGift", null, next);
                     }
@@ -1308,7 +1332,7 @@ Base.extends("GameConnection", {
                             var data_luckCard = yield this.sendMsg("KingWar", "luckCardGift", {id: card.id}, next);
                         }
                     }
-                    // auto rank reward
+                    // 排名奖励
                     for (var i = 1; i <= 3; ++i) {
                         var data_rank = yield this.sendMsg("KingWar", "areaRank", {areaid:i}, next);
                         if (data_rank && data_rank.state == 1) {
@@ -1322,7 +1346,7 @@ Base.extends("GameConnection", {
                 }
             }
             if (this.validator.checkHourly("autoReward")) {
-                // auto neko
+                // 招财猫
                 var data = yield this.sendMsg("ActNeko", "getinfo", null, next);
                 if (data && typeof(data.num) == "number") {
                     var nekoNum = (config.nekoMax > 10 ? 10 : config.nekoMax);
@@ -1330,7 +1354,7 @@ Base.extends("GameConnection", {
                         var data_neko = yield this.sendMsg("ActNeko", "knock", null, next);
                     }
                 }
-                // auto active
+                // 活跃日历
                 var data = yield this.sendMsg("ActActive", "getinfo", null, next);
                 if (data && data.list) {
                     for (var i = 0; i < data.list.length; ++i) {
@@ -1357,7 +1381,7 @@ Base.extends("GameConnection", {
                         var data_box = yield this.sendMsg("ActActive", "box", {id:boxid}, next);
                     }
                 }
-                // auto quest
+                // 任务
                 var hasQuest = true;
                 while(hasQuest) {
                     hasQuest = false;
@@ -1372,7 +1396,7 @@ Base.extends("GameConnection", {
                         }
                     }
                 }
-                // auto splendid
+                // 福利活动
                 var data = yield this.sendMsg("ActSplendid", "getinfo", null, next);
                 if (data && data.list) {
                     for (var i = 0; i < data.list.length; ++i) {
@@ -1385,7 +1409,7 @@ Base.extends("GameConnection", {
                         }
                     }
                 }
-                // auto meal
+                // 勇者餐馆
                 var data = yield this.sendMsg("ActMeal", "getinfo", null, next);
                 if (data && data.list) {
                     var rewards = {};
@@ -1426,6 +1450,12 @@ Base.extends("GameConnection", {
             });
         }, this);
     },
+    autoConsume:function(config, done) {
+        var next = coroutine(function*() {
+            if (config.tavern) {
+            }
+        }, this);
+    },
     testProtocol:function(done) {
         var next = coroutine(function*() {
             console.log(new Date().getTime() / 1000);
@@ -1455,6 +1485,7 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("ActGoblin", "refresh", null, next);
             //var data = yield this.sendMsg("League", "getWarInfo", null, next); // 国战信息
             //var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next); //皇帝战
+            //var data = yield this.sendMsg("Tavern", "getlog", {ids:"50016,60018,70041"}, next); // 可兑换勇者的状态
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
