@@ -403,7 +403,13 @@ var displayAutomationModel = {
     servers: ["s96", "s95", "s94", "s93", ],
     levels: ["账号"],
     configProps: [
-        {name: "autoBenefit", desc: "有益无害(打卡，三卡，好友，邮件...)", props: []},
+        {name: "autoBenefit", desc: "有益无害", props: [
+            {name: "sign", desc: "打卡", type: "check"},
+            {name: "vip", desc: "三卡", type: "check"},
+            {name: "friend", desc: "好友送钻石", type: "check"},
+            {name: "email", desc: "邮件", type: "check"},
+            {name: "redpacket", desc: "红包", type: "check"},
+        ]},
         {name: "autoForward", desc: "战斗，下一关", props: []},
         {name: "autoMaze", desc: "迷宫", props: [
             {name: "searchNumber", desc: "每个迷宫的寻宝次数", type: "number", limit: [0, 13]},

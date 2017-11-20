@@ -1,6 +1,6 @@
 {
     "automation":{
-        "autoBenefit":{}
+        "autoBenefit":{"sign":true,"vip":true,"friend":true,"email":true,"redpacket":true}
         ,"autoForward":{}
         ,"autoMaze":{"searchNumber":3}
         ,"autoFriendWar":{"baseInspire":3,"advanceInspire":3,"buyBlueCard":true}

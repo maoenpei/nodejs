@@ -711,7 +711,7 @@ Base.extends("GameConnection", {
     autoBenefit:function(config, done) {
         var next = coroutine(function*() {
             // auto sign
-            if (this.validator.checkDaily("autoSign")) {
+            if (config.sign && this.validator.checkDaily("autoSign")) {
                 var data = yield this.sendMsg("Sign", "getinfo", null, next);
                 if (data && data.list) {
                     var signed = !!(data.list[String(data.count)]);
@@ -721,7 +721,7 @@ Base.extends("GameConnection", {
                 }
             }
             // auto vip
-            if (this.validator.checkDaily("autoVipReward")) {
+            if (config.vip && this.validator.checkDaily("autoVipReward")) {
                 var data = yield this.sendMsg("Vip", "getinfo", null, next);
                 if (data && data.cards) {
                     for (var i = 0; i < data.cards.length; ++i) {
@@ -733,7 +733,7 @@ Base.extends("GameConnection", {
                 }
             }
             // auto friend reward
-            if (this.validator.checkHourly("autoFriendReward")) {
+            if (config.friend && this.validator.checkHourly("autoFriendReward")) {
                 var data = yield this.sendMsg("Friend", "getinfo", null, next);
                 if (data && data.friend) {
                     var friends = {};
@@ -755,7 +755,7 @@ Base.extends("GameConnection", {
                 }
             }
             // auto email
-            if (this.validator.checkHourly("autoEmail")) {
+            if (config.email && this.validator.checkHourly("autoEmail")) {
                 var data = yield this.sendMsg("RoleEmail", "getlist", null, next);
                 if (data && data.list) {
                     for (var i = 0; i < data.list.length; ++i) {
@@ -765,6 +765,18 @@ Base.extends("GameConnection", {
                         }
                         if (email.attachment && email.state != 2) {
                             var data_fetch = yield this.sendMsg("RoleEmail", "fetch", {id: email.id}, next);
+                        }
+                    }
+                }
+            }
+            // auto Red Packet
+            if (config.redpacket && this.gameInfo.hasRedPacket && this.validator.checkDaily("autoRedPacket")) {
+                var data = yield this.sendMsg("ActRedpacket", "getInfo", null, next);
+                if (data && data.list) {
+                    for (var i = 0; i < data.list.length; ++i) {
+                        var item = data.list[i];
+                        if (item.req == "" && item.done == 0) {
+                            var data_reward = yield this.sendMsg("ActRedpacket", "reward", { index:item.index }, next);
                         }
                     }
                 }
@@ -1443,8 +1455,6 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("ActGoblin", "refresh", null, next);
             //var data = yield this.sendMsg("League", "getWarInfo", null, next); // 国战信息
             //var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next); //皇帝战
-
-            
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
