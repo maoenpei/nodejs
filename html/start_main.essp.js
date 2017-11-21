@@ -779,6 +779,8 @@ function displayAutomation() {
             }
         }
         function displayPlayers() {
+            displayAutomationModel.toAccount();
+
             var servers = displayAutomationModel.getValidServers(lastAccount);
             var addOption = (servers.length == 0 ? null : {name: "添加角色", func:function() {
                 divPlayerServers.html(autoPlayerServersTemplate({servers:servers}));
@@ -816,8 +818,9 @@ function displayAutomation() {
             settings: { name: "设置", func: displaySetting, },
         };
         function displayCatalog() {
-            displayCommands();
+            displayAutomationModel.toPlayer();
 
+            displayCommands();
             divAutomationContent.html("");
 
             displayAutomationModel.backupPlayer(lastPlayer);
@@ -832,7 +835,7 @@ function displayAutomation() {
             divAutoConfigsBlock.appendTo(divAutomationContent);
 
             divAutoConfigsBlock.find(".clickable").click(function() {
-                displayAutomationModel.toCatalog((catalog ? detailTypes.configs.name : null));
+                displayAutomationModel.toCatalog(detailTypes.configs.name);
                 lastCatalog = "configs";
                 displayDetail();
             });
@@ -854,7 +857,7 @@ function displayAutomation() {
             divAutoSettingsBlock.appendTo(divAutomationContent);
 
             divAutoSettingsBlock.find(".clickable").click(function() {
-                displayAutomationModel.toCatalog((catalog ? detailTypes.settings.name : null));
+                displayAutomationModel.toCatalog(detailTypes.settings.name);
                 lastCatalog = "settings";
                 displayDetail();
             });
@@ -977,6 +980,7 @@ function displayAutomation() {
             }
         }
         function displayDetail() {
+            displayAutomationModel.toCatalog();
             detailTypes[lastCatalog].func();
         }
         displayAccounts();
