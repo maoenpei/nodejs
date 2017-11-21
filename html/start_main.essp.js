@@ -797,7 +797,7 @@ function displayAutomation() {
                     divAutoPlayerBlock.appendTo(divAutomationContent);
 
                     divAutoPlayerBlock.find(".div_auto_item_delete").click(function() {
-                        if (confirm("确认删除'" + player.server + "'的角色？")) {
+                        if (confirm("确认删除'" + player.server + "'的角色" + (player.name ? "'" + player.name + "'" : "") + "？")) {
                             displayAutomationModel.delPlayer(lastAccount, player, function() {
                                 displayPlayers();
                             });
