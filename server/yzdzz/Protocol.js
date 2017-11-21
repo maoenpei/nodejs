@@ -81,7 +81,7 @@ GameSock.receive = function(sock, callback) {
                 if (!obj.data) {
                     console.log(">> - Protocol error on c({0}) m({1}):".format(obj.c, obj.m), obj.error);
                 }
-                safe(callback)(obj.c, obj.m, obj.data);
+                safe(callback)(obj.c, obj.m, obj.data, obj.change);
             });
         }
     });

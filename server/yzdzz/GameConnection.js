@@ -182,7 +182,11 @@ Base.extends("GameConnection", {
             console.log("Connected with ip:{0}, port:{1}, server:{2}".format(server.ip, server.port, server.desc));
             this.sock = sock;
             this.serverInfo = server;
-            GameSock.receive(sock, (c, m, data) => {
+            GameSock.receive(sock, (c, m, data, change) => {
+                if (change) {
+                    console.log("change happen -", c, m, change);
+                    this.updateGameInfo(change);
+                }
                 this.onReceive(c, m, data);
             });
 
@@ -201,25 +205,27 @@ Base.extends("GameConnection", {
                 this.quit();
                 return safe(done)({});
             }
+            this.gameInfoNumberProps = {
+                level: "level", // 等级
+                coin: "gold", // 金币
+                gold: "colorDiamond", // 彩钻
+                ticket: "whiteDiamond", // 白钻
+                cpi: "power", // 战力
+                league_medal: "leagueMedal", // 国家勋章
+                crystal: "crystal", // 帝国战水晶
+                arena_point: "arenaPoint", // 竞技场积分
+                arena_glory: "arenaGlory", // 竞技场荣誉值
+                union_war_double: "unionWarDouble", // 领地锄头
+                vip: "vip", // vip 等级
+                friendship: "friendWarVal", //友谊值
+                summon_soul: "redSoul", // 红魂
+            };
             this.gameInfo = {
                 playerId : data.uid,
                 name : data.role_name, // 名字
-                level : data.level, // 等级
-                gold : data.coin, // 金币
-                colorDiamond : data.gold, // 彩钻
-                whiteDiamond : data.ticket, // 白钻
-                power: data.cpi, // 战力
-                leagueMedal: data.league_medal, // 国家勋章
-                crystal: data.crystal, // 帝国战水晶
-                arenaPoint: (data.arena_point ? data.arena_point : 0), // 竞技场积分
-                arenaGlory: (data.arena_glory ? data.arena_glory : 0), // 竞技场荣誉值
-                unionWarDouble: (data.union_war_double ? data.union_war_double : 0), // 领地锄头
-                vip: data.vip, // vip 等级
-                friendWarVal: data.friendship, //友谊值
-                redSoul: data.summon_soul, // 红魂
-
                 hasRedPacket: !!(data.act_redpacket && data.act_redpacket > 0),
             };
+            this.updateGameInfo(data, true);
             var result = yield GameHTTP.stat(this.gameInfo.playerId, "reg", next);
             if (result != 'done') {
                 console.log("stat failed playerId:{0} error:{1}".format(this.gameInfo.playerId, JSON.stringify(result)));
@@ -238,6 +244,23 @@ Base.extends("GameConnection", {
                 success:true,
             });
         }, this);
+    },
+    updateGameInfo:function(data, force) {
+        if (!this.gameInfo || !this.gameInfoNumberProps) {
+            return;
+        }
+        var keyContainer = (force ? this.gameInfoNumberProps : data);
+        for (var dataKey in keyContainer) {
+            var key = this.gameInfoNumberProps[dataKey];
+            var dataVal = data[dataKey];
+            if (key) {
+                if (typeof(dataVal) == "number") {
+                    this.gameInfo[key] = dataVal;
+                } else if (force) {
+                    this.gameInfo[key] = 0;
+                }
+            }
+        }
     },
     getRole:function(done) {
         var next = coroutine(function*() {
@@ -914,6 +937,10 @@ Base.extends("GameConnection", {
                 for (var i = 1; i <= 3; ++i) {
                     if (data.reward[i] != 1 && winNumber >= neededWin[i-1]) {
                         var data_reward = yield this.sendMsg("FriendWar", "reward", {id:i}, next);
+                        if (!data_reward) {
+                            console.log("FriendWar reward failed", i);
+                            break;
+                        }
                     }
                 }
                 if (config.buyBlueCard && this.gameInfo.friendWarVal > 100) {
