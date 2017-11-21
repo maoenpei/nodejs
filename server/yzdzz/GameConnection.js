@@ -223,7 +223,9 @@ Base.extends("GameConnection", {
             this.gameInfo = {
                 playerId : data.uid,
                 name : data.role_name, // 名字
-                hasRedPacket: !!(data.act_redpacket && data.act_redpacket > 0),
+
+                hasXReward: !!(data.act_goldsign),
+                hasRedPacket: !!(data.act_redpacket),
             };
             this.updateGameInfo(data, true);
             var result = yield GameHTTP.stat(this.gameInfo.playerId, "reg", next);
@@ -818,7 +820,7 @@ Base.extends("GameConnection", {
             }
             // auto Red Packet
             if (config.redpacket && this.gameInfo.hasRedPacket && this.validator.checkDaily("autoRedPacket")) {
-                var data = yield this.sendMsg("ActRedpacket", "getInfo", null, next);
+                var data = yield this.sendMsg("ActRedpacket", "getinfo", null, next);
                 if (data && data.list) {
                     for (var i = 0; i < data.list.length; ++i) {
                         var item = data.list[i];
@@ -1320,7 +1322,7 @@ Base.extends("GameConnection", {
     },
     autoReward:function(config, done) {
         var next = coroutine(function*() {
-            if (this.validator.checkDaily("autoReward")) {
+            if (config.specCard && this.validator.checkDaily("autoSpecCard")) {
                 // 特点头像
                 var data = yield this.sendMsg("ActCollectCard", "getinfo", null, next);
                 if (data && data.list) {
@@ -1347,10 +1349,11 @@ Base.extends("GameConnection", {
                         }
                     }
                 }
-                // 帝国战
+            }
+            if (config.kingwarDaily && this.validator.checkHourly("autoKingwarDaily")) {
+                // 帝国战每日奖励
                 var data = yield this.sendMsg("KingWar", "gift", null, next);
                 if (data && data.daily) {
-                    // 每日奖励
                     if (data.done == 0) {
                         var data_daily = yield this.sendMsg("KingWar", "dailyGift", null, next);
                     }
@@ -1360,20 +1363,22 @@ Base.extends("GameConnection", {
                             var data_luckCard = yield this.sendMsg("KingWar", "luckCardGift", {id: card.id}, next);
                         }
                     }
-                    // 排名奖励
-                    for (var i = 1; i <= 3; ++i) {
-                        var data_rank = yield this.sendMsg("KingWar", "areaRank", {areaid:i}, next);
-                        if (data_rank && data_rank.state == 1) {
-                            var data_fetch = yield this.sendMsg("KingWar", "fetchAreaRes", {areaid:i}, next);
-                        }
-                    }
-                    var data_emperor = yield this.sendMsg("KingWar", "emperorRank", null, next);
-                    if (data_emperor && data_emperor.state == 1) {
-                        var data_fetch = yield this.sendMsg("KingWar", "fetchEmperorRes", null, next);
-                    }
                 }
             }
-            if (this.validator.checkHourly("autoReward")) {
+            if (config.kingwarRank && this.validator.checkHourly("autoKingwarRank")) {
+                // 帝国战排名奖励
+                for (var i = 1; i <= 3; ++i) {
+                    var data_rank = yield this.sendMsg("KingWar", "areaRank", {areaid:i}, next);
+                    if (data_rank && data_rank.state == 1) {
+                        var data_fetch = yield this.sendMsg("KingWar", "fetchAreaRes", {areaid:i}, next);
+                    }
+                }
+                var data_emperor = yield this.sendMsg("KingWar", "emperorRank", null, next);
+                if (data_emperor && data_emperor.state == 1) {
+                    var data_fetch = yield this.sendMsg("KingWar", "fetchEmperorRes", null, next);
+                }
+            }
+            if (config.nekoMax > 0 && this.validator.checkHourly("autoNeko")) {
                 // 招财猫
                 var data = yield this.sendMsg("ActNeko", "getinfo", null, next);
                 if (data && typeof(data.num) == "number") {
@@ -1382,6 +1387,8 @@ Base.extends("GameConnection", {
                         var data_neko = yield this.sendMsg("ActNeko", "knock", null, next);
                     }
                 }
+            }
+            if (config.actDaily && this.validator.checkHourly("autoActDaily")) {
                 // 活跃日历
                 var data = yield this.sendMsg("ActActive", "getinfo", null, next);
                 if (data && data.list) {
@@ -1409,6 +1416,8 @@ Base.extends("GameConnection", {
                         var data_box = yield this.sendMsg("ActActive", "box", {id:boxid}, next);
                     }
                 }
+            }
+            if (config.quest && this.validator.checkHourly("autoQuest")) {
                 // 任务
                 var hasQuest = true;
                 while(hasQuest) {
@@ -1424,6 +1433,8 @@ Base.extends("GameConnection", {
                         }
                     }
                 }
+            }
+            if (config.splendid && this.validator.checkHourly("autoSplendid")) {
                 // 福利活动
                 var data = yield this.sendMsg("ActSplendid", "getinfo", null, next);
                 if (data && data.list) {
@@ -1437,6 +1448,8 @@ Base.extends("GameConnection", {
                         }
                     }
                 }
+            }
+            if (config.meal && this.validator.checkHourly("autoMeal")) {
                 // 勇者餐馆
                 var data = yield this.sendMsg("ActMeal", "getinfo", null, next);
                 if (data && data.list) {
@@ -1514,6 +1527,8 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("League", "getWarInfo", null, next); // 国战信息
             //var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next); //皇帝战
             //var data = yield this.sendMsg("Tavern", "getlog", {ids:"50016,60018,70041"}, next); // 可兑换勇者的状态
+
+            var data = yield this.sendMsg("ActGoldSign", "getinfo", null, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);

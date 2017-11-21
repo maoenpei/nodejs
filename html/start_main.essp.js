@@ -439,8 +439,15 @@ var displayAutomationModel = {
             {name: "fightPlayer", desc: "是否攻击战力低的玩家", type: "check"},
             {name: "fightMax", desc: "攻击次数", type: "number", limit: [0, 20]},
         ]},
-        {name: "autoReward", desc: "领取(日历，任务，招财猫，活动...)", props: [
+        {name: "autoReward", desc: "领取", props: [
+            {name: "specCard", desc: "特点头像", type: "check"},
+            {name: "kingwarDaily", desc: "帝国战每日奖励", type: "check"},
+            {name: "kingwarRank", desc: "帝国战排名", type: "check"},
             {name: "nekoMax", desc: "招财猫次数", type: "number", limit: [0, 10]},
+            {name: "actDaily", desc: "活跃日历", type: "check"},
+            {name: "quest", desc: "任务", type: "check"},
+            {name: "splendid", desc: "福利活动", type: "check"},
+            {name: "meal", desc: "勇者餐馆", type: "check"},
         ]},
     ],
 };
