@@ -439,6 +439,10 @@ var displayAutomationModel = {
             {name: "fightPlayer", desc: "是否攻击战力低的玩家", type: "check"},
             {name: "fightMax", desc: "攻击次数", type: "number", limit: [0, 20]},
         ]},
+        {name: "autoXReward", desc: "暗金活动", props:[
+            {name: "xwish", desc: "许愿次数", type: "number", limit: [0, 10]},
+            {name: "xcoin", desc: "白钻购买按金币个数", type: "number", limit: [0, 5]},
+        ]},
         {name: "autoReward", desc: "领取", props: [
             {name: "specCard", desc: "特点头像", type: "check"},
             {name: "kingwarDaily", desc: "帝国战每日奖励", type: "check"},
@@ -448,8 +452,6 @@ var displayAutomationModel = {
             {name: "quest", desc: "任务", type: "check"},
             {name: "splendid", desc: "福利活动", type: "check"},
             {name: "meal", desc: "勇者餐馆", type: "check"},
-            {name: "xreward", desc: "暗金活动", type: "check"},
-            {name: "xwish", desc: "许愿次数", type: "number", limit: [0, 10]},
         ]},
     ],
 };

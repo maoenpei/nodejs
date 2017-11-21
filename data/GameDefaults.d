@@ -8,6 +8,7 @@
         ,"autoLeague":{"prayNumber":10,"donateMax":10,"autoWar":false,"warPay":0}
         ,"autoUnion":{"donateMax":10}
         ,"autoArena":{"boxMax":6,"buyHeroSoul":true,"fightPlayer":true,"fightMax":10}
+        ,"autoXReward":{"xwish":1,"xcoin":5}
         ,"autoReward":{
             "specCard":true
             ,"kingwarDaily":true
@@ -17,8 +18,6 @@
             ,"quest":true
             ,"splendid":true
             ,"meal":true
-            ,"xreward":true
-            ,"xwish":1
         }
     }
     ,"periodic":{

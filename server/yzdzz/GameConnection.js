@@ -1320,6 +1320,66 @@ Base.extends("GameConnection", {
             });
         }, this);
     },
+    autoXReward:function(config, done) {
+        var next = coroutine(function*() {
+            if (this.gameInfo.hasXReward && this.validator.checkHourly("autoXReward")) {
+                // 暗金活动
+                var data = yield this.sendMsg("ActGoldSign", "getinfo", null, next);
+                if (data && data.active) {
+                    for (var i = 0; i < data.sign.length; ++i) {
+                        var signItem = data.sign[i];
+                        if (signItem.state == 1 || signItem.state == 2) {
+                            var data_sign = yield this.sendMsg("ActGoldSign", "sign", {day:signItem.day}, next);
+                            if (!data_sign) {
+                                console.log("ActGoldSign sign failed", i);
+                            }
+                        }
+                    }
+                    for (var i = 0; i < data.active.length; ++i) {
+                        var actItem = data.active[i];
+                        if (actItem.state == 1) {
+                            var data_gift = yield this.sendMsg("ActGoldSign", "gift", {int:actItem.id}, next);
+                            if (!data_gift) {
+                                console.log("ActGoldSign gift failed", i);
+                            }
+                        }
+                    }
+                    var wish_num = (data.wish_num ? data.wish_num : 0);
+                    for (var i = wish_num; i < config.xwish; ++i) {
+                        var data_wish = yield this.sendMsg("ActGoldSign", "wish", null, next);
+                        if (!data_wish) {
+                            console.log("ActGoldSign wish failed", i);
+                            break;
+                        }
+                    }
+                }
+            }
+            if (config.xcoin > 0 && this.validator.checkHourly("consumeXCoin")) {
+                var data = yield this.sendMsg("ActGoldSign", "shop", null, next);
+                if (data && data.list) {
+                    for (var i = 0; i < data.list.length; ++i) {
+                        var item = data.list[i];
+                        if (item.res.indexOf("x_coin") >= 0) {
+                            var buy_max = (config.xcoin > item.max ? item.max : config.xcoin);
+                            for (var j = item.num; j < buy_max; ++j) {
+                                var data_exchange = yield this.sendMsg("ActGoldSign", "exchange", {id:item.id}, next);
+                                if (!data_exchange) {
+                                    console.log("ActGoldSign", "exchange", "failed", j);
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            if (config.tavern) {
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
     autoReward:function(config, done) {
         var next = coroutine(function*() {
             if (config.specCard && this.validator.checkDaily("autoSpecCard")) {
@@ -1486,47 +1546,9 @@ Base.extends("GameConnection", {
                     }
                 }
             }
-            if (config.xreward && this.gameInfo.hasXReward && this.validator.checkHourly("autoXReward")) {
-                // 暗金活动
-                var data = yield this.sendMsg("ActGoldSign", "getinfo", null, next);
-                if (data && data.active) {
-                    for (var i = 0; i < data.sign.length; ++i) {
-                        var signItem = data.sign[i];
-                        if (signItem.state == 1) {
-                            var data_sign = yield this.sendMsg("ActGoldSign", "sign", {day:signItem.day}, next);
-                            if (!data_sign) {
-                                console.log("ActGoldSign sign failed", i);
-                            }
-                        }
-                    }
-                    for (var i = 0; i < data.active.length; ++i) {
-                        var actItem = data.active[i];
-                        if (actItem.state == 1) {
-                            var data_gift = yield this.sendMsg("ActGoldSign", "gift", {int:actItem.id}, next);
-                            if (!data_gift) {
-                                console.log("ActGoldSign gift failed", i);
-                            }
-                        }
-                    }
-                    var wish_num = (data.wish_num ? data.wish_num : 0);
-                    for (var i = wish_num; i < config.xwish; ++i) {
-                        var data_wish = yield this.sendMsg("ActGoldSign", "wish", null, next);
-                        if (!data_wish) {
-                            console.log("ActGoldSign wish failed", i);
-                            break;
-                        }
-                    }
-                }
-            }
             return safe(done)({
                 success: true,
             });
-        }, this);
-    },
-    autoConsume:function(config, done) {
-        var next = coroutine(function*() {
-            if (config.tavern) {
-            }
         }, this);
     },
     testProtocol:function(done) {
@@ -1559,9 +1581,6 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("League", "getWarInfo", null, next); // 国战信息
             //var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next); //皇帝战
             //var data = yield this.sendMsg("Tavern", "getlog", {ids:"50016,60018,70041"}, next); // 可兑换勇者的状态
-
-            var data = yield this.sendMsg("ActGoldSign", "getinfo", null, next);
-            //var data = yield this.sendMsg("ActGoldSign", "wish", null, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
