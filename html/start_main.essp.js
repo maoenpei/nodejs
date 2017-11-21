@@ -499,33 +499,6 @@ displayAutomationModel.getValidServers = function(account) {
     }
     return servers;
 }
-displayAutomationModel.getConfigProps = function() {
-    return this.configProps;
-}
-displayAutomationModel.getLevels = function() {
-    return this.levels;
-}
-displayAutomationModel.toRoot = function() {
-    this.levels.splice(1, this.levels.length - 1);
-}
-displayAutomationModel.toAccount = function(username) {
-    this.levels.splice(2, this.levels.length - 2);
-    if (username) {
-        this.levels[1] = username;
-    }
-}
-displayAutomationModel.toPlayer = function(server) {
-    this.levels.splice(3, this.levels.length - 3);
-    if (server) {
-        this.levels[2] = server;
-    }
-}
-displayAutomationModel.toCatalog = function(catalog) {
-    this.levels.splice(4, this.levels.length - 4);
-    if (catalog) {
-        this.levels[3] = catalog;
-    }
-}
 displayAutomationModel.getMaxPlayer = function(account) {
     var maxPlayer = null;
     var maxPower = 0;
@@ -537,6 +510,51 @@ displayAutomationModel.getMaxPlayer = function(account) {
         }
     }
     return maxPlayer;
+}
+displayAutomationModel.getConfigProps = function() {
+    return this.configProps;
+}
+displayAutomationModel.getLevels = function() {
+    return this.levels;
+}
+displayAutomationModel.getLastAccount = function() {
+    return this.lastAccount;
+}
+displayAutomationModel.getLastPlayer = function() {
+    return this.lastPlayer;
+}
+displayAutomationModel.getLastCatalog = function() {
+    return this.lastCatalog;
+}
+displayAutomationModel.toRoot = function() {
+    this.levels.splice(1, this.levels.length - 1);
+    this.lastAccount = null;
+    this.lastPlayer = null;
+    this.lastCatalog = null;
+}
+displayAutomationModel.toAccount = function(account) {
+    this.levels.splice(2, this.levels.length - 2);
+    if (account) {
+        this.levels[1] = account.username;
+        this.lastAccount = account;
+    }
+    this.lastPlayer = null;
+    this.lastCatalog = null;
+}
+displayAutomationModel.toPlayer = function(player) {
+    this.levels.splice(3, this.levels.length - 3);
+    if (player) {
+        this.levels[2] = player.server;
+        this.lastPlayer = player;
+    }
+    this.lastCatalog = null;
+}
+displayAutomationModel.toCatalog = function(catalog) {
+    this.levels.splice(4, this.levels.length - 4);
+    if (catalog) {
+        this.levels[3] = catalog.name;
+        this.lastCatalog = catalog;
+    }
 }
 displayAutomationModel.addAccount = function(username, password, callback) {
     $this = this;
@@ -575,8 +593,12 @@ displayAutomationModel.delAccount = function(account, callback) {
         }
     });
 }
-displayAutomationModel.addPlayer = function(account, server, callback) {
+displayAutomationModel.addPlayer = function(server, callback) {
     $this = this;
+    var account = this.lastAccount;
+    if (!account) {
+        return;
+    }
     requestPost("addplayer", { key: account.key, server: server }, function(json) {
         if (json.success) {
             account.players.push({
@@ -588,8 +610,12 @@ displayAutomationModel.addPlayer = function(account, server, callback) {
         }
     });
 }
-displayAutomationModel.delPlayer = function(account, player, callback) {
+displayAutomationModel.delPlayer = function(player, callback) {
     $this = this;
+    var account = this.lastAccount;
+    if (!account) {
+        return;
+    }
     requestPost("delplayer", { key: player.key }, function(json) {
         if (json.success) {
             var players = account.players;
@@ -645,10 +671,6 @@ function displayAutomation() {
     displayAutomationModel.get(function(data) {
         divContentPanel.html($(".hd_automation_all").html());
 
-        var lastAccount = null;
-        var lastPlayer = null;
-        var lastCatalog = null;
-
         // add accounts
         var divAccountAddMask = divContentPanel.find(".div_automation_account_add_mask");
         var inputAccountUsername = divAccountAddMask.find(".input_automation_username");
@@ -691,7 +713,7 @@ function displayAutomation() {
             var selectPlayerServers = divPlayerAddMask.find(".select_player_servers");
             var server = selectPlayerServers.val();
             divPlayerAddMask.hide();
-            displayAutomationModel.addPlayer(lastAccount, server, function() {
+            displayAutomationModel.addPlayer(server, function() {
                 displayPlayers();
             });
         });
@@ -756,10 +778,8 @@ function displayAutomation() {
 
                     if (maxPlayer) {
                         divAutoAccountBlock.find(".div_auto_item_right").click(function() {
-                            displayAutomationModel.toAccount(account.username);
-                            lastAccount = account;
-                            displayAutomationModel.toPlayer(maxPlayer.server);
-                            lastPlayer = maxPlayer;
+                            displayAutomationModel.toAccount(account);
+                            displayAutomationModel.toPlayer(maxPlayer);
                             displayCatalog();
                         });
                     }
@@ -771,8 +791,7 @@ function displayAutomation() {
                         }
                     });
                     divAutoAccountBlock.find(".clickable").click(function() {
-                        displayAutomationModel.toAccount(account.username);
-                        lastAccount = account;
+                        displayAutomationModel.toAccount(account);
                         displayPlayers();
                     });
                 })();
@@ -781,6 +800,7 @@ function displayAutomation() {
         function displayPlayers() {
             displayAutomationModel.toAccount();
 
+            var lastAccount = displayAutomationModel.getLastAccount();
             var servers = displayAutomationModel.getValidServers(lastAccount);
             var addOption = (servers.length == 0 ? null : {name: "添加角色", func:function() {
                 divPlayerServers.html(autoPlayerServersTemplate({servers:servers}));
@@ -800,29 +820,25 @@ function displayAutomation() {
 
                     divAutoPlayerBlock.find(".div_auto_item_delete").click(function() {
                         if (confirm("确认删除'" + player.server + "'的角色" + (player.name ? "'" + player.name + "'" : "") + "？")) {
-                            displayAutomationModel.delPlayer(lastAccount, player, function() {
+                            displayAutomationModel.delPlayer(player, function() {
                                 displayPlayers();
                             });
                         }
                     });
                     divAutoPlayerBlock.find(".clickable").click(function() {
-                        displayAutomationModel.toPlayer(player.server);
-                        lastPlayer = player;
+                        displayAutomationModel.toPlayer(player);
                         displayCatalog();
                     });
                 })();
             }
         }
-        var detailTypes = {
-            configs: { name: "日常", func: displayConfig, },
-            settings: { name: "设置", func: displaySetting, },
-        };
         function displayCatalog() {
             displayAutomationModel.toPlayer();
 
             displayCommands();
             divAutomationContent.html("");
 
+            var lastPlayer = displayAutomationModel.getLastPlayer();
             displayAutomationModel.backupPlayer(lastPlayer);
 
             // configs
@@ -835,8 +851,7 @@ function displayAutomation() {
             divAutoConfigsBlock.appendTo(divAutomationContent);
 
             divAutoConfigsBlock.find(".clickable").click(function() {
-                displayAutomationModel.toCatalog(detailTypes.configs.name);
-                lastCatalog = "configs";
+                displayAutomationModel.toCatalog({ name: "日常", func: displayConfig, });
                 displayDetail();
             });
             divAutoConfigsBlock.find(".div_auto_item_right").click(function() {
@@ -857,14 +872,14 @@ function displayAutomation() {
             divAutoSettingsBlock.appendTo(divAutomationContent);
 
             divAutoSettingsBlock.find(".clickable").click(function() {
-                displayAutomationModel.toCatalog(detailTypes.settings.name);
-                lastCatalog = "settings";
+                displayAutomationModel.toCatalog({ name: "设置", func: displaySetting, });
                 displayDetail();
             });
         }
         function displaySetting() {
             displayCommands();
 
+            var lastPlayer = displayAutomationModel.getLastPlayer();
             divAutomationContent.html("");
             var templateData = {
                 players: displayAutomationModel.getPlayerSelections(),
@@ -909,6 +924,8 @@ function displayAutomation() {
         }
         function displayConfig() {
             displayCommands();
+
+            var lastPlayer = displayAutomationModel.getLastPlayer();
             var configChanged = function() {
                 displayAutomationModel.saveConfig(lastPlayer, function(success) {
                     displayConfig();
@@ -981,7 +998,7 @@ function displayAutomation() {
         }
         function displayDetail() {
             displayAutomationModel.toCatalog();
-            detailTypes[lastCatalog].func();
+            displayAutomationModel.getLastCatalog().func();
         }
         displayAccounts();
     });
