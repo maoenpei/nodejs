@@ -1486,6 +1486,38 @@ Base.extends("GameConnection", {
                     }
                 }
             }
+            if (config.xreward && this.gameInfo.hasXReward && this.validator.checkHourly("autoXReward")) {
+                // 暗金活动
+                var data = yield this.sendMsg("ActGoldSign", "getinfo", null, next);
+                if (data && data.active) {
+                    for (var i = 0; i < data.sign.length; ++i) {
+                        var signItem = data.sign[i];
+                        if (signItem.state == 1) {
+                            var data_sign = yield this.sendMsg("ActGoldSign", "sign", {day:signItem.day}, next);
+                            if (!data_sign) {
+                                console.log("ActGoldSign sign failed", i);
+                            }
+                        }
+                    }
+                    for (var i = 0; i < data.active.length; ++i) {
+                        var actItem = data.active[i];
+                        if (actItem.state == 1) {
+                            var data_gift = yield this.sendMsg("ActGoldSign", "gift", {int:actItem.id}, next);
+                            if (!data_gift) {
+                                console.log("ActGoldSign gift failed", i);
+                            }
+                        }
+                    }
+                    var wish_num = (data.wish_num ? data.wish_num : 0);
+                    for (var i = wish_num; i < config.xwish; ++i) {
+                        var data_wish = yield this.sendMsg("ActGoldSign", "wish", null, next);
+                        if (!data_wish) {
+                            console.log("ActGoldSign wish failed", i);
+                            break;
+                        }
+                    }
+                }
+            }
             return safe(done)({
                 success: true,
             });
@@ -1529,6 +1561,7 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("Tavern", "getlog", {ids:"50016,60018,70041"}, next); // 可兑换勇者的状态
 
             var data = yield this.sendMsg("ActGoldSign", "getinfo", null, next);
+            //var data = yield this.sendMsg("ActGoldSign", "wish", null, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);

@@ -8,7 +8,18 @@
         ,"autoLeague":{"prayNumber":10,"donateMax":10,"autoWar":false,"warPay":0}
         ,"autoUnion":{"donateMax":10}
         ,"autoArena":{"boxMax":6,"buyHeroSoul":true,"fightPlayer":true,"fightMax":10}
-        ,"autoReward":{"specCard":true,"kingwarDaily":true,"kingwarRank":true,"nekoMax":4,"actDaily":true,"quest":true,"splendid":true,"meal":true}
+        ,"autoReward":{
+            "specCard":true
+            ,"kingwarDaily":true
+            ,"kingwarRank":true
+            ,"nekoMax":4
+            ,"actDaily":true
+            ,"quest":true
+            ,"splendid":true
+            ,"meal":true
+            ,"xreward":true
+            ,"xwish":1
+        }
     }
     ,"periodic":{
         "interval":360

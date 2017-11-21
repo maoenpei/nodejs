@@ -448,6 +448,8 @@ var displayAutomationModel = {
             {name: "quest", desc: "任务", type: "check"},
             {name: "splendid", desc: "福利活动", type: "check"},
             {name: "meal", desc: "勇者餐馆", type: "check"},
+            {name: "xreward", desc: "暗金活动", type: "check"},
+            {name: "xwish", desc: "许愿次数", type: "number", limit: [0, 10]},
         ]},
     ],
 };
