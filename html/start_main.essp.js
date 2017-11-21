@@ -544,7 +544,7 @@ displayAutomationModel.toAccount = function(account) {
 displayAutomationModel.toPlayer = function(player) {
     this.levels.splice(3, this.levels.length - 3);
     if (player) {
-        this.levels[2] = player.server;
+        this.levels[2] = (player.name ? player.name : player.server);
         this.lastPlayer = player;
     }
     this.lastCatalog = null;
@@ -772,7 +772,7 @@ function displayAutomation() {
                     var divAutoAccountBlock = $(autoItemTemplate({
                         name: account.username,
                         hasDel: true,
-                        rightText: (maxPlayer ? maxPlayer.server + "." + maxPlayer.name : null)
+                        rightText: (maxPlayer ? maxPlayer.name : null)
                     }));
                     divAutoAccountBlock.appendTo(divAutomationContent);
 
