@@ -9,9 +9,10 @@ GAME_ACCOUNTS_CONFIG = "GameAcounts.d";
 GAME_DEFAULTS_CONFIG = "GameDefaults.d";
 GAME_SETTING_CONFIG = "GameSetting.d";
 
-GAME_KINGWAR_CONFIG = "GameKingwar.d";
 GAME_POWER_MAX_CONFIG = "GamePowerMax.d";
 GAME_UNIONS_CONFIG = "GameUnions.d";
+GAME_KINGWAR_CONFIG = "GameKingwar.d";
+GAME_PLAYER_NAME_CONFIG = "GamePlayerNames.d";
 
 var AllFuncs = [
     {name:"refresh", authBase:2},
@@ -41,6 +42,7 @@ $HttpModel.addClass({
         this.playersMd5 = "";
         this.unionMd5 = "";
         this.kingwarMd5 = "";
+        this.playerNamesMd5 = "";
         this.onRefreshEnd = [];
         this.delayRefresh = "";
 
@@ -76,14 +78,29 @@ $HttpModel.addClass({
             }
             yield $StateManager.openState(GAME_SETTING_CONFIG, null, next);
             yield $StateManager.openState(GAME_DEFAULTS_CONFIG, null, next);
-            yield $StateManager.openState(GAME_KINGWAR_CONFIG, null, next);
             yield $StateManager.openState(GAME_POWER_MAX_CONFIG, null, next);
             yield $StateManager.openState(GAME_UNIONS_CONFIG, null, next);
+            yield $StateManager.openState(GAME_KINGWAR_CONFIG, null, next);
+            yield $StateManager.openState(GAME_PLAYER_NAME_CONFIG, null, next);
 
-            var allKingwars = $StateManager.getState(GAME_KINGWAR_CONFIG);
-            this.controller.restoreKingwar(allKingwars);
             var allPowerMax = $StateManager.getState(GAME_POWER_MAX_CONFIG);
+            this.playersMd5 = this.getTag(allPowerMax);
             this.controller.restorePlayers(allPowerMax);
+            var allUnions = $StateManager.getState(GAME_UNIONS_CONFIG);
+            this.unionMd5 = this.getTag(allUnions);
+            this.controller.restoreUnions(allUnions);
+            var allKingwars = $StateManager.getState(GAME_KINGWAR_CONFIG);
+            this.kingwarMd5 = this.getTag(allKingwars);
+            this.controller.restoreKingwar(allKingwars);
+            var allPlayerNames = $StateManager.getState(GAME_PLAYER_NAME_CONFIG);
+            this.playerNamesMd5 = this.getTag(allPlayerNames);
+            for (var playerKey in this.players) {
+                var playerData = this.players[playerKey];
+                var brief = allPlayerNames[playerKey];
+                if (brief) {
+                    this.controller.setPlayerBrief(playerData, brief);
+                }
+            }
 
             yield this.startRefreshSettings(next);
             safe(done)();
@@ -145,6 +162,7 @@ $HttpModel.addClass({
         }
         var refreshCallback = (done) => {
             var next = coroutine(function*() {
+                // Save all players
                 var players = this.controller.savePlayers();
                 var md5 = this.getTag(players);
                 if (this.playersMd5 != md5) {
@@ -161,7 +179,8 @@ $HttpModel.addClass({
                     }
                     yield $StateManager.commitState(GAME_POWER_MAX_CONFIG, next);
                 }
-                var unions = this.controller.getUnions();
+                // Save all unions
+                var unions = this.controller.saveUnions();
                 var md5 = this.getTag(unions);
                 if (this.unionMd5 != md5) {
                     this.unionMd5 = md5;
@@ -171,6 +190,7 @@ $HttpModel.addClass({
                     }
                     yield $StateManager.commitState(GAME_UNIONS_CONFIG, next);
                 }
+                // Save kingwars
                 var kingwarPlayers = this.controller.saveKingwar();
                 var md5 = this.getTag(kingwarPlayers);
                 if (this.kingwarMd5 != md5) {
@@ -180,6 +200,20 @@ $HttpModel.addClass({
                         allKingwars[kingwarKey] = kingwarPlayers[kingwarKey];
                     }
                     yield $StateManager.commitState(GAME_KINGWAR_CONFIG, next);
+                }
+                // Save player names for added accounts
+                var allPlayerNames = $StateManager.getState(GAME_PLAYER_NAME_CONFIG);
+                for (var playerKey in this.players) {
+                    var playerData = this.players[playerKey];
+                    var brief = this.controller.getPlayerBrief(playerData);
+                    if (brief) {
+                        allPlayerNames[playerKey] = brief;
+                    }
+                }
+                var md5 = this.getTag(allPlayerNames);
+                if (this.playerNamesMd5 != md5) {
+                    this.playerNamesMd5 = md5;
+                    yield $StateManager.commitState(GAME_PLAYER_NAME_CONFIG, next);
                 }
                 invokeNoConflictions();
                 safe(done)();
@@ -961,7 +995,10 @@ $HttpModel.addClass({
                     var playerData = this.players[playerKey];
                     for (var j = 0; j < accounts.length; ++j) {
                         if (playerData.accountKey == accounts[j].key) {
+                            var brief = this.controller.getPlayerBrief(playerData);
                             accounts[j].players.push({
+                                name: (brief ? brief.name : undefined),
+                                power: (brief ? brief.power : undefined),
                                 server: playerData.server,
                                 key: playerKey,
                                 configs: this.getSettingAutomation(playerKey),

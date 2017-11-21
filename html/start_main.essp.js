@@ -526,6 +526,18 @@ displayAutomationModel.toCatalog = function(catalog) {
         this.levels[3] = catalog;
     }
 }
+displayAutomationModel.getMaxPlayer = function(account) {
+    var maxPlayer = null;
+    var maxPower = 0;
+    for (var i = 0; i < account.players.length; ++i) {
+        var player = account.players[i];
+        if (player.name && player.power && player.power > maxPower) {
+            maxPower = player.power;
+            maxPlayer = player;
+        }
+    }
+    return maxPlayer;
+}
 displayAutomationModel.addAccount = function(username, password, callback) {
     $this = this;
     requestPost("addaccount", { un: username, pd: password }, function(json) {
@@ -734,12 +746,23 @@ function displayAutomation() {
             for (var i = 0; i < data.accounts.length; ++i) {
                 (function() {
                     var account = data.accounts[i];
+                    var maxPlayer = displayAutomationModel.getMaxPlayer(account);
                     var divAutoAccountBlock = $(autoItemTemplate({
                         name: account.username,
                         hasDel: true,
+                        rightText: (maxPlayer ? maxPlayer.server + "." + maxPlayer.name : null)
                     }));
                     divAutoAccountBlock.appendTo(divAutomationContent);
 
+                    if (maxPlayer) {
+                        divAutoAccountBlock.find(".div_auto_item_right").click(function() {
+                            displayAutomationModel.toAccount(account.username);
+                            lastAccount = account;
+                            displayAutomationModel.toPlayer(maxPlayer.server);
+                            lastPlayer = maxPlayer;
+                            displayCatalog();
+                        });
+                    }
                     divAutoAccountBlock.find(".div_auto_item_delete").click(function() {
                         if (confirm("确定删除账号'" + account.username + "'？")) {
                             displayAutomationModel.delAccount(account, function() {
@@ -748,15 +771,14 @@ function displayAutomation() {
                         }
                     });
                     divAutoAccountBlock.find(".clickable").click(function() {
-                        displayPlayers(account);
+                        displayAutomationModel.toAccount(account.username);
+                        lastAccount = account;
+                        displayPlayers();
                     });
                 })();
             }
         }
-        function displayPlayers(account) {
-            displayAutomationModel.toAccount(account ? account.username : null);
-            lastAccount = (account ? account : lastAccount);
-
+        function displayPlayers() {
             var servers = displayAutomationModel.getValidServers(lastAccount);
             var addOption = (servers.length == 0 ? null : {name: "添加角色", func:function() {
                 divPlayerServers.html(autoPlayerServersTemplate({servers:servers}));
@@ -769,7 +791,7 @@ function displayAutomation() {
                 (function() {
                     var player = lastAccount.players[i];
                     var divAutoPlayerBlock = $(autoItemTemplate({
-                        name: player.server,
+                        name: (player.name ? player.server + "." + player.name : player.server),
                         hasDel:true,
                     }));
                     divAutoPlayerBlock.appendTo(divAutomationContent);
@@ -782,15 +804,18 @@ function displayAutomation() {
                         }
                     });
                     divAutoPlayerBlock.find(".clickable").click(function() {
-                        displayCatalog(player);
+                        displayAutomationModel.toPlayer(player.server);
+                        lastPlayer = player;
+                        displayCatalog();
                     });
                 })();
             }
         }
-        function displayCatalog(player) {
-            displayAutomationModel.toPlayer(player ? player.server : null);
-            lastPlayer = (player ? player : lastPlayer);
-
+        var detailTypes = {
+            configs: { name: "日常", func: displayConfig, },
+            settings: { name: "设置", func: displaySetting, },
+        };
+        function displayCatalog() {
             displayCommands();
 
             divAutomationContent.html("");
@@ -807,17 +832,19 @@ function displayAutomation() {
             divAutoConfigsBlock.appendTo(divAutomationContent);
 
             divAutoConfigsBlock.find(".clickable").click(function() {
-                displayDetail("configs");
+                displayAutomationModel.toCatalog((catalog ? detailTypes.configs.name : null));
+                lastCatalog = "configs";
+                displayDetail();
             });
             divAutoConfigsBlock.find(".div_auto_item_right").click(function() {
-                displayAutomationModel.manualConfig(player, function(success) {
+                displayAutomationModel.manualConfig(lastPlayer, function(success) {
                     alert(success ? "手动成功，请登陆游戏查看" : "手动失败");
                 });
             });
             var inputEnablePlayer = divAutoConfigsBlock.find(".input_check_auto_item");
             inputEnablePlayer.change(function() {
-                player.copy_configs.disabled = (inputEnablePlayer.is(":checked") ? undefined : true);
-                displayAutomationModel.saveConfig(player, function() {
+                lastPlayer.copy_configs.disabled = (inputEnablePlayer.is(":checked") ? undefined : true);
+                displayAutomationModel.saveConfig(lastPlayer, function() {
                     displayCatalog();
                 });
             });
@@ -827,13 +854,11 @@ function displayAutomation() {
             divAutoSettingsBlock.appendTo(divAutomationContent);
 
             divAutoSettingsBlock.find(".clickable").click(function() {
-                displayDetail("settings");
+                displayAutomationModel.toCatalog((catalog ? detailTypes.settings.name : null));
+                lastCatalog = "settings";
+                displayDetail();
             });
         }
-        var detailTypes = {
-            configs: { name: "日常", func: displayConfig, },
-            settings: { name: "设置", func: displaySetting, },
-        };
         function displaySetting() {
             displayCommands();
 
@@ -951,10 +976,7 @@ function displayAutomation() {
                 })();
             }
         }
-        function displayDetail(catalog) {
-            displayAutomationModel.toCatalog((catalog ? detailTypes[catalog].name : null));
-            lastCatalog = (catalog ? catalog : lastCatalog);
-
+        function displayDetail() {
             detailTypes[lastCatalog].func();
         }
         displayAccounts();

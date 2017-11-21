@@ -60,6 +60,7 @@ Base.extends("GameController", {
         this.refreshData = {};
         this.refreshingState = false;
         this.heartbeat = new Heartbeat();
+        this.lastPlayerInfo = {};
         this.initKingwar();
         this.initPlayerListing();
         this.initPlayerAutomation();
@@ -67,6 +68,15 @@ Base.extends("GameController", {
     },
     getAccountManager:function() {
         return this.accountManager;
+    },
+
+    getPlayerBrief:function(playerData) {
+        var accountGameKey = playerData.account + "$" + playerData.server;
+        return this.lastPlayerInfo[accountGameKey];
+    },
+    setPlayerBrief:function(playerData, brief) {
+        var accountGameKey = playerData.account + "$" + playerData.server;
+        this.lastPlayerInfo[accountGameKey] = brief;
     },
 
     setPlayerAutomation:function(playerData, autoConfigs) {
@@ -94,6 +104,11 @@ Base.extends("GameController", {
             if (!data.success) {
                 return safe(done)({});
             }
+            var accountGameKey = playerData.account + "$" + playerData.server;
+            this.lastPlayerInfo[accountGameKey] = {
+                name: conn.getGameInfo().name,
+                power: conn.getGameInfo().power,
+            };
             yield this.refreshAutomation(conn, autoConfigs, next);
             conn.quit();
             playerData.mutex.unlock();
@@ -134,21 +149,6 @@ Base.extends("GameController", {
                 limitDay: listingConfig.limitDay,
             }, done);
         });
-    },
-    savePlayers:function() {
-        var players = {};
-        for (var playerId in this.allPlayers) {
-            var player = this.allPlayers[playerId];
-            players[playerId] = {
-                name: player.name,
-                maxPower: player.maxPower,
-                unionId: player.unionId,
-            };
-        }
-        return players;
-    },
-    getUnions:function() {
-        return this.allUnions;
     },
     getSortedPlayers:function(count) {
         var sortedPlayerIds = this.sortedPlayerIds;
@@ -206,9 +206,29 @@ Base.extends("GameController", {
         }
         return sortedPlayers;
     },
+    savePlayers:function() {
+        var players = {};
+        for (var playerId in this.allPlayers) {
+            var player = this.allPlayers[playerId];
+            players[playerId] = {
+                name: player.name,
+                maxPower: player.maxPower,
+                unionId: player.unionId,
+            };
+        }
+        return players;
+    },
     restorePlayers:function(allPowerMax) {
         for (var playerId in allPowerMax) {
             this.allPlayers[playerId] = allPowerMax[playerId];
+        }
+    },
+    saveUnions:function() {
+        return this.allUnions;
+    },
+    restoreUnions:function(unions) {
+        for (var unionId in unions) {
+            this.allUnions[unionId] = unions[unionId];
         }
     },
 
@@ -720,6 +740,11 @@ Base.extends("GameController", {
                 this.errLog("loginGame", "account({0}), server({1})".format(refreshInfo.account, refreshInfo.server));
                 return doEnd(true);
             }
+            var accountGameKey = refreshInfo.account + "$" + refreshInfo.server;
+            this.lastPlayerInfo[accountGameKey] = {
+                name: conn.getGameInfo().name,
+                power: conn.getGameInfo().power,
+            };
             for (var i = 0; i < executables.length; ++i) {
                 yield executables[i](conn, next, taskItem);
             }
