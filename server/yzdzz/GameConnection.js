@@ -1145,25 +1145,26 @@ Base.extends("GameConnection", {
                     // auto thumb
                     var data_like = yield this.sendMsg("Union", "like", { unionid: data.id }, next);
                     var data_like = yield this.sendMsg("UnionWar", "agree", null, next);
-                    // auto donate
-                    var data_home = yield this.sendMsg("Union", "home", null, next);
-                    if (!data_home || !data_home.shop) {
-                        return safe(done)({});
-                    }
-                    var alreadyNum = 10 - data_home.my_max / 1000000;
-                    var donateNum = (data_home.my_max < data_home.total_max ? data_home.my_max : data_home.total_max) / 1000000;
-                    donateNum = (donateNum < (config.donateMax - alreadyNum) ? donateNum : (config.donateMax - alreadyNum));
-                    if (donateNum > 0) {
-                        if (donateNum == 10) {
-                            var data_donate = yield this.sendMsg("Union", "donate", {type:2}, next);
-                        } else {
-                            for (var i = 0; i < donateNum; ++i) {
-                                var data_donate = yield this.sendMsg("Union", "donate", {type:1}, next);
-                            }
+                }
+
+                // auto donate
+                var data_home = yield this.sendMsg("Union", "home", null, next);
+                if (!data_home || !data_home.shop) {
+                    console.log("Union home failed!", data_home);
+                    return safe(done)({});
+                }
+                var alreadyNum = 10 - data_home.my_max / 1000000;
+                var donateNum = (data_home.my_max < data_home.total_max ? data_home.my_max : data_home.total_max) / 1000000;
+                donateNum = (donateNum < (config.donateMax - alreadyNum) ? donateNum : (config.donateMax - alreadyNum));
+                if (donateNum > 0) {
+                    if (donateNum == 10) {
+                        var data_donate = yield this.sendMsg("Union", "donate", {type:2}, next);
+                    } else {
+                        for (var i = 0; i < donateNum; ++i) {
+                            var data_donate = yield this.sendMsg("Union", "donate", {type:1}, next);
                         }
                     }
                 }
-
                 // auto race reward
                 var data_rewardlist = yield this.sendMsg("UnionRace", "getrewardlist", null, next);
                 if (!data_rewardlist || !data_rewardlist.list) {
