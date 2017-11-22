@@ -602,6 +602,7 @@ Base.extends("GameController", {
                     yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 5; }, next);
                 }
                 this.setRefreshStatesOfType("kingwar", 1);
+                this.setRefreshStatesOfType("targeting", 3);
             }, this);
         });
         this.targetingTimes.push(targetingKey);
