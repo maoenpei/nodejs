@@ -1118,7 +1118,7 @@ Base.extends("GameConnection", {
                             }
                         }
                     }
-                    if (config.autoWar && data_war.auto == 0) {
+                    if (config.autoWar && data_autoInfo.auto == 0) {
                         var data_start = yield this.sendMsg("League", "startAutoWar", null, next);
                     }
                 }
