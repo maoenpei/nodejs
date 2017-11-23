@@ -424,7 +424,7 @@ var displayAutomationModel = {
             {name: "fightPlayer", desc: "是否攻击战力低的玩家", type: "check"},
             {name: "useCard", desc: "智能放卡", type: "check"},
         ]},
-        {name: "autoLeague", desc: "国家(福利，狩猎，国土奖励...)", props: [
+        {name: "autoLeague", desc: "国家", props: [
             {name: "prayNumber", desc: "国家福利次数", type: "number", limit: [3, 23]},
             {name: "donateMax", desc: "女神捐献次数", type: "number", limit: [0, 10]},
             {name: "autoWar", desc: "开启国战挂机", type: "check"},

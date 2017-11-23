@@ -184,7 +184,7 @@ Base.extends("GameConnection", {
             this.serverInfo = server;
             GameSock.receive(sock, (c, m, data, change) => {
                 if (change) {
-                    console.log("change happen -", c, m, change);
+                    //console.log("change happen -", c, m, change);
                     this.updateGameInfo(change);
                 }
                 this.onReceive(c, m, data);
@@ -210,7 +210,6 @@ Base.extends("GameConnection", {
                 coin: "gold", // 金币
                 gold: "colorDiamond", // 彩钻
                 ticket: "whiteDiamond", // 白钻
-                cpi: "power", // 战力
                 league_medal: "leagueMedal", // 国家勋章
                 crystal: "crystal", // 帝国战水晶
                 arena_point: "arenaPoint", // 竞技场积分
@@ -221,8 +220,9 @@ Base.extends("GameConnection", {
                 summon_soul: "redSoul", // 红魂
             };
             this.gameInfo = {
-                playerId : data.uid,
-                name : data.role_name, // 名字
+                playerId: data.uid,
+                name: data.role_name, // 名字
+                power: data.cpi, // 战力
 
                 hasXReward: !!(data.act_goldsign),
                 hasRedPacket: !!(data.act_redpacket),
@@ -628,10 +628,19 @@ Base.extends("GameConnection", {
                 var item = data.list[i];
                 players.push({
                     playerId: item.uid,
-                    name: item.role_name,
                 });
             }
+            var cards = [];
+            if (data.cards) {
+                for (var i = 0; i < data.cards.length; ++i) {
+                    var card = data.cards[i];
+                    cards.push(GameUtil.cardToInfo(card));
+                }
+            }
             return safe(done)({
+                area: data.areaid,
+                star: data.star,
+                cards: cards,
                 players: players,
             });
         }, this);
@@ -687,10 +696,7 @@ Base.extends("GameConnection", {
             var cards = [];
             for (var i = 0; i < data.cards.length; ++i) {
                 var card = data.cards[i];
-                cards.push({
-                    isGood: card == 4,
-                    cardType: card,
-                });
+                cards.push(GameUtil.cardToInfo(card));
             }
             var members = [];
             for (var i = 0; i < data.members.length; ++i) {
@@ -1078,14 +1084,13 @@ Base.extends("GameConnection", {
                 }
                 // auto city reward
                 var data_city = yield this.sendMsg("League", "getCityInfo", null, next);
-                if (!data_city) {
-                    return safe(done)({});
-                }
-                if (data_city.award_1 == 1 && data_city.get_1 != 1) {
-                    var data_award = yield this.sendMsg("League", "cityAward", {h:1}, next);
-                }
-                if (data_city.award_2 == 1 && data_city.get_2 != 1) {
-                    var data_award = yield this.sendMsg("League", "cityAward", {h:2}, next);
+                if (data_city) {
+                    if (data_city.award_1 == 1 && data_city.get_1 != 1) {
+                        var data_award = yield this.sendMsg("League", "cityAward", {h:1}, next);
+                    }
+                    if (data_city.award_2 == 1 && data_city.get_2 != 1) {
+                        var data_award = yield this.sendMsg("League", "cityAward", {h:2}, next);
+                    }
                 }
                 // auto boss
                 var boss_max = 20;
@@ -1098,6 +1103,25 @@ Base.extends("GameConnection", {
                         }
                     }
                 }
+                // auto war
+                if (this.gameInfo.vip >= 3) {
+                    var data_autoInfo = yield this.sendMsg("League", "getAutoInfo", null, next);
+                    if (data_autoInfo) {
+                        if (data_autoInfo.auto_num > 0) {
+                            var data_reward = yield this.sendMsg("League", "getAutoWarReward", null, next);
+                        }
+                        var payMax = (config.warPay > 20 ? 20 : config.warPay);
+                        var warPay = (data_autoInfo.paynum ? data_autoInfo.paynum : 0);
+                        if (payMax > 0 && (warPay < payMax)) {
+                            for (var i = warPay; i < payMax; ++i) {
+                                var data_addpay = yield this.sendMsg("League", "addpay", null, next);
+                            }
+                        }
+                    }
+                    if (config.autoWar && data_war.auto == 0) {
+                        var data_start = yield this.sendMsg("League", "startAutoWar", null, next);
+                    }
+                }
                 if (this.validator.checkDaily("autoLeague")) {
                     // auto donate
                     var alreadyNum = 10 - data.donate_role_max / 1000000;
@@ -1105,27 +1129,26 @@ Base.extends("GameConnection", {
                     donateNum = (donateNum < (config.donateMax - alreadyNum) ? donateNum : (config.donateMax - alreadyNum));
                     if (donateNum > 0) {
                         var data_goddess = yield this.sendMsg("League", "getGoddess", null, next);
-                        if (!data_goddess || !data_goddess.list) {
-                            return safe(done)({});
-                        }
-                        var goddessData = {};
-                        for (var i in data_goddess.list) {
-                            var goddess = data_goddess.list[i];
-                            goddessData[goddess.id] = goddess;
-                        }
-                        var donateOrder = [1, 4, 2, 5, 6, 3];
-                        for (var i = 0; i < donateOrder.length; ++i) {
-                            var id = donateOrder[i];
-                            var goddess = goddessData[id];
-                            if (goddess.level < 120) {
-                                if (donateNum == 10) {
-                                    var data_donate = yield this.sendMsg("League", "donate", {id:id, type:2}, next);
-                                } else {
-                                    for (var j = 0; j < donateNum; ++j) {
-                                        var data_donate = yield this.sendMsg("League", "donate", {id:id, type:1}, next);
+                        if (data_goddess && data_goddess.list) {
+                            var goddessData = {};
+                            for (var i in data_goddess.list) {
+                                var goddess = data_goddess.list[i];
+                                goddessData[goddess.id] = goddess;
+                            }
+                            var donateOrder = [1, 4, 2, 5, 6, 3];
+                            for (var i = 0; i < donateOrder.length; ++i) {
+                                var id = donateOrder[i];
+                                var goddess = goddessData[id];
+                                if (goddess.level < 120) {
+                                    if (donateNum == 10) {
+                                        var data_donate = yield this.sendMsg("League", "donate", {id:id, type:2}, next);
+                                    } else {
+                                        for (var j = 0; j < donateNum; ++j) {
+                                            var data_donate = yield this.sendMsg("League", "donate", {id:id, type:1}, next);
+                                        }
                                     }
+                                    break;
                                 }
-                                break;
                             }
                         }
                     }
@@ -1135,26 +1158,53 @@ Base.extends("GameConnection", {
                     }
                     // auto golory
                     var data_glory = yield this.sendMsg("League", "gloryDaily", null, next);
-                    // auto war
-                    if (this.gameInfo.vip >= 3) {
-                        var data_war = yield this.sendMsg("League", "getAutoInfo", null, next);
-                        if (!data_war) {
-                            return safe(done)({});
-                        }
-                        if (data_war.auto_num > 0) {
-                            var data_reward = yield this.sendMsg("League", "getAutoWarReward", null, next);
-                        }
-                        var payMax = (config.warPay > 20 ? 20 : config.warPay);
-                        var warPay = (data_war.paynum ? data_war.paynum : 0);
-                        if (payMax > 0 && (warPay < payMax)) {
-                            for (var i = warPay; i < payMax; ++i) {
-                                var data_addpay = yield this.sendMsg("League", "addpay", null, next);
-                            }
-                        }
-                        if (config.autoWar && data_war.auto == 0) {
-                            var data_start = yield this.sendMsg("League", "startAutoWar", null, next);
+                }
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    autoLeaguewar:function(config, done) {
+        var next = coroutine(function*() {
+            // league war
+            var currHour = new Date().getHours();
+            if ((currHour >= 10 && currHour <= 12) || (currHour >= 17 && currHour <= 19)) {
+                var data = yield this.sendMsg("League", "getWarInfo", null, next);
+                if (!data || !data.map) {
+                    return safe(done)({});
+                }
+                if (data.auto == 1) {
+                    var data_stop = yield this.sendMsg("League", "stopAutoWar", null, next);
+                }
+
+                var fightNum = data.num;
+                if (data.agree == 1) {
+                    var data_agree = yield this.sendMsg("League", "agree", null, next);
+                    if (data_agree) {
+                        fightNum = data_agree.num;
+                    }
+                }
+
+                var ourPos = data.pos;
+                var warCity = null;
+                var minScore = 1000000000;
+                for (var i = 0; i < data.map.length; ++i) {
+                    var city = data.map[i];
+                    if (city.status == 1 && (ourPos == city.defend || ourPos == city.attack)) {
+                        ourScore = (ourPos == city.defend ? city.defend_kill : city.attack_kill);
+                        if (ourScore < minScore) {
+                            minScore = ourScore;
+                            warCity = {id:city.id};
                         }
                     }
+                }
+                if (!warCity) {
+                    return safe(done)({});
+                }
+
+                var data_enter = yield this.sendMsg("League", "enterWar", {id: warCity.id, league: ourPos}, next);
+                if (data_enter) {
                 }
             }
             return safe(done)({
@@ -1570,7 +1620,9 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("League", "getPosList", null, next); // 国家玩家列表
             //var data = yield this.sendMsg("KingWar", "getAreaRes", null, next); // 帝国战获取奖励列表
             //var data = yield this.sendMsg("UnionRace", "getinfo", null, next); // 比武大会
-            //var data = yield this.sendMsg("Role", "quick", null, next); // 活跃日历
+            //var data = yield this.sendMsg("Role", "quick", null, next); // 活跃日历日常面板
+            //var data = yield this.sendMsg("League", "startAutoWar", null, next); // 开启自动挂机
+            //var data = yield this.sendMsg("League", "stopAutoWar", null, next); // 关闭自动挂机
 
             //var data = yield this.sendMsg("UnionWar", "cardlog", null, next); // 查看卡牌列表
             //var data = yield this.sendMsg("UnionWar", "ahead", null, next); // 查看名次信息
@@ -1578,9 +1630,18 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("ActGoblin", "getinfo", null, next);
             //var data = yield this.sendMsg("ActGoblin", "buy", {id:"2120004"}, next);
             //var data = yield this.sendMsg("ActGoblin", "refresh", null, next);
-            //var data = yield this.sendMsg("League", "getWarInfo", null, next); // 国战信息
             //var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next); //皇帝战
             //var data = yield this.sendMsg("Tavern", "getlog", {ids:"50016,60018,70041"}, next); // 可兑换勇者的状态
+
+            //var data = yield this.sendMsg("League", "getWarInfo", null, next);
+            //var data = yield this.sendMsg("League", "getEnterInfo", {id:45}, next);
+            //var data = yield this.sendMsg("League", "enterWar", {id: 45, league: 2}, next);
+            //var data = yield this.sendMsg("League", "agree", null, next);
+            //var data = yield this.sendMsg("League", "inspire", null, next);
+            var data = yield this.sendMsg("League", "combatWar", {batch:1,id:45}, next);
+            //var data = yield this.sendMsg("League", "event", {id:45,choose:0}, next);
+            //var data = yield this.sendMsg("League", "superwar", {id:45}, next);
+            //untracked msg c: League m: gloryUp data: { level: 189, res: '2:league_point:1990' }
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
@@ -1696,5 +1757,6 @@ Base.extends("GameConnection", {
         this.regMsg("League", "warClose", (data) => {}); // notification
         this.regMsg("Combat", "complete", (data) => {}); // show combat
         this.regMsg("RoleExplore", "update", (data) => {}); // notification
+        this.regMsg("League", "kill", (data) => {}); // notification
     },
 });
