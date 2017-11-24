@@ -893,6 +893,7 @@ Base.extends("GameConnection", {
                     }
                 }
             }
+            // 契约之门
             if (config.tavern && this.validator.checkHourly("autoTavern")) {
                 var data = yield this.sendMsg("Tavern", "getinfo", null, next);
                 if (data) {
@@ -913,6 +914,34 @@ Base.extends("GameConnection", {
                     }
                     if (data.all == 1) {
                         var data_gift = yield this.sendMsg("Tavern", "gift", {type:"all"}, next);
+                    }
+                }
+            }
+            // 特点头像
+            if (config.specCard && this.validator.checkDaily("autoSpecCard")) {
+                var data = yield this.sendMsg("ActCollectCard", "getinfo", null, next);
+                if (data && data.list) {
+                    var collectable = [];
+                    collectable.push(data.show);
+                    for (var i = 0; i < data.list.length; ++i) {
+                        var item = data.list[i];
+                        if (item.tips == 1 && item.id != data.show.id) {
+                            var data_card = yield this.sendMsg("ActCollectCard", "card", { id:item.id }, next);
+                            if (data_card) {
+                                collectable.push(data_card);
+                            }
+                        }
+                    }
+                    for (var i = 0; i < collectable.length; ++i) {
+                        var item = collectable[i];
+                        if (item.daily == 0) {
+                            var data_daily = yield this.sendMsg("ActCollectCard", "dailyGift", { id:item.id }, next);
+                        }
+                        for (var j = 1; j <= item.day; ++j) {
+                            if (!item.list || !item.list[j]) {
+                                var data_gift = yield this.sendMsg("ActCollectCard", "gift", { id:item.id, day: item.day - j }, next);
+                            }
+                        }
                     }
                 }
             }
@@ -1593,36 +1622,8 @@ Base.extends("GameConnection", {
     },
     autoReward:function(config, done) {
         var next = coroutine(function*() {
-            if (config.specCard && this.validator.checkDaily("autoSpecCard")) {
-                // 特点头像
-                var data = yield this.sendMsg("ActCollectCard", "getinfo", null, next);
-                if (data && data.list) {
-                    var collectable = [];
-                    collectable.push(data.show);
-                    for (var i = 0; i < data.list.length; ++i) {
-                        var item = data.list[i];
-                        if (item.tips == 1 && item.id != data.show.id) {
-                            var data_card = yield this.sendMsg("ActCollectCard", "card", { id:item.id }, next);
-                            if (data_card) {
-                                collectable.push(data_card);
-                            }
-                        }
-                    }
-                    for (var i = 0; i < collectable.length; ++i) {
-                        var item = collectable[i];
-                        if (item.daily == 0) {
-                            var data_daily = yield this.sendMsg("ActCollectCard", "dailyGift", { id:item.id }, next);
-                        }
-                        for (var j = 1; j <= item.day; ++j) {
-                            if (!item.list || !item.list[j]) {
-                                var data_gift = yield this.sendMsg("ActCollectCard", "gift", { id:item.id, day: item.day - j }, next);
-                            }
-                        }
-                    }
-                }
-            }
+            // 帝国战每日奖励
             if (config.kingwarDaily && this.validator.checkHourly("autoKingwarDaily")) {
-                // 帝国战每日奖励
                 var data = yield this.sendMsg("KingWar", "gift", null, next);
                 if (data && data.daily) {
                     if (data.done == 0) {
@@ -1636,8 +1637,8 @@ Base.extends("GameConnection", {
                     }
                 }
             }
+            // 帝国战排名奖励
             if (config.kingwarRank && this.validator.checkHourly("autoKingwarRank")) {
-                // 帝国战排名奖励
                 for (var i = 1; i <= 3; ++i) {
                     var data_rank = yield this.sendMsg("KingWar", "areaRank", {areaid:i}, next);
                     if (data_rank && data_rank.state == 1) {
@@ -1649,8 +1650,8 @@ Base.extends("GameConnection", {
                     var data_fetch = yield this.sendMsg("KingWar", "fetchEmperorRes", null, next);
                 }
             }
+            // 招财猫
             if (config.nekoMax > 0 && this.validator.checkHourly("autoNeko")) {
-                // 招财猫
                 var data = yield this.sendMsg("ActNeko", "getinfo", null, next);
                 if (data && typeof(data.num) == "number") {
                     var nekoNum = (config.nekoMax > 10 ? 10 : config.nekoMax);
@@ -1659,8 +1660,8 @@ Base.extends("GameConnection", {
                     }
                 }
             }
+            // 活跃日历
             if (config.actDaily && this.validator.checkHourly("autoActDaily")) {
-                // 活跃日历
                 var data = yield this.sendMsg("ActActive", "getinfo", null, next);
                 if (data && data.list) {
                     for (var i = 0; i < data.list.length; ++i) {
@@ -1688,8 +1689,8 @@ Base.extends("GameConnection", {
                     }
                 }
             }
+            // 任务
             if (config.quest && this.validator.checkHourly("autoQuest")) {
-                // 任务
                 var hasQuest = true;
                 while(hasQuest) {
                     hasQuest = false;
@@ -1705,8 +1706,8 @@ Base.extends("GameConnection", {
                     }
                 }
             }
+            // 福利活动
             if (config.splendid && this.validator.checkHourly("autoSplendid")) {
-                // 福利活动
                 var data = yield this.sendMsg("ActSplendid", "getinfo", null, next);
                 if (data && data.list) {
                     for (var i = 0; i < data.list.length; ++i) {
@@ -1720,8 +1721,8 @@ Base.extends("GameConnection", {
                     }
                 }
             }
+            // 勇者餐馆
             if (config.meal && this.validator.checkHourly("autoMeal")) {
-                // 勇者餐馆
                 var data = yield this.sendMsg("ActMeal", "getinfo", null, next);
                 if (data && data.list) {
                     var rewards = {};

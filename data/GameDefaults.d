@@ -1,6 +1,14 @@
 {
     "automation":{
-        "autoBenefit":{"sign":true,"vip":true,"friend":true,"email":true,"tavern":true,"redpacket":true}
+        "autoBenefit":{
+            "sign":true
+            ,"vip":true
+            ,"friend":true
+            ,"email":true
+            ,"tavern":true
+            ,"specCard":true
+            ,"redpacket":true
+        }
         ,"autoForward":{}
         ,"autoMaze":{"searchNumber":3}
         ,"autoFriendWar":{"baseInspire":3,"advanceInspire":3,"buyBlueCard":true}
@@ -11,8 +19,7 @@
         ,"autoArena":{"boxMax":6,"buyHeroSoul":true,"fightPlayer":true,"fightMax":10}
         ,"autoXReward":{"xwish":1,"xcoin":5}
         ,"autoReward":{
-            "specCard":true
-            ,"kingwarDaily":true
+            "kingwarDaily":true
             ,"kingwarRank":true
             ,"nekoMax":4
             ,"actDaily":true

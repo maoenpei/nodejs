@@ -409,6 +409,7 @@ var displayAutomationModel = {
             {name: "friend", desc: "好友送钻石", type: "check"},
             {name: "email", desc: "邮件", type: "check"},
             {name: "tavern", desc: "契约之门", type: "check"},
+            {name: "specCard", desc: "特点头像", type: "check"},
             {name: "redpacket", desc: "红包", type: "check"},
         ]},
         {name: "autoForward", desc: "战斗，下一关", props: []},
@@ -446,12 +447,11 @@ var displayAutomationModel = {
         ]},
         {name: "autoXReward", desc: "暗金活动", props:[
             {name: "xwish", desc: "许愿次数", type: "number", limit: [0, 10]},
-            {name: "xcoin", desc: "白钻购买按金币个数", type: "number", limit: [0, 5]},
+            {name: "xcoin", desc: "白钻购买暗金币个数", type: "number", limit: [0, 5]},
         ]},
         {name: "autoReward", desc: "领取", props: [
-            {name: "specCard", desc: "特点头像", type: "check"},
             {name: "kingwarDaily", desc: "帝国战每日奖励", type: "check"},
-            {name: "kingwarRank", desc: "帝国战排名", type: "check"},
+            {name: "kingwarRank", desc: "帝国战排名奖励", type: "check"},
             {name: "nekoMax", desc: "招财猫次数", type: "number", limit: [0, 10]},
             {name: "actDaily", desc: "活跃日历", type: "check"},
             {name: "quest", desc: "任务", type: "check"},
