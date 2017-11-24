@@ -5,7 +5,8 @@
         ,"autoMaze":{"searchNumber":3}
         ,"autoFriendWar":{"baseInspire":3,"advanceInspire":3,"buyBlueCard":true}
         ,"autoLadder":{"fightPlayer":false,"useCard":true}
-        ,"autoLeague":{"prayNumber":10,"donateMax":10,"autoWar":false,"warPay":0}
+        ,"autoLeague":{"prayNumber":10,"donateMax":10,"warPay":0}
+        ,"autoLeaguewar":{"target":0,"face":20,"faceForce":false,"gold70":true}
         ,"autoUnion":{"donateMax":10}
         ,"autoArena":{"boxMax":6,"buyHeroSoul":true,"fightPlayer":true,"fightMax":10}
         ,"autoXReward":{"xwish":1,"xcoin":5}

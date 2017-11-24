@@ -427,8 +427,13 @@ var displayAutomationModel = {
         {name: "autoLeague", desc: "国家", props: [
             {name: "prayNumber", desc: "国家福利次数", type: "number", limit: [3, 23]},
             {name: "donateMax", desc: "女神捐献次数", type: "number", limit: [0, 10]},
-            {name: "autoWar", desc: "开启国战挂机", type: "check"},
             {name: "warPay", desc: "国家热情次数", type: "number", limit: [0, 20]},
+        ]},
+        {name: "autoLeaguewar", desc: "国战", props: [
+            {name: "target", desc: "优先攻击的国家", type: "number", limit: [0, 3], alias: ["无", "风", "火", "水"]},
+            {name: "face", desc: "使用笑脸次数", type: "number", limit: [0, 200]},
+            {name: "faceForce", desc: "笑脸不够使用白钻", type: "check"},
+            {name: "gold70", desc: "是否接受70%的金币", type: "check"},
         ]},
         {name: "autoUnion", desc: "骑士团", props: [
             {name: "donateMax", desc: "贡献次数", type: "number", limit: [0, 10]},
@@ -965,9 +970,11 @@ function displayAutomation() {
                         } else if (prop.type == "number") {
                             property.type_options = true;
                             property.options = [];
+                            var aliasIndex = 0;
                             for (var k = prop.limit[0]; k <= prop.limit[1]; ++k) {
                                 property.options.push({
                                     val: k,
+                                    desc: (prop.alias ? prop.alias[aliasIndex++] : k),
                                     selected: k == value,
                                 });
                             }

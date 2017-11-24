@@ -1,6 +1,8 @@
 
 require("../Base");
 require("../FileManager");
+require("../Mutex");
+require("./Database");
 require("./Protocol");
 
 var secOfDay = 24 * 3600;
@@ -55,6 +57,9 @@ Base.extends("GameConnection", {
         this.servers = {};
         this.serverInfo = null;
         this.gameInfo = null;
+        this.itemsInfo = null;
+        this.itemsQuick = null;
+        this.itemsLock = new Mutex();
 
         this.sock = null;
 
@@ -248,22 +253,90 @@ Base.extends("GameConnection", {
         }, this);
     },
     updateGameInfo:function(data, force) {
-        if (!this.gameInfo || !this.gameInfoNumberProps) {
-            return;
+        if (this.gameInfo && this.gameInfoNumberProps) {
+            var keyContainer = (force ? this.gameInfoNumberProps : data);
+            for (var dataKey in keyContainer) {
+                var key = this.gameInfoNumberProps[dataKey];
+                var dataVal = data[dataKey];
+                if (key) {
+                    if (typeof(dataVal) == "number") {
+                        this.gameInfo[key] = dataVal;
+                    } else if (force) {
+                        this.gameInfo[key] = 0;
+                    }
+                }
+            }
         }
-        var keyContainer = (force ? this.gameInfoNumberProps : data);
-        for (var dataKey in keyContainer) {
-            var key = this.gameInfoNumberProps[dataKey];
-            var dataVal = data[dataKey];
-            if (key) {
-                if (typeof(dataVal) == "number") {
-                    this.gameInfo[key] = dataVal;
-                } else if (force) {
-                    this.gameInfo[key] = 0;
+        if (!force && data.items && this.itemsInfo && this.itemsQuick) {
+            var updateItems = data.items.update;
+            if (updateItems) {
+                for (var key in updateItems) {
+                    this.updateItem(this.itemsInfo, this.itemsQuick, updateItems[key]);
+                }
+            }
+            var deleteItems = data.items.delete;
+            if (deleteItems) {
+                for (var i = 0; i < deleteItems.length; ++i) {
+                    this.updateItem(this.itemsInfo, this.itemsQuick, {id:deleteItems[i]});
                 }
             }
         }
     },
+    readAllItems: function(done) {
+        var next = coroutine(function*() {
+            yield this.itemsLock.lock(next);
+            if (!this.itemsInfo || !this.itemsQuick) {
+                var data = yield this.getItems(next);
+                if (data.items && data.quick) {
+                    this.itemsInfo = data.items;
+                    this.itemsQuick = data.quick;
+                } else {
+                    console.log("============= failed to read items! =================", this.gameInfo.name);
+                }
+            }
+            this.itemsLock.unlock();
+            return safe(done)();
+        }, this);
+    },
+    getItemCount:function(itemName, done) {
+        var next = coroutine(function*() {
+            var count = 0;
+            if (!this.itemsInfo) {
+                yield this.readAllItems(next);
+            }
+            if (this.itemsInfo) {
+                var item = this.itemsInfo[itemName];
+                count = (item ? item.count : 0);
+            }
+            return safe(done)(count);
+        }, this);
+    },
+    updateItem:function(items, quick, itemData) {
+        var id = Number(itemData.id);
+        var num = Number(itemData.num ? itemData.num : 0);
+        var item = (quick[id] ? quick[id] : items[itemData.sysid]);
+        item = (item ? item : { count: 0, details: [] });
+        for (var i = 0; i < item.details.length; ++i) {
+            var detail = item.details[i];
+            if (detail.id == id) {
+                item.count -= detail.num;
+                item.details.splice(i, 1);
+                break;
+            }
+        }
+        if (num > 0) {
+            item.count += num;
+            item.details.push({
+                id: id,
+                num: num,
+            });
+            quick[id] = item;
+            items[itemData.sysid] = item;
+        } else {
+            delete quick[id];
+        }
+    },
+
     getRole:function(done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("Role", "getInfo", null, next);
@@ -278,7 +351,26 @@ Base.extends("GameConnection", {
             return safe(done)();
         }, this);
     },
-    getRankPlayers:function() {
+    getItems:function(done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("RoleItem", "list", null, next);
+            if (!data || !data.list) {
+                return safe(done)({});
+            }
+
+            var items = {};
+            var quick = {};
+            for (var key in data.list) {
+                this.updateItem(items, quick, data.list[key]);
+            }
+            return safe(done)({
+                items: items,
+                quick: quick,
+            });
+        }, this);
+    },
+
+    getRankPlayers:function(done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("KingWar", "roleRank", null, next);
             if (!data || !data.list) {
@@ -1118,9 +1210,6 @@ Base.extends("GameConnection", {
                             }
                         }
                     }
-                    if (config.autoWar && data_autoInfo.auto == 0) {
-                        var data_start = yield this.sendMsg("League", "startAutoWar", null, next);
-                    }
                 }
                 if (this.validator.checkDaily("autoLeague")) {
                     // auto donate
@@ -1186,16 +1275,34 @@ Base.extends("GameConnection", {
                     }
                 }
 
+                if (fightNum == 0 && data.super < 100) {
+                    return safe(done)({});
+                }
+
                 var ourPos = data.pos;
+                var target = (config.target == ourPos ? 0 : config.target);
                 var warCity = null;
                 var minScore = 1000000000;
                 for (var i = 0; i < data.map.length; ++i) {
                     var city = data.map[i];
                     if (city.status == 1 && (ourPos == city.defend || ourPos == city.attack)) {
-                        ourScore = (ourPos == city.defend ? city.defend_kill : city.attack_kill);
-                        if (ourScore < minScore) {
-                            minScore = ourScore;
-                            warCity = {id:city.id};
+                        var ourScore = 0;
+                        var enemyPos = 0;
+                        var enemyScore = 0;
+                        if (ourPos == city.defend) {
+                            ourScore = city.defend_kill;
+                            enemyPos = city.attack;
+                            enemyScore = city.attack_kill;
+                        } else if (ourPos == city.attack) {
+                            ourScore = city.attack_kill;
+                            enemyPos = city.defend;
+                            enemyScore = city.defend_kill;
+                        }
+                        if (enemyPos && (target == 0 || target == enemyPos)) {
+                            if (ourScore < minScore) {
+                                minScore = ourScore;
+                                warCity = {id:city.id};
+                            }
                         }
                     }
                 }
@@ -1205,6 +1312,60 @@ Base.extends("GameConnection", {
 
                 var data_enter = yield this.sendMsg("League", "enterWar", {id: warCity.id, league: ourPos}, next);
                 if (data_enter) {
+                    var faceUse = (config.face > 200 ? 200 : config.face);
+                    if (!config.faceForce) {
+                        var faceCount = yield this.getItemCount("league_war_horn", next);
+                        faceUse = (faceUse > faceCount ? faceCount : faceUse);
+                    }
+                    var used = (data.morale - 100) / 20;
+                    for (var i = used; i < faceUse; ++i) {
+                        var data_inspire = yield this.sendMsg("League", "inspire", null, next);
+                        if (!data_inspire) {
+                            break;
+                        }
+                    }
+
+                    var superVal = data.super;
+                    var gloryUpVal = 0;
+                    var ckey = this.regMsg("League", "gloryUp", () => {
+                        gloryUpVal = 5;
+                    });
+                    var updateFight = (data_fight) => {
+                        superVal = data_fight.super;
+                        fightNum = data_fight.num + gloryUpVal;
+                        gloryUpVal = 0;
+                    };
+                    // fire base num
+                    while (fightNum > 0 || superVal > 100) {
+                        if (fightNum > 0) {
+                            var data_combat = yield this.sendMsg("League", "combatWar", { batch:0, id:warCity.id }, next);
+                            if (!data_combat) {
+                                break;
+                            }
+                            updateFight(data_combat);
+                            if (data_combat.type == 3 && superVal < 100) {
+                                // ignore it.
+                            } else if (data_combat.type == 3 || (data_combat.type == 4 && config.gold70)) {
+                                var data_event = yield this.sendMsg("League", "event", { id:warCity.id, choose:1 }, next);
+                                if (data_event && data_event.success == 1 && data_combat.type == 3) {
+                                    var data_super = yield this.sendMsg("League", "superWar", {id:45}, next);
+                                    if (data_super) {
+                                        updateFight({ num: fightNum, super: data_super.super});
+                                    }
+                                }
+                            } else if (data_combat.type != 0) {
+                                var data_event = yield this.sendMsg("League", "event", { id:warCity.id, choose:0 }, next);
+                                // Dont care result
+                            }
+                        } else {
+                            var data_super = yield this.sendMsg("League", "superWar", {id:45}, next);
+                            if (!data_super) {
+                                break;
+                            }
+                            updateFight({ num: fightNum, super: data_super.super});
+                        }
+                    }
+                    this.unregMsg(ckey);
                 }
             }
             return safe(done)({
@@ -1633,15 +1794,6 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next); //皇帝战
             //var data = yield this.sendMsg("Tavern", "getlog", {ids:"50016,60018,70041"}, next); // 可兑换勇者的状态
 
-            //var data = yield this.sendMsg("League", "getWarInfo", null, next);
-            //var data = yield this.sendMsg("League", "getEnterInfo", {id:45}, next);
-            //var data = yield this.sendMsg("League", "enterWar", {id: 45, league: 2}, next);
-            //var data = yield this.sendMsg("League", "agree", null, next);
-            //var data = yield this.sendMsg("League", "inspire", null, next);
-            var data = yield this.sendMsg("League", "combatWar", {batch:1,id:45}, next);
-            //var data = yield this.sendMsg("League", "event", {id:45,choose:0}, next);
-            //var data = yield this.sendMsg("League", "superwar", {id:45}, next);
-            //untracked msg c: League m: gloryUp data: { level: 189, res: '2:league_point:1990' }
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
