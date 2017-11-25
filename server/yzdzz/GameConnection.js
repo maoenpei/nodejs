@@ -1288,29 +1288,36 @@ Base.extends("GameConnection", {
         var next = coroutine(function*() {
             // league war
             var currHour = new Date().getHours();
-            if ((currHour >= 10 && currHour <= 12) || (currHour >= 17 && currHour <= 19)) {
-                var data = yield this.sendMsg("League", "getWarInfo", null, next);
-                if (!data || !data.map) {
-                    return safe(done)({});
-                }
-                if (data.auto == 1) {
-                    var data_stop = yield this.sendMsg("League", "stopAutoWar", null, next);
-                }
+            if (!((currHour >= 10 && currHour <= 12) || (currHour >= 17 && currHour <= 19))) {
+                return safe(done)({});
+            }
+            var data = yield this.sendMsg("League", "getWarInfo", null, next);
+            if (!data || !data.map) {
+                return safe(done)({});
+            }
+            if (data.auto == 1) {
+                var data_stop = yield this.sendMsg("League", "stopAutoWar", null, next);
+            }
 
-                var fightNum = data.num;
-                if (data.agree == 1) {
-                    var data_agree = yield this.sendMsg("League", "agree", null, next);
-                    if (data_agree) {
-                        fightNum = data_agree.num;
-                    }
+            var fightNum = data.num;
+            var superVal = data.super;
+            if (data.agree == 1) {
+                var data_agree = yield this.sendMsg("League", "agree", null, next);
+                if (data_agree) {
+                    fightNum = data_agree.num;
                 }
+            }
 
-                if (fightNum == 0 && data.super < 100) {
-                    return safe(done)({});
-                }
+            var FightEnd = () => {
+                return fightNum == 0 && superVal < 100;
+            };
+            if (FightEnd()) {
+                return safe(done)({});
+            }
 
-                var ourPos = this.gameInfo.league;
-                var target = (config.target == ourPos ? 0 : config.target);
+            var ourPos = this.gameInfo.league;
+            var target = (config.target == ourPos ? 0 : config.target);
+            var GetWarCity = (data) => {
                 var warCity = null;
                 var minScore = 1000000000;
                 for (var i = 0; i < data.map.length; ++i) {
@@ -1336,69 +1343,86 @@ Base.extends("GameConnection", {
                         }
                     }
                 }
-                if (!warCity) {
-                    return safe(done)({});
+                return warCity;
+            };
+            var warCity = GetWarCity(data);
+            if (!warCity) {
+                return safe(done)({});
+            }
+
+            var faceUse = (config.face > 200 ? 200 : config.face);
+            if (faceUse > 0 && !config.faceForce) {
+                var faceCount = yield this.getItemCount("league_war_horn", next);
+                faceUse = (faceUse > faceCount ? faceCount : faceUse);
+            }
+            var used = (data.morale - 100) / 20;
+            for (var i = used; i < faceUse; ++i) {
+                var data_inspire = yield this.sendMsg("League", "inspire", null, next);
+                if (!data_inspire) {
+                    break;
+                }
+            }
+
+            var data_enter = yield this.sendMsg("League", "enterWar", {id: warCity.id, league: ourPos}, next);
+            if (!data_enter) {
+                return safe(done)({});
+            }
+            var gloryUpVal = 0;
+            var ckey = this.regMsg("League", "gloryUp", () => {
+                gloryUpVal = 5;
+            });
+            var updateFight = (data_fight) => {
+                superVal = data_fight.super;
+                fightNum = data_fight.num + gloryUpVal;
+                gloryUpVal = 0;
+            };
+            var flagNum = 0;
+            if (config.useFlag) {
+                flagNum = yield this.getItemCount("league_war_life", next);
+            }
+
+            var fightCount = 0;
+            var stateBatch = false;
+            while (!FightEnd()) {
+                // fire base num
+                if (fightNum > 0) {
+                    var batch = ((stateBatch && fightNum + flagNum > 10) ? 1 : 0);
+                    var data_combat = yield this.sendMsg("League", "combatWar", { batch:batch, id:warCity.id }, next);
+                    if (!data_combat) {
+                        break;
+                    }
+                    stateBatch = data_combat.type != 0;
+                    updateFight(data_combat);
+                    if (data_combat.type == 3 || (data_combat.type == 4 && config.gold70)) {
+                        var data_event = yield this.sendMsg("League", "event", { id:warCity.id, choose:1 }, next);
+                        // data_event.success == 1
+                    } else if (data_combat.type != 0) {
+                        var data_event = yield this.sendMsg("League", "event", { id:warCity.id, choose:0 }, next);
+                        // Dont care result
+                    }
+                } else if (superVal >= 100) {
+                    var data_super = yield this.sendMsg("League", "superWar", { id:warCity.id }, next);
+                    if (!data_super) {
+                        break;
+                    }
+                    updateFight({ num: fightNum, super: data_super.super});
                 }
 
-                var data_enter = yield this.sendMsg("League", "enterWar", {id: warCity.id, league: ourPos}, next);
-                if (data_enter) {
-                    var faceUse = (config.face > 200 ? 200 : config.face);
-                    if (faceUse > 0 && !config.faceForce) {
-                        var faceCount = yield this.getItemCount("league_war_horn", next);
-                        faceUse = (faceUse > faceCount ? faceCount : faceUse);
-                    }
-                    var used = (data.morale - 100) / 20;
-                    for (var i = used; i < faceUse; ++i) {
-                        var data_inspire = yield this.sendMsg("League", "inspire", null, next);
-                        if (!data_inspire) {
+                // re-select a lower score city
+                if (!FightEnd() && fightCount++ % 5 == 4) {
+                    var data_again = yield this.sendMsg("League", "getWarInfo", null, next);
+                    var warCity_again = GetWarCity(data_again);
+                    if (warCity_again.id != warCity.id) {
+                        warCity = warCity_again;
+                        var data_enter = yield this.sendMsg("League", "enterWar", {id: warCity.id, league: ourPos}, next);
+                        if (!data_enter) {
                             break;
                         }
                     }
-
-                    var flagNum = 0;
-                    if (config.useFlag) {
-                        flagNum = yield this.getItemCount("league_war_life", next);
-                    }
-
-                    var superVal = data.super;
-                    var gloryUpVal = 0;
-                    var ckey = this.regMsg("League", "gloryUp", () => {
-                        gloryUpVal = 5;
-                    });
-                    var updateFight = (data_fight) => {
-                        superVal = data_fight.super;
-                        fightNum = data_fight.num + gloryUpVal;
-                        gloryUpVal = 0;
-                    };
-                    // fire base num
-                    var stateBatch = false;
-                    while (fightNum > 0 || superVal >= 100) {
-                        if (fightNum > 0) {
-                            var batch = ((stateBatch && fightNum + flagNum > 10) ? 1 : 0);
-                            var data_combat = yield this.sendMsg("League", "combatWar", { batch:batch, id:warCity.id }, next);
-                            if (!data_combat) {
-                                break;
-                            }
-                            stateBatch = data_combat.type != 0;
-                            updateFight(data_combat);
-                            if (data_combat.type == 3 || (data_combat.type == 4 && config.gold70)) {
-                                var data_event = yield this.sendMsg("League", "event", { id:warCity.id, choose:1 }, next);
-                                // data_event.success == 1
-                            } else if (data_combat.type != 0) {
-                                var data_event = yield this.sendMsg("League", "event", { id:warCity.id, choose:0 }, next);
-                                // Dont care result
-                            }
-                        } else {
-                            var data_super = yield this.sendMsg("League", "superWar", { id:warCity.id }, next);
-                            if (!data_super) {
-                                break;
-                            }
-                            updateFight({ num: fightNum, super: data_super.super});
-                        }
-                    }
-                    this.unregMsg(ckey);
                 }
             }
+            this.unregMsg(ckey);
+
             return safe(done)({
                 success: true,
             });
@@ -1796,7 +1820,6 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("ActGoblin", "refresh", null, next);
             //var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next); //皇帝战
             //var data = yield this.sendMsg("Tavern", "getlog", {ids:"50016,60018,70041"}, next); // 可兑换勇者的状态
-
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
