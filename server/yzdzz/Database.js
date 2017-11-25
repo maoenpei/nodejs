@@ -4,6 +4,7 @@ require("../Base");
 Database = {};
 
 Database.items = {
+    "coin":{name:"万金币", },
     "summon_book":{name:"勇者契约书", },
     "league_war_horn":{name:"国战笑脸", },
     "league_war_life":{name:"国战旗帜", },
@@ -173,6 +174,42 @@ Database.heros = {
     "456123":3,
 };
 
-Database.goblin = {
-    "2090003": {meterialId:"book", num:5, reduce:8, type:1, },
+Database.goblin_item = {
+    "0001":{item_id:"coin", count:1000, buy:2, },
+    "0002":{item_id:"coin", count:500, buy:2, },
+    "0003":{item_id:"summon_book", count:5, buy:1, },
+    "0004":{item_id:"summon_book", count:2, buy:1, },
+    "0005":{item_id:"stone_piece_random_3", count:100, buy:1, },
+    "0006":{item_id:"stone_piece_random_4", count:100, buy:1, },
+    "0007":{item_id:"stone_piece_random_5", count:100, buy:1, },
+    "0008":{item_id:"stone_piece_random_6", count:100, buy:1, },
+    "0009":{item_id:"stone_piece_random_7", count:100, buy:1, },
+    "0010":{item_id:"food_2", count:30, buy:1, },
+    "0011":{item_id:"food_3", count:30, buy:1, },
+    "0012":{item_id:"food_4", count:30, buy:1, },
+    "0013":{item_id:"food_5", count:30, buy:1, },
+    "0014":{item_id:"food_6", count:30, buy:1, },
+    "0015":{item_id:"dungeon_dice", count:5, buy:1, },
+    "0016":{item_id:"hero_upgrade_card_piece", count:3, buy:1, },
+    "0017":{item_id:"summon_book", count:5, buy:2, },
+    "0018":{item_id:"summon_book", count:2, buy:2, },
+    "0019":{item_id:"stone_piece_random_3", count:100, buy:2, },
+    "0020":{item_id:"stone_piece_random_4", count:100, buy:2, },
+    "0021":{item_id:"stone_piece_random_5", count:100, buy:2, },
+    "0022":{item_id:"stone_piece_random_6", count:100, buy:2, },
+    "0023":{item_id:"stone_piece_random_7", count:100, buy:2, },
+    "0024":{item_id:"food_2", count:30, buy:2, },
+    "0025":{item_id:"food_3", count:30, buy:2, },
+    "0026":{item_id:"food_4", count:30, buy:2, },
+    "0027":{item_id:"food_5", count:30, buy:2, },
+    "0028":{item_id:"food_6", count:30, buy:2, },
+    "0029":{item_id:"dungeon_dice", count:5, buy:2, },
+    "0030":{item_id:"hero_upgrade_card_piece", count:3, buy:2, },
+};
+
+Database.goblin_reduce = {
+    "209": 8,
+    "210": 5,
+    "211": 5,
+    "212": 3,
 };
