@@ -215,6 +215,7 @@ Base.extends("GameConnection", {
                 coin: "gold", // 金币
                 gold: "colorDiamond", // 彩钻
                 ticket: "whiteDiamond", // 白钻
+                league_id: "league", // 所属国家
                 league_medal: "leagueMedal", // 国家勋章
                 crystal: "crystal", // 帝国战水晶
                 arena_point: "arenaPoint", // 竞技场积分
@@ -1308,7 +1309,7 @@ Base.extends("GameConnection", {
                     return safe(done)({});
                 }
 
-                var ourPos = data.pos;
+                var ourPos = this.gameInfo.league;
                 var target = (config.target == ourPos ? 0 : config.target);
                 var warCity = null;
                 var minScore = 1000000000;
@@ -1377,7 +1378,7 @@ Base.extends("GameConnection", {
                             } else if (data_combat.type == 3 || (data_combat.type == 4 && config.gold70)) {
                                 var data_event = yield this.sendMsg("League", "event", { id:warCity.id, choose:1 }, next);
                                 if (data_event && data_event.success == 1 && data_combat.type == 3) {
-                                    var data_super = yield this.sendMsg("League", "superWar", {id:45}, next);
+                                    var data_super = yield this.sendMsg("League", "superWar", {id:warCity.id}, next);
                                     if (data_super) {
                                         updateFight({ num: fightNum, super: data_super.super});
                                     }
@@ -1387,7 +1388,7 @@ Base.extends("GameConnection", {
                                 // Dont care result
                             }
                         } else {
-                            var data_super = yield this.sendMsg("League", "superWar", {id:45}, next);
+                            var data_super = yield this.sendMsg("League", "superWar", {id:warCity.id}, next);
                             if (!data_super) {
                                 break;
                             }
@@ -1911,5 +1912,6 @@ Base.extends("GameConnection", {
         this.regMsg("Combat", "complete", (data) => {}); // show combat
         this.regMsg("RoleExplore", "update", (data) => {}); // notification
         this.regMsg("League", "kill", (data) => {}); // notification
+        this.regMsg("League", "updateTop", (data) => {}); // notification
     },
 });
