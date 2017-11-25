@@ -996,6 +996,10 @@ Base.extends("GameConnection", {
             });
         }, this);
     },
+    autoGoblin:function(config, done) {
+        var next = coroutine(function*() {
+        }, this);
+    },
     autoMaze:function(config, done) {
         var next = coroutine(function*() {
             if (this.validator.checkHourly("autoMaze")) {
@@ -1820,6 +1824,7 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("ActGoblin", "refresh", null, next);
             //var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next); //皇帝战
             //var data = yield this.sendMsg("Tavern", "getlog", {ids:"50016,60018,70041"}, next); // 可兑换勇者的状态
+            //var data = yield this.sendMsg("Comment", "getCount", {id:80005}, next); // 勇者评论数目
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);

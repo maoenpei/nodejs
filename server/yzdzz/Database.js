@@ -3,6 +3,20 @@ require("../Base");
 
 Database = {};
 
+Database.goblinInfo = function(id) {
+    var reduceInfo = this.goblin_reduce[id.substr(0, 3)];
+    var itemInfo = this.goblin_item[id.substr(3, 4)];
+    if (!reduceInfo || !itemInfo) {
+        return null;
+    }
+    return {
+        reduce: reduceInfo,
+        itemName: itemInfo.item_id,
+        buyCount: itemInfo.count,
+        useDiamond: itemInfo.buy == 2,
+    };
+}
+
 Database.items = {
     "coin":{name:"万金币", },
     "summon_book":{name:"勇者契约书", },
@@ -170,10 +184,6 @@ Database.equips = {
     "weapon":{name:"武器"},
 };
 
-Database.heros = {
-    "456123":3,
-};
-
 Database.goblin_item = {
     "0001":{item_id:"coin", count:1000, buy:2, },
     "0002":{item_id:"coin", count:500, buy:2, },
@@ -212,4 +222,73 @@ Database.goblin_reduce = {
     "210": 5,
     "211": 5,
     "212": 3,
+};
+
+Database.heros = {
+    "80005":{name:"潘多拉", cls:"X", },
+    "80010":{name:"青鸾", cls:"X", },
+    "80003":{name:"路西法", cls:"X", },
+    "80001":{name:"妲己", cls:"X", },
+    "80008":{name:"波塞冬", cls:"X", },
+    "80006":{name:"美杜莎", cls:"X", },
+    "80004":{name:"伏羲", cls:"X", },
+    "80009":{name:"苍龙", cls:"X", },
+    "80002":{name:"哈迪斯", cls:"X", },
+    "70007":{name:"黑衣剑士", cls:"SSS+", },
+    "70006":{name:"本子娜", cls:"SSS+", },
+    "70003":{name:"枭之店长", cls:"SSS+", },
+    "70012":{name:"吊车尾大王", cls:"SSS+", },
+    "70014":{name:"真白骑士姬", cls:"SSS+", },
+    "70008":{name:"雅典娜", cls:"SSS+", },
+    "70015":{name:"红发之皇", cls:"SSS+", },
+    "70009":{name:"小狮郎", cls:"SSS+", },
+    "70010":{name:"静电萌宠", cls:"SSS+", },
+    "70011":{name:"黄色闪光", cls:"SSS+", },
+    "70018":{name:"鼬神", cls:"SSS+", },
+    "70016":{name:"狗哥", cls:"SSS+", },
+    "70017":{name:"泰坦神王", cls:"SSS+", },
+    "70005":{name:"金木小天使", cls:"SSS+", },
+    "70001":{name:"吾王", cls:"SSS+", },
+    "70004":{name:"荣耀大剑", cls:"SSS+", },
+    "70019":{name:"银酱", cls:"SSS+", },
+    "70013":{name:"草帽小子", cls:"SSS+", },
+    "70020":{name:"基神", cls:"SSS+", },
+    "70002":{name:"黑焰射手", cls:"SSS+", },
+    "70022":{name:"欠雷", cls:"SSS", },
+    "70048":{name:"司令官大哥", cls:"SSS", },
+    "70049":{name:"T800", cls:"SSS", },
+    "70030":{name:"ZERO", cls:"SSS", },
+    "70036":{name:"传说中的肥羊", cls:"SSS", },
+    "70054":{name:"绿之勇者", cls:"SSS", },
+    "70021":{name:"红之骑士", cls:"SSS", },
+    "70023":{name:"吃撑", cls:"SSS", },
+    "70043":{name:"霍比特小能手", cls:"SSS", },
+    "70037":{name:"超级射击子", cls:"SSS", },
+    "70046":{name:"崇明四郎", cls:"SSS", },
+    "70053":{name:"第六天大魔王", cls:"SSS", },
+    "70028":{name:"大蛇", cls:"SSS", },
+    "70029":{name:"片翼天使", cls:"SSS", },
+    "70040":{name:"拷贝忍者", cls:"SSS", },
+    "70045":{name:"月下吸血鬼", cls:"SSS", },
+    "70039":{name:"Lucy", cls:"SSS", },
+    "70051":{name:"梦幻生物", cls:"SSS", },
+    "70034":{name:"吕奉先", cls:"SSS", },
+    "70031":{name:"SOS团长", cls:"SSS", },
+    "70025":{name:"金色炮姐", cls:"SSS", },
+    "70033":{name:"孔明", cls:"SSS", },
+    "70035":{name:"小埋", cls:"SSS", },
+    "70047":{name:"北斗霸主", cls:"SSS", },
+    "70041":{name:"海贼猎人", cls:"SSS", },
+    "70042":{name:"国王贡", cls:"SSS", },
+    "70024":{name:"披萨魔女", cls:"SSS", },
+    "70052":{name:"双子座", cls:"SSS", },
+    "70027":{name:"最强佣兵", cls:"SSS", },
+    "70050":{name:"第一歌姬", cls:"SSS", },
+    "70038":{name:"甩葱女神", cls:"SSS", },
+    "70032":{name:"妖精女王", cls:"SSS", },
+    "70044":{name:"孙悟空", cls:"SSS", },
+    "70026":{name:"三无少女", cls:"SSS", },
+    "60016":{name:"艾雪", },
+    "60040":{name:"恶魔猎手", },
+    "80010":{name:"潘多拉", },
 };
