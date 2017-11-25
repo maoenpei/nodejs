@@ -434,6 +434,7 @@ var displayAutomationModel = {
             {name: "target", desc: "优先攻击的国家", type: "number", limit: [0, 3], alias: ["无", "风", "火", "水"]},
             {name: "face", desc: "使用笑脸次数", type: "number", limit: [0, 200]},
             {name: "faceForce", desc: "笑脸不够使用白钻", type: "check"},
+            {name: "useFlag", desc: "是否使用战斗旗帜补齐10连击", type: "check"},
             {name: "gold70", desc: "是否接受70%的金币", type: "check"},
         ]},
         {name: "autoUnion", desc: "骑士团", props: [
