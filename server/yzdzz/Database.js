@@ -4,8 +4,9 @@ require("../Base");
 Database = {};
 
 Database.goblinInfo = function(id) {
-    var reduceInfo = this.goblin_reduce[id.substr(0, 3)];
-    var itemInfo = this.goblin_item[id.substr(3, 4)];
+    var iId = Number(id) % 1000000;
+    var reduceInfo = this.goblin_reduce[Math.floor(iId / 10000)];
+    var itemInfo = this.goblin_item[iId % 10000];
     if (!reduceInfo || !itemInfo) {
         return null;
     }
@@ -185,43 +186,43 @@ Database.equips = {
 };
 
 Database.goblin_item = {
-    "0001":{item_id:"coin", count:1000, buy:2, },
-    "0002":{item_id:"coin", count:500, buy:2, },
-    "0003":{item_id:"summon_book", count:5, buy:1, },
-    "0004":{item_id:"summon_book", count:2, buy:1, },
-    "0005":{item_id:"stone_piece_random_3", count:100, buy:1, },
-    "0006":{item_id:"stone_piece_random_4", count:100, buy:1, },
-    "0007":{item_id:"stone_piece_random_5", count:100, buy:1, },
-    "0008":{item_id:"stone_piece_random_6", count:100, buy:1, },
-    "0009":{item_id:"stone_piece_random_7", count:100, buy:1, },
-    "0010":{item_id:"food_2", count:30, buy:1, },
-    "0011":{item_id:"food_3", count:30, buy:1, },
-    "0012":{item_id:"food_4", count:30, buy:1, },
-    "0013":{item_id:"food_5", count:30, buy:1, },
-    "0014":{item_id:"food_6", count:30, buy:1, },
-    "0015":{item_id:"dungeon_dice", count:5, buy:1, },
-    "0016":{item_id:"hero_upgrade_card_piece", count:3, buy:1, },
-    "0017":{item_id:"summon_book", count:5, buy:2, },
-    "0018":{item_id:"summon_book", count:2, buy:2, },
-    "0019":{item_id:"stone_piece_random_3", count:100, buy:2, },
-    "0020":{item_id:"stone_piece_random_4", count:100, buy:2, },
-    "0021":{item_id:"stone_piece_random_5", count:100, buy:2, },
-    "0022":{item_id:"stone_piece_random_6", count:100, buy:2, },
-    "0023":{item_id:"stone_piece_random_7", count:100, buy:2, },
-    "0024":{item_id:"food_2", count:30, buy:2, },
-    "0025":{item_id:"food_3", count:30, buy:2, },
-    "0026":{item_id:"food_4", count:30, buy:2, },
-    "0027":{item_id:"food_5", count:30, buy:2, },
-    "0028":{item_id:"food_6", count:30, buy:2, },
-    "0029":{item_id:"dungeon_dice", count:5, buy:2, },
-    "0030":{item_id:"hero_upgrade_card_piece", count:3, buy:2, },
+    "1":{item_id:"coin", count:1000, buy:2, },
+    "2":{item_id:"coin", count:500, buy:2, },
+    "3":{item_id:"summon_book", count:5, buy:1, },
+    "4":{item_id:"summon_book", count:2, buy:1, },
+    "5":{item_id:"stone_piece_random_3", count:100, buy:1, },
+    "6":{item_id:"stone_piece_random_4", count:100, buy:1, },
+    "7":{item_id:"stone_piece_random_5", count:100, buy:1, },
+    "8":{item_id:"stone_piece_random_6", count:100, buy:1, },
+    "9":{item_id:"stone_piece_random_7", count:100, buy:1, },
+    "10":{item_id:"food_2", count:30, buy:1, },
+    "11":{item_id:"food_3", count:30, buy:1, },
+    "12":{item_id:"food_4", count:30, buy:1, },
+    "13":{item_id:"food_5", count:30, buy:1, },
+    "14":{item_id:"food_6", count:30, buy:1, },
+    "15":{item_id:"dungeon_dice", count:5, buy:1, },
+    "16":{item_id:"hero_upgrade_card_piece", count:3, buy:1, },
+    "17":{item_id:"summon_book", count:5, buy:2, },
+    "18":{item_id:"summon_book", count:2, buy:2, },
+    "19":{item_id:"stone_piece_random_3", count:100, buy:2, },
+    "20":{item_id:"stone_piece_random_4", count:100, buy:2, },
+    "21":{item_id:"stone_piece_random_5", count:100, buy:2, },
+    "22":{item_id:"stone_piece_random_6", count:100, buy:2, },
+    "23":{item_id:"stone_piece_random_7", count:100, buy:2, },
+    "24":{item_id:"food_2", count:30, buy:2, },
+    "25":{item_id:"food_3", count:30, buy:2, },
+    "26":{item_id:"food_4", count:30, buy:2, },
+    "27":{item_id:"food_5", count:30, buy:2, },
+    "28":{item_id:"food_6", count:30, buy:2, },
+    "29":{item_id:"dungeon_dice", count:5, buy:2, },
+    "30":{item_id:"hero_upgrade_card_piece", count:3, buy:2, },
 };
 
 Database.goblin_reduce = {
-    "209": 8,
-    "210": 5,
-    "211": 5,
-    "212": 3,
+    "9": 8,
+    "10": 5,
+    "11": 5,
+    "12": 3,
 };
 
 Database.heros = {

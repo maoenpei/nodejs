@@ -205,7 +205,7 @@ Base.extends("GameConnection", {
                 "channelUid":this.accountInfo.accountId,
                 "productId":182,
             }, next);
-            //yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvlogin.json", JSON.stringify(data, null, 2), next);
+            yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvlogin.json", JSON.stringify(data, null, 2), next);
             if (!data || !data.uid) {
                 this.quit();
                 return safe(done)({});
@@ -230,8 +230,9 @@ Base.extends("GameConnection", {
                 name: data.role_name, // 名字
                 power: data.cpi, // 战力
 
-                hasXReward: !!(data.act_goldsign),
-                hasRedPacket: !!(data.act_redpacket),
+                hasHeroReward: !!(data.act_goldenhero), // 2
+                hasXReward: !!(data.act_goldsign), // 2
+                hasRedPacket: !!(data.act_redpacket), // 2
             };
             this.updateGameInfo(data, true);
             var result = yield GameHTTP.stat(this.gameInfo.playerId, "reg", next);
@@ -1029,35 +1030,44 @@ Base.extends("GameConnection", {
                     }
                     return false;
                 };
-                // Check timed refresh
-                for (var id in data.list) {
-                    if (data.list[id] == 1) {
-                        var info = Database.goblinInfo(id);
-                        if (ShouldBuy(info)) {
-                            var data_buy = yield this.sendMsg("ActGoblin", "buy", {id:id}, next);
-                            if (!data_buy) {
+                var hasUnrecognized = false;
+                var GetBuyIds = (data) => {
+                    var buyIds = [];
+                    for (var id in data.list) {
+                        if (data.list[id] == 1) {
+                            var info = Database.goblinInfo(id);
+                            if (!info) {
+                                console.log("=======>> unrecoginized item id:", id, data.list, this.gameInfo.name);
+                                hasUnrecognized = true;
                                 break;
+                            } else if (ShouldBuy(info)) {
+                                buyIds.push(id);
                             }
                         }
+                    }
+                    return buyIds;
+                };
+                // Check timed refresh
+                var buyIds = GetBuyIds(data);
+                for (var i = 0; i < buyIds.length; ++i) {
+                    var data_buy = yield this.sendMsg("ActGoblin", "buy", {id:buyIds[i]}, next);
+                    if (!data_buy) {
+                        break;
                     }
                 }
                 // Check manual refresh
                 var alreadyBuy = (3 - data.num) + data.buy;
                 var buyNum = (config.buyNum > 13 ? 13 : config.buyNum);
-                while(alreadyBuy < buyNum) {
+                while(alreadyBuy < buyNum && !hasUnrecognized) {
                     var data_refresh = yield this.sendMsg("ActGoblin", "refresh", null, next);
                     if (!data_refresh || !data_refresh.list) {
                         break;
                     }
-                    for (var id in data_refresh.list) {
-                        if (data_refresh.list[id] == 1) {
-                            var info = Database.goblinInfo(id);
-                            if (ShouldBuy(info)) {
-                                var data_buy = yield this.sendMsg("ActGoblin", "buy", {id:id}, next);
-                                if (!data_buy) {
-                                    break;
-                                }
-                            }
+                    var buyIds = GetBuyIds(data_refresh);
+                    for (var i = 0; i < buyIds.length; ++i) {
+                        var data_buy = yield this.sendMsg("ActGoblin", "buy", {id:buyIds[i]}, next);
+                        if (!data_buy) {
+                            break;
                         }
                     }
                     alreadyBuy = (3 - data_refresh.num) + data_refresh.buy;
