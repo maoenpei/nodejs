@@ -1483,12 +1483,14 @@ Base.extends("GameConnection", {
                 // re-select a lower score city
                 if (!FightEnd() && fightCount++ % 5 == 4) {
                     var data_again = yield this.sendMsg("League", "getWarInfo", null, next);
-                    var warCity_again = GetWarCity(data_again);
-                    if (warCity_again.id != warCity.id) {
-                        warCity = warCity_again;
-                        var data_enter = yield this.sendMsg("League", "enterWar", {id: warCity.id, league: ourPos}, next);
-                        if (!data_enter) {
-                            break;
+                    if (data_again && data_again.map) {
+                        var warCity_again = GetWarCity(data_again);
+                        if (warCity_again.id != warCity.id) {
+                            warCity = warCity_again;
+                            var data_enter = yield this.sendMsg("League", "enterWar", {id: warCity.id, league: ourPos}, next);
+                            if (!data_enter) {
+                                break;
+                            }
                         }
                     }
                 }
