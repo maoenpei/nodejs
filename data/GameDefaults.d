@@ -10,6 +10,15 @@
             ,"redpacket":true
         }
         ,"autoForward":{}
+        ,"autoGoblin":{
+            "buyNum":8
+            ,"dungeonDiceGold":3
+            ,"dungeonDiceDiamond":3
+            ,"summonBookGold":3
+            ,"summonBookDiamond":1
+            ,"heroUpgradeGold":3
+            ,"heroUpgradeDiamond":0
+        }
         ,"autoMaze":{"searchNumber":3}
         ,"autoFriendWar":{"baseInspire":3,"advanceInspire":3,"buyBlueCard":true}
         ,"autoLadder":{"fightPlayer":false,"useCard":true}

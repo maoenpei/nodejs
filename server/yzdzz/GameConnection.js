@@ -998,6 +998,74 @@ Base.extends("GameConnection", {
     },
     autoGoblin:function(config, done) {
         var next = coroutine(function*() {
+            if (this.validator.checkHourly("autoGoblin")) {
+                var data = yield this.sendMsg("ActGoblin", "getinfo", null, next);
+                if (!data || !data.list) {
+                    return safe(done)({});
+                }
+
+                var reduceLevels = [0, 3, 5, 8];
+                var ShouldBuy = (info) => {
+                    if (info.itemName == "dungeon_dice") {
+                        if (!info.useDiamond) {
+                            return info.reduce <= reduceLevels[config.dungeonDiceGold];
+                        } else {
+                            return info.reduce <= reduceLevels[config.dungeonDiceDiamond];
+                        }
+                    }
+                    if (info.itemName == "summon_book") {
+                        if (!info.useDiamond) {
+                            return info.reduce <= reduceLevels[config.summonBookGold];
+                        } else {
+                            return info.reduce <= reduceLevels[config.summonBookDiamond];
+                        }
+                    }
+                    if (info.itemName == "hero_upgrade_card_piece") {
+                        if (!info.useDiamond) {
+                            return info.reduce <= reduceLevels[config.heroUpgradeGold];
+                        } else if (config.heroUpgradeDiamond > 0) {
+                            return info.reduce <= reduceLevels[config.heroUpgradeDiamond];
+                        }
+                    }
+                    return false;
+                };
+                // Check timed refresh
+                for (var id in data.list) {
+                    if (data.list[id] == 1) {
+                        var info = Database.goblinInfo(id);
+                        if (ShouldBuy(info)) {
+                            var data_buy = yield this.sendMsg("ActGoblin", "buy", {id:id}, next);
+                            if (!data_buy) {
+                                break;
+                            }
+                        }
+                    }
+                }
+                // Check manual refresh
+                var alreadyBuy = (3 - data.num) + data.buy;
+                var buyNum = (config.buyNum > 13 ? 13 : config.buyNum);
+                while(alreadyBuy < buyNum) {
+                    var data_refresh = yield this.sendMsg("ActGoblin", "refresh", null, next);
+                    if (!data_refresh || !data_refresh.list) {
+                        break;
+                    }
+                    for (var id in data_refresh.list) {
+                        if (data_refresh.list[id] == 1) {
+                            var info = Database.goblinInfo(id);
+                            if (ShouldBuy(info)) {
+                                var data_buy = yield this.sendMsg("ActGoblin", "buy", {id:id}, next);
+                                if (!data_buy) {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    alreadyBuy = (3 - data_refresh.num) + data_refresh.buy;
+                }
+            }
+            return safe(done)({
+                success: true,
+            });
         }, this);
     },
     autoMaze:function(config, done) {

@@ -413,6 +413,15 @@ var displayAutomationModel = {
             {name: "redpacket", desc: "红包", type: "check"},
         ]},
         {name: "autoForward", desc: "战斗，下一关", props: []},
+        {name: "autoGoblin", desc: "地精商店", props: [
+            {name: "buyNum", desc: "刷新次数", type: "number", limit: [0, 13]},
+            {name: "dungeonDiceGold", desc: "骰子(金币)", type: "number", limit: [0, 3], alias:["不购买", "3折以下", "5折以下", "8折以下"]},
+            {name: "dungeonDiceDiamond", desc: "骰子(钻石)", type: "number", limit: [0, 3], alias:["不购买", "3折以下", "5折以下", "8折以下"]},
+            {name: "summonBookGold", desc: "契约书(金币)", type: "number", limit: [0, 3], alias:["不购买", "3折以下", "5折以下", "8折以下"]},
+            {name: "summonBookDiamond", desc: "契约书(钻石)", type: "number", limit: [0, 3], alias:["不购买", "3折以下", "5折以下", "8折以下"]},
+            {name: "heroUpgradeGold", desc: "主角进化卡(金币)", type: "number", limit: [0, 3], alias:["不购买", "3折以下", "5折以下", "8折以下"]},
+            {name: "heroUpgradeDiamond", desc: "主角进化卡(钻石)", type: "number", limit: [0, 3], alias:["不购买", "3折以下", "5折以下", "8折以下"]},
+        ]},
         {name: "autoMaze", desc: "迷宫", props: [
             {name: "searchNumber", desc: "每个迷宫的寻宝次数", type: "number", limit: [0, 13]},
         ]},
