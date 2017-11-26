@@ -1051,31 +1051,36 @@ function displayPlayerList() {
     displayPlayerListModel.get(function(data) {
         divContentPanel.html($(".hd_player_list_all").html());
 
-        var divShowKingwar = divContentPanel.find(".div_show_kingwar");
-        unique_click(divShowKingwar, function() {
-            StorageItem().showKingwar = (StorageItem().showKingwar == "true" ? "false" : "true");
+        var inputShowKingwar = divContentPanel.find(".input_player_sub_show_kingwar");
+        inputShowKingwar.change(function() {
+            var showKingwar = inputShowKingwar.is(":checked");
+            StorageItem().showKingwar = (showKingwar ? "true" : "false");
             loadPlayers();
         });
 
-        var divShowQuit = divContentPanel.find(".div_show_quit");
-        unique_click(divShowQuit, function() {
-            StorageItem().showQuit = (StorageItem().showQuit == "true" ? "false" : "true");
+        var inputShowQuit = divContentPanel.find(".input_player_sub_show_quit");
+        inputShowQuit.change(function() {
+            var showQuit = inputShowQuit.is(":checked");
+            StorageItem().showQuit = (showQuit ? "true" : "false");
             loadPlayers();
         });
 
-        var loadPlayers = function() {
+        adjustPageLayout();
+        loadPlayers();
+
+        function loadPlayers() {
             var showKingwar = StorageItem().showKingwar == "true";
             if (showKingwar) {
-                divShowKingwar.addClass("div_show_checked");
+                inputShowKingwar.attr("checked", "checked");
             } else {
-                divShowKingwar.removeClass("div_show_checked");
+                inputShowKingwar.removeAttr("checked");
             }
 
             var showQuit = StorageItem().showQuit == "true";
             if (showQuit) {
-                divShowQuit.addClass("div_show_checked");
+                inputShowQuit.attr("checked", "checked");
             } else {
-                divShowQuit.removeClass("div_show_checked");
+                inputShowQuit.removeAttr("checked");
             }
 
             var divPlayerList = divContentPanel.find(".div_player_list");
@@ -1115,7 +1120,6 @@ function displayPlayerList() {
                 }
             });
         }
-        loadPlayers();
     });
 }
 

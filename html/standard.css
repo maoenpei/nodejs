@@ -269,7 +269,7 @@ input[type='checkbox']{
 .div_player_list_title{
     color: rgb(240, 240, 240);
     font-size: 0.8rem;
-    margin-top: 0.3rem;
+    margin-top: 0.1rem;
     background-color: rgba(0, 0, 0, 0.4);
     padding: 0.05rem;
 }
@@ -319,27 +319,13 @@ input[type='checkbox']{
 .div_player_item_last_content{
     font-size: 0.5rem;
 }
-.div_show_kingwar, .div_show_quit{
-    position:fixed;
-    z-index:10;
-    text-align:center;
-    padding-left:0.05rem;
-    font-size:0.6rem;
-    padding-top:0.2rem;
-    margin:0.6rem;
-    width:4.2rem;
-    height:2.3rem;
-    right: 1.5rem;
-    background:rgba(200, 127, 0, 0.4);
+.div_player_sub_title_bar{
+    color: blue;
 }
-.div_show_kingwar{
-    top: 6rem;
-}
-.div_show_quit{
-    top: 9rem;
-}
-.div_show_checked{
-    border: 2px solid #0ad;
+.div_player_sub_show_item{
+    display: inline-block;
+    margin-left: 0.4rem;
+    margin-right: 0.4rem;
 }
 
 .div_users_list{
