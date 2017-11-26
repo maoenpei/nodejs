@@ -106,7 +106,7 @@ Base.extends("GameConnection", {
             if (!obj || obj.code != 'SUCCESS') {
                 return safe(done)({});
             }
-            console.log("Login success with account {0}".format(this.username));
+            this.log("Login success!");
             this.accountInfo = {
                 accessToken : obj.value.accessToken,
                 accountId : obj.value.channelUid,
@@ -155,7 +155,7 @@ Base.extends("GameConnection", {
             {
                 var result = yield GameHTTP.stat(this.accountInfo.accountId, "active", next);
                 if (result != "done") {
-                    console.log("stat accountId:{0} error:{1}".format(this.accountInfo.accountId, result));
+                    this.log("stat accountId:{0} error:{1}".format(this.accountInfo.accountId, result));
                 }
             }
 
@@ -184,7 +184,7 @@ Base.extends("GameConnection", {
             if (!sock) {
                 return safe(done)({});
             }
-            console.log("Connected with ip:{0}, port:{1}, server:{2}".format(server.ip, server.port, server.desc));
+            this.log("Connected with ip:{0}, port:{1}, server:{2}".format(server.ip, server.port, server.desc));
             this.sock = sock;
             this.serverInfo = server;
             GameSock.receive(sock, (c, m, data, change) => {
@@ -237,16 +237,16 @@ Base.extends("GameConnection", {
             this.updateGameInfo(data, true);
             var result = yield GameHTTP.stat(this.gameInfo.playerId, "reg", next);
             if (result != 'done') {
-                console.log("stat failed playerId:{0} error:{1}".format(this.gameInfo.playerId, JSON.stringify(result)));
+                this.log("stat failed playerId:{0} error:{1}".format(this.gameInfo.playerId, JSON.stringify(result)));
             }
-            console.log("Player id:{0}, name:{1}".format(this.gameInfo.playerId, this.gameInfo.name));
+            this.log("Player id:{0}, name:{1}".format(this.gameInfo.playerId, this.gameInfo.name));
             //var obj = yield GameHTTP.save(this.accountInfo.accountId, this.gameInfo.playerId, server.serverId, this.accountInfo.accessToken, next);
             //if (obj.code != 'SUCCESS') {
-            //    console.log("save failed accountId:{0} code:{1} reason:{2}".format(this.accountInfo.playerId, obj.code, obj.desc));
+            //    this.log("save failed accountId:{0} code:{1} reason:{2}".format(this.accountInfo.playerId, obj.code, obj.desc));
             //}
             var result = yield GameHTTP.loginServer(this.accountInfo.accountId, server.serverId, next);
             if (result != 'ok') {
-                console.log("loginServer failed accountId:{0} result:{1}".format(this.accountInfo.accountId, JSON.stringify(result)));
+                this.log("loginServer failed accountId:{0} result:{1}".format(this.accountInfo.accountId, JSON.stringify(result)));
             }
 
             return safe(done)({
@@ -293,7 +293,7 @@ Base.extends("GameConnection", {
                     this.itemsInfo = data.items;
                     this.itemsQuick = data.quick;
                 } else {
-                    console.log("============= failed to read items! =================", this.gameInfo.name);
+                    this.log("============= failed to read items! =================");
                 }
             }
             this.itemsLock.unlock();
@@ -681,7 +681,7 @@ Base.extends("GameConnection", {
                 return safe(done)({});
             }
             if (areaId != data.areaid || starId != data.star) {
-                console.log("Join KingWar (area:{0}, star:{1}) error:".format(areaId, starId), data);
+                this.log("Join KingWar (area:{0}, star:{1}) error:".format(areaId, starId), data);
             }
             return safe(done)({
                 success: true,
@@ -1037,7 +1037,7 @@ Base.extends("GameConnection", {
                         if (data.list[id] == 1) {
                             var info = Database.goblinInfo(id);
                             if (!info) {
-                                console.log("=======>> unrecoginized item id:", id, data.list, this.gameInfo.name);
+                                this.log("=======>> unrecoginized item id:", id, data.list);
                                 hasUnrecognized = true;
                                 break;
                             } else if (ShouldBuy(info)) {
@@ -1118,7 +1118,7 @@ Base.extends("GameConnection", {
                 for (var i = current; i < config.baseInspire; ++i) {
                     var data_inspire = yield this.sendMsg("FriendWar", "inspire", null, next);
                     if (!data_inspire) {
-                        console.log("FriendWar inspire failed", i);
+                        this.log("FriendWar inspire failed", i);
                         break;
                     }
                 }
@@ -1136,7 +1136,7 @@ Base.extends("GameConnection", {
                                 for (var k = 0; k < config.advanceInspire; ++k) {
                                     var data_inspire = yield this.sendMsg("FriendWar", "inspire", null, next);
                                     if (!data_inspire) {
-                                        console.log("FriendWar inspire failed", k);
+                                        this.log("FriendWar inspire failed", k);
                                         break;
                                     }
                                 }
@@ -1150,7 +1150,7 @@ Base.extends("GameConnection", {
                     if (data.reward[i] != 1 && winNumber >= neededWin[i-1]) {
                         var data_reward = yield this.sendMsg("FriendWar", "reward", {id:i}, next);
                         if (!data_reward) {
-                            console.log("FriendWar reward failed", i);
+                            this.log("FriendWar reward failed", i);
                             break;
                         }
                     }
@@ -1160,7 +1160,7 @@ Base.extends("GameConnection", {
                     for (var i = 0; i < buyCount; ++i) {
                         var data_exchange = yield this.sendMsg("FriendWar", "exchange", {id:1}, next);
                         if (!data_exchange) {
-                            console.log("FriendWar exchange failed", i, buyCount);
+                            this.log("FriendWar exchange failed", i, buyCount);
                             break;
                         }
                     }
@@ -1302,7 +1302,7 @@ Base.extends("GameConnection", {
                     for (var boss_id = data.boss_id; boss_id <= boss_max; ++boss_id) {
                         var data_boss = yield this.sendMsg("League", "boss", null, next);
                         if (!data_boss || data_boss.succ != 1) {
-                            console.log("boss failed", data_boss);
+                            this.log("boss failed", data_boss);
                             break;
                         }
                     }
@@ -1529,7 +1529,7 @@ Base.extends("GameConnection", {
                 // auto donate
                 var data_home = yield this.sendMsg("Union", "home", null, next);
                 if (!data_home || !data_home.shop) {
-                    console.log("Union home failed!", data_home);
+                    this.log("Union home failed!", data_home);
                     return safe(done)({});
                 }
                 var alreadyNum = 10 - data_home.my_max / 1000000;
@@ -1594,7 +1594,7 @@ Base.extends("GameConnection", {
                 for (var i = data.box_num; i < boxNum; ++i) {
                     var data_box = yield this.sendMsg("Arena", "box", null, next);
                     if (!data_box) {
-                        console.log("box failed", boxMax, boxNum, restArenaPoint);
+                        this.log("box failed", boxMax, boxNum, restArenaPoint);
                         break;
                     }
                 }
@@ -1638,7 +1638,7 @@ Base.extends("GameConnection", {
                         for (var i = data.fight_num; i < fightMax; ++i) {
                             var data_fight = yield this.sendMsg("Arena", "fight", { data: fightItem.uid }, next);
                             if (!data_fight) {
-                                console.log("fight failed", data.list.length, fightItem);
+                                this.log("fight failed", data.list.length, fightItem);
                                 break;
                             }
                         }
@@ -1681,7 +1681,7 @@ Base.extends("GameConnection", {
                         if (signItem.state == 1 || signItem.state == 2) {
                             var data_sign = yield this.sendMsg("ActGoldSign", "sign", {day:signItem.day}, next);
                             if (!data_sign) {
-                                console.log("ActGoldSign sign failed", i);
+                                this.log("ActGoldSign sign failed", i);
                             }
                         }
                     }
@@ -1690,7 +1690,7 @@ Base.extends("GameConnection", {
                         if (actItem.state == 1) {
                             var data_gift = yield this.sendMsg("ActGoldSign", "gift", {int:actItem.id}, next);
                             if (!data_gift) {
-                                console.log("ActGoldSign gift failed", i);
+                                this.log("ActGoldSign gift failed", i);
                             }
                         }
                     }
@@ -1698,7 +1698,7 @@ Base.extends("GameConnection", {
                     for (var i = wish_num; i < config.xwish; ++i) {
                         var data_wish = yield this.sendMsg("ActGoldSign", "wish", null, next);
                         if (!data_wish) {
-                            console.log("ActGoldSign wish failed", i);
+                            this.log("ActGoldSign wish failed", i);
                             break;
                         }
                     }
@@ -1714,7 +1714,7 @@ Base.extends("GameConnection", {
                             for (var j = item.num; j < buy_max; ++j) {
                                 var data_exchange = yield this.sendMsg("ActGoldSign", "exchange", {id:item.id}, next);
                                 if (!data_exchange) {
-                                    console.log("ActGoldSign", "exchange", "failed", j);
+                                    this.log("ActGoldSign", "exchange", "failed", j);
                                     break;
                                 }
                             }
@@ -1913,6 +1913,10 @@ Base.extends("GameConnection", {
     },
 
     // private
+    log:function() {
+        var appendArgs = (this.gameInfo ? [">> Player -", this.gameInfo.name] : [">> Username -", this.username]);
+        console.log.apply(console, appendArgs.concat(Array.prototype.slice.call(arguments)));
+    },
     sendNotify:function(c, m, data, callback) {
         if (!this.sock) {
             return later(callback, null);
@@ -1935,7 +1939,7 @@ Base.extends("GameConnection", {
             return later(callback, null);
         }
         var kickKey = this.regKick(() => {
-            console.log("reply null by kick!");
+            this.log("reply null by kick!");
             safe(callback)(null);
         });
         var key = c + "." + m;
@@ -1956,7 +1960,7 @@ Base.extends("GameConnection", {
                 callbackArray[i](data);
             }
         } else {
-            console.log("untracked msg", "c:", c, "m:", m, "data:", data);
+            this.log("untracked msg", "c:", c, "m:", m, "data:", data);
         }
     },
     regMsg:function(c, m, callback) {
@@ -2003,7 +2007,7 @@ Base.extends("GameConnection", {
         this.regMsg("MsgBox", "message", (data) => {});
         this.regMsg("Chat", "msg", (data) => {});
         this.regMsg("Role", "kick", (data) => {
-            console.log("User Kicked!", (this.gameInfo ? this.gameInfo.name : this.username));
+            this.log("User Kicked!");
             this.quit();
             var kickCallbacks = this.kickCallbacks;
             this.kickCallbacks = [];
