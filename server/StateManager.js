@@ -8,21 +8,14 @@ Base.extends("$StateManager", {
         this.fileStates = {};
         this.canSave = {};
     },
-    openState:function(fileName, lineProcessor, done) {
+    openState:function(fileName, done) {
         assert(!this.fileStates[fileName] && !this.canSave[fileName]);
         var path = "/data/" + fileName;
-        if (lineProcessor) {
-            this.fileStates[fileName] = {};
-            $FileManager.parseFile(path, (line) => {
-                lineProcessor(line, this.fileStates[fileName]);
-            }, done);
-        } else {
-            this.canSave[fileName] = true;
-            $FileManager.visitFile(path, (data) => {
-                this.fileStates[fileName] = (data ? JSON.parse(data.toString()) : {});
-                safe(done)();
-            });
-        }
+        this.canSave[fileName] = true;
+        $FileManager.visitFile(path, (data) => {
+            this.fileStates[fileName] = (data ? JSON.parse(data.toString()) : {});
+            safe(done)();
+        });
     },
     getState:function(fileName) {
         if (!this.fileStates[fileName]) {

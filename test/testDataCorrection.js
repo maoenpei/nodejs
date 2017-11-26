@@ -21,14 +21,14 @@ GAME_PLAYER_NAME_CONFIG = "GamePlayerNames.d";
 
 var next = coroutine(function*() {
 
-    yield $StateManager.openState(USER_CONFIG, null, next);
-    yield $StateManager.openState(GAME_ACCOUNTS_CONFIG, null, next);
-    yield $StateManager.openState(GAME_SETTING_CONFIG, null, next);
-    yield $StateManager.openState(GAME_DEFAULTS_CONFIG, null, next);
-    yield $StateManager.openState(GAME_KINGWAR_CONFIG, null, next);
-    yield $StateManager.openState(GAME_POWER_MAX_CONFIG, null, next);
-    yield $StateManager.openState(GAME_UNIONS_CONFIG, null, next);
-    yield $StateManager.openState(GAME_PLAYER_NAME_CONFIG, null, next);
+    yield $StateManager.openState(USER_CONFIG, next);
+    yield $StateManager.openState(GAME_ACCOUNTS_CONFIG, next);
+    yield $StateManager.openState(GAME_SETTING_CONFIG, next);
+    yield $StateManager.openState(GAME_DEFAULTS_CONFIG, next);
+    yield $StateManager.openState(GAME_KINGWAR_CONFIG, next);
+    yield $StateManager.openState(GAME_POWER_MAX_CONFIG, next);
+    yield $StateManager.openState(GAME_UNIONS_CONFIG, next);
+    yield $StateManager.openState(GAME_PLAYER_NAME_CONFIG, next);
 
     var stateUser = $StateManager.getState(USER_CONFIG);
     var stateAccounts = $StateManager.getState(GAME_ACCOUNTS_CONFIG);

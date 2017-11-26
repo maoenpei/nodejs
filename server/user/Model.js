@@ -22,8 +22,8 @@ $HttpModel.addClass({
     },
     initialize:function(done) {
         var next = coroutine(function*() {
-            yield $StateManager.openState(USER_CONFIG, null, next);
-            yield $StateManager.openState(BREAKIN_CONFIG, null, next);
+            yield $StateManager.openState(USER_CONFIG, next);
+            yield $StateManager.openState(BREAKIN_CONFIG, next);
             safe(done)();
         }, this);
     },

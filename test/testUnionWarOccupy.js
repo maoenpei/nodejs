@@ -19,6 +19,7 @@ var accounts = [
     {u:"13719987234", p:"xwWZT123"},
     {u:"13801890722", p:"Q950318my"},
     {u:"13758796288", p:"087200"},
+
     {u:"15171335812", p:"12345678"},
     {u:"18983624927", p:"123456"},
     {u:"13913945392", p:"816476"},
@@ -38,7 +39,7 @@ var next = coroutine(function*() {
 
     var gameController = new GameController();
     var accountManager = gameController.getAccountManager();
-    yield $StateManager.openState(GAME_POWER_MAX_CONFIG, null, next);
+    yield $StateManager.openState(GAME_POWER_MAX_CONFIG, next);
     var allPowerMax = $StateManager.getState(GAME_POWER_MAX_CONFIG);
     var accountKeys = [];
     for (var i = 0; i < accounts.length; ++i) {

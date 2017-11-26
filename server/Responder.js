@@ -2,7 +2,7 @@
 require("./Base");
 require("./StateManager");
 
-EXTENSION_CONFIG = "ExtTypes.i";
+EXTENSION_CONFIG = "ExtTypes.d";
 
 Base.extends("Responder", {
 	_constructor:function(res) {

@@ -22,12 +22,12 @@ var next = coroutine(function*() {
     var gameController = new GameController();
     var accountManager = gameController.getAccountManager();
 
-    yield $StateManager.openState(GAME_ACCOUNTS_CONFIG, null, next);
-    yield $StateManager.openState(GAME_SETTING_CONFIG, null, next);
-    yield $StateManager.openState(GAME_DEFAULTS_CONFIG, null, next);
-    yield $StateManager.openState(GAME_KINGWAR_CONFIG, null, next);
-    yield $StateManager.openState(GAME_POWER_MAX_CONFIG, null, next);
-    yield $StateManager.openState(GAME_UNIONS_CONFIG, null, next);
+    yield $StateManager.openState(GAME_ACCOUNTS_CONFIG, next);
+    yield $StateManager.openState(GAME_SETTING_CONFIG, next);
+    yield $StateManager.openState(GAME_DEFAULTS_CONFIG, next);
+    yield $StateManager.openState(GAME_KINGWAR_CONFIG, next);
+    yield $StateManager.openState(GAME_POWER_MAX_CONFIG, next);
+    yield $StateManager.openState(GAME_UNIONS_CONFIG, next);
 
     var defaultsStates = $StateManager.getState(GAME_DEFAULTS_CONFIG);
     var allKingwars = $StateManager.getState(GAME_KINGWAR_CONFIG);

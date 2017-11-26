@@ -47,10 +47,7 @@ Base.extends("HttpServer", {
         this.ready = false;
 
         var next = coroutine(function*() {
-            yield $StateManager.openState(EXTENSION_CONFIG, (line, state) => {
-                var info = line.split(" ");
-                state["." + info[0]] = info[1];
-            }, next);
+            yield $StateManager.openState(EXTENSION_CONFIG, next);
 
             this.models = [];
             var classes = $HttpModel.getClasses();

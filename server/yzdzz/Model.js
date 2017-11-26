@@ -65,7 +65,7 @@ $HttpModel.addClass({
     },
     initialize:function(done) {
         var next = coroutine(function*() {
-            yield $StateManager.openState(GAME_ACCOUNTS_CONFIG, null, next);
+            yield $StateManager.openState(GAME_ACCOUNTS_CONFIG, next);
             var accountStates = $StateManager.getState(GAME_ACCOUNTS_CONFIG);
             for (var accountKey in accountStates.accounts) {
                 var accountInfo = accountStates.accounts[accountKey];
@@ -76,12 +76,12 @@ $HttpModel.addClass({
                 var playerInfo = accountStates.players[playerKey];
                 this.addPlayer(playerKey, playerInfo.account, playerInfo.server);
             }
-            yield $StateManager.openState(GAME_SETTING_CONFIG, null, next);
-            yield $StateManager.openState(GAME_DEFAULTS_CONFIG, null, next);
-            yield $StateManager.openState(GAME_POWER_MAX_CONFIG, null, next);
-            yield $StateManager.openState(GAME_UNIONS_CONFIG, null, next);
-            yield $StateManager.openState(GAME_KINGWAR_CONFIG, null, next);
-            yield $StateManager.openState(GAME_PLAYER_NAME_CONFIG, null, next);
+            yield $StateManager.openState(GAME_SETTING_CONFIG, next);
+            yield $StateManager.openState(GAME_DEFAULTS_CONFIG, next);
+            yield $StateManager.openState(GAME_POWER_MAX_CONFIG, next);
+            yield $StateManager.openState(GAME_UNIONS_CONFIG, next);
+            yield $StateManager.openState(GAME_KINGWAR_CONFIG, next);
+            yield $StateManager.openState(GAME_PLAYER_NAME_CONFIG, next);
 
             var allPowerMax = $StateManager.getState(GAME_POWER_MAX_CONFIG);
             this.playersMd5 = this.getTag(allPowerMax);
