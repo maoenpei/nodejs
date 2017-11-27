@@ -3,6 +3,17 @@ require("../Base");
 
 Database = {};
 
+Database.cardInfo = function(card) {
+    return {
+        isGold: card == 1,
+        isBad: card == 2 || card == 3,
+        isGood: card == 4,
+        isDismissGood: card == 5,
+        isDismissBad: card == 6,
+        cardType: card,
+    };
+}
+
 Database.goblinInfo = function(id) {
     var iId = Number(id) % 1000000;
     var reduceInfo = this.goblin_reduce[Math.floor(iId / 10000)];

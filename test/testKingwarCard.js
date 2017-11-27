@@ -41,7 +41,7 @@ var next = coroutine(function*() {
         if (!data.success) {
             continue;
         }
-        var data = yield conn.getRace(next);
+        var data = yield conn.getKingWarRace(next);
         console.log(data.area, data.star, data.cards, accounts[i].u);
         conn.quit();
     }

@@ -659,7 +659,7 @@ Base.extends("GameConnection", {
             });
         }, this);
     },
-    getArea:function(areaId, done) {
+    getKingWarArea:function(areaId, done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("KingWar", "getAreaInfo", null, next);
             if (!data || !data.lands) {
@@ -711,7 +711,7 @@ Base.extends("GameConnection", {
             });
         }, this);
     },
-    getRace:function(done) {
+    getKingWarRace:function(done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("KingWar", "getRaceInfo", null, next);
             if (!data || !data.list) {
@@ -728,7 +728,7 @@ Base.extends("GameConnection", {
             if (data.cards) {
                 for (var i = 0; i < data.cards.length; ++i) {
                     var card = data.cards[i];
-                    cards.push(GameUtil.cardToInfo(card));
+                    cards.push(Database.cardInfo(card));
                 }
             }
             return safe(done)({
@@ -790,7 +790,7 @@ Base.extends("GameConnection", {
             var cards = [];
             for (var i = 0; i < data.cards.length; ++i) {
                 var card = data.cards[i];
-                cards.push(GameUtil.cardToInfo(card));
+                cards.push(Database.cardInfo(card));
             }
             var members = [];
             for (var i = 0; i < data.members.length; ++i) {
