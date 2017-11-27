@@ -372,27 +372,6 @@ Base.extends("GameConnection", {
         }, this);
     },
 
-    getRankPlayers:function(done) {
-        var next = coroutine(function*() {
-            var data = yield this.sendMsg("KingWar", "roleRank", null, next);
-            if (!data || !data.list) {
-                return safe(done)({});
-            }
-            var players = [];
-            for (var i = 0; i < data.list.length; ++i) {
-                var item = data.list[i];
-                players.push({
-                    playerId: item.uid,
-                    power: item.cpi,
-                    name: item.role_name,
-                    union: item.server + "." + item.union_name,
-                });
-            }
-            return safe(done)({
-                players: players,
-            });
-        }, this);
-    },
     getUnion:function(done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("Union", "getinfo", null, next);
@@ -735,6 +714,27 @@ Base.extends("GameConnection", {
                 area: data.areaid,
                 star: data.star,
                 cards: cards,
+                players: players,
+            });
+        }, this);
+    },
+    getRankPlayers:function(done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("KingWar", "roleRank", null, next);
+            if (!data || !data.list) {
+                return safe(done)({});
+            }
+            var players = [];
+            for (var i = 0; i < data.list.length; ++i) {
+                var item = data.list[i];
+                players.push({
+                    playerId: item.uid,
+                    power: item.cpi,
+                    name: item.role_name,
+                    union: item.server + "." + item.union_name,
+                });
+            }
+            return safe(done)({
                 players: players,
             });
         }, this);
