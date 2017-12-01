@@ -606,12 +606,12 @@ Base.extends("GameController", {
                 }
                 if (!this.constantKingwar)
                 {
-                    var kingwarTaskManager = new TaskManager((tasks, total) => {
+                    var targetingTaskManager = new TaskManager((tasks, total) => {
                         if (tasks.length == total) {
                             this.targetingAssignment(tasks, defaults);
                         }
                     });
-                    yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 3; }, next, kingwarTaskManager);
+                    yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 3; }, next, targetingTaskManager);
                     yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 5; }, next);
                 }
                 this.setRefreshStatesOfType("kingwar", 1);
@@ -697,7 +697,8 @@ Base.extends("GameController", {
                         }
                     }, this);
                 })();
-                yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 6; }, next, kingwarTaskManager);
+                yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 6; }, next, droppingTaskManager);
+                console.log("dropping finished!");
             }, this);
         };
         for (var i = 0; i < defaults.times.length; ++i) {
@@ -889,7 +890,7 @@ Base.extends("GameController", {
             safe(done)();
         }, this);
     },
-    isValidCard:function(playerData, card) {
+    isCardValid:function(card, playerData) {
         if (card.isGold) {
             return true;
         } else if (playerData.good < 3 && card.isGood) {
@@ -899,6 +900,16 @@ Base.extends("GameController", {
         } else if (playerData.bad < 3 && card.isBad) {
             return true;
         } else if (playerData.bad > 0 && card.isDismissBad) {
+            return true;
+        }
+        return false;
+    },
+    isCardDroppable:function(card, playerData) {
+        if (card.isGold || card.isDismissGood || card.isDismissBad) {
+            return true;
+        } else if (playerData.good < 3 && card.isGood) {
+            return true;
+        } else if (playerData.bad < 3 && card.isBad) {
             return true;
         }
         return false;
@@ -914,14 +925,15 @@ Base.extends("GameController", {
         }
         return true;
     },
-    canDropCard:function(conn, card, playerId, raceInfo) {
+    canDropCardTo:function(conn, card, playerId, raceInfo) {
         if (!playerId || playerId == conn.getGameInfo().playerId) {
             return false;
         }
         for (var i = 0; i < raceInfo.players.length; ++i) {
             var playerData = raceInfo.players[i];
             if (playerId == playerData.playerId) {
-                if (this.isValidCard(playerData, card)) {
+                console.log("try drop to target.", card.cardType, playerData, conn.getGameInfo().name);
+                if (this.isCardValid(card, playerData)) {
                     return true;
                 }
                 break;
@@ -940,21 +952,30 @@ Base.extends("GameController", {
         while (players.length > 0) {
             var index = rand(players.length);
             var playerData = players[index];
-            if (this.isValidCard(playerData, card)) {
+            if (this.isCardDroppable(card, playerData)) {
+                console.log("try drop to rand", card.cardType, playerData, conn.getGameInfo().name);
                 return playerData.playerId;
             }
             players.splice(index, 1);
         }
         return null;
     },
+    rawCardsOf:function(cards) {
+        var rawCards = [];
+        for (var i = 0; i < cards.length; ++i) {
+            rawCards.push(cards[i].cardType);
+        }
+        return rawCards;
+    },
     findDroppingTarget:function(conn, kingwarInfo, cards, raceInfo, isForce) {
         if (!raceInfo.cards || raceInfo.cards.length == 0 || !this.compareCards(cards, raceInfo.cards)) {
+            console.log("dropping break", this.rawCardsOf(cards), this.rawCardsOf(raceInfo.cards || []));
             raceInfo.cards = [];
             return null;
         }
         var card = raceInfo.cards[0];
         var targetPlayerId = (card.isBenefit ? kingwarInfo.helpId : kingwarInfo.damageId);
-        if (this.canDropCard(conn, card, targetPlayerId, raceInfo)) {
+        if (this.canDropCardTo(conn, card, targetPlayerId, raceInfo)) {
             return targetPlayerId;
         } else if (isForce) {
             return this.randomPlayer(conn, card, kingwarInfo.helpId, kingwarInfo.damageId, raceInfo);
@@ -965,36 +986,46 @@ Base.extends("GameController", {
         var next = coroutine(function*() {
             console.log("refreshDropping..", conn.getGameInfo().name);
             var raceInfo = yield conn.getKingWarRace(next);
-            if (!raceInfo.cards) {
+            if (!raceInfo.cards || raceInfo.cards.length == 0) {
+                console.log("dropping with no cards!", conn.getGameInfo().name);
                 taskItem.giveup();
             } else {
+                console.log("hasCards", raceInfo.rawCards, conn.getGameInfo().name);
                 var cards = raceInfo.cards;
                 var kingwarKey = raceInfo.area * 100 + raceInfo.star;
                 var kingwarInfo = yield taskItem.getAssignment(kingwarKey, next);
+                console.log("dropping with Info", kingwarInfo, conn.getGameInfo().name);
                 while (cards.length > 0 && conn.getServerTime() <= kingwarInfo.forceTime) {
                     var refreshRace = yield conn.getKingWarRace(next);
                     var playerId = this.findDroppingTarget(conn, kingwarInfo, cards, refreshRace, false);
                     cards = refreshRace.cards;
                     if (playerId) {
+                        console.log("drop card {0} to {1}".format(cards[0].cardType, playerId), conn.getGameInfo().name);
                         var useData = yield conn.useKingWarCard(playerId, next);
                         if (useData.success) {
+                            console.log("drop success", conn.getGameInfo().name);
                             cards.splice(0, 1);
                         }
                     }
-                    yield setTimeout(next, 10);
+                    yield setTimeout(next, 100);
                 }
+                console.log("dropping force", conn.getGameInfo().name);
                 while (cards.length > 0 && conn.getServerTime() <= kingwarInfo.endTime) {
                     var refreshRace = yield conn.getKingWarRace(next);
                     var playerId = this.findDroppingTarget(conn, kingwarInfo, cards, refreshRace, true);
                     cards = refreshRace.cards;
                     if (playerId) {
+                        console.log("drop card {0} to {1}".format(cards[0].cardType, playerId), conn.getGameInfo().name);
                         var useData = yield conn.useKingWarCard(playerId, next);
                         if (useData.success) {
+                            console.log("drop success", conn.getGameInfo().name);
                             cards.splice(0, 1);
                         }
                     }
                 }
+                console.log("dropping end", conn.getGameInfo().name);
             }
+            safe(done)();
         }, this);
     },
     initPlayerAutomation:function() {

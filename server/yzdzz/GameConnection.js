@@ -214,6 +214,7 @@ Base.extends("GameConnection", {
             }
             var serverTime = data.server_time * 1000;
             var deltaTime = serverTime - (startTime + endTime) / 2;
+            var delayTime = endTime - startTime;
             this.gameInfoNumberProps = {
                 level: "level", // 等级
                 coin: "gold", // 金币
@@ -245,7 +246,7 @@ Base.extends("GameConnection", {
             if (result != 'done') {
                 this.log("stat failed playerId:{0} error:{1}".format(this.gameInfo.playerId, JSON.stringify(result)));
             }
-            this.log("Player id:{0}, name:{1}".format(this.gameInfo.playerId, this.gameInfo.name));
+            this.log("Player id:{0}, name:{1}, server delta:{2}, delay:{3}".format(this.gameInfo.playerId, this.gameInfo.name, deltaTime, delayTime));
             //var obj = yield GameHTTP.save(this.accountInfo.accountId, this.gameInfo.playerId, server.serverId, this.accountInfo.accessToken, next);
             //if (obj.code != 'SUCCESS') {
             //    this.log("save failed accountId:{0} code:{1} reason:{2}".format(this.accountInfo.playerId, obj.code, obj.desc));
@@ -743,7 +744,7 @@ Base.extends("GameConnection", {
             return safe(done)({
                 success: true,
             });
-        });
+        }, this);
     },
     getRankPlayers:function(done) {
         var next = coroutine(function*() {
