@@ -912,9 +912,9 @@ function displayAutomation() {
                 stars: displayAutomationModel.getKingwarStars(),
             };
             var targeting = lastPlayer.copy_settings.targeting;
-            if (targeting) {
-                templateData.targeting = true;
-            }
+            templateData.targeting = !!targeting;
+            var dropping = lastPlayer.copy_settings.dropping;
+            templateData.dropping = !!dropping;
             var divAutoSettingContent = $(autoSettingsTemplate(templateData));
             divAutoSettingContent.appendTo(divAutomationContent);
 
@@ -944,6 +944,17 @@ function displayAutomation() {
                 selectSettingMinstar.val((targeting.minStar ? targeting.minStar : 1));
                 selectSettingMinstar.change(function() {
                     targeting.minStar = selectSettingMinstar.val();
+                    configChanged();
+                });
+            }
+            if (dropping) {
+                var divDroppingBlock = divAutoSettingContent.find(".div_auto_setting_dropping");
+                var inputSettingDrop = divDroppingBlock.find(".ctrl_setting_config_prop_drop");
+                if (dropping.allowDrop) {
+                    inputSettingDrop.attr("checked", "checked");
+                }
+                inputSettingDrop.change(function() {
+                    dropping.allowDrop = inputSettingDrop.is(":checked");
                     configChanged();
                 });
             }

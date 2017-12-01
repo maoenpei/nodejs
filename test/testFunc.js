@@ -38,7 +38,7 @@ var next = coroutine(function*() {
     if (TEST_TYPE == "KINGWAR") {
         var taskManager = new TaskManager((tasks, total) => {
             if (tasks.length == total) {
-                gameController.kingwarAssignment(tasks, defaultsStates.targeting);
+                gameController.targetingAssignment(tasks, defaultsStates.targeting);
             }
         });
         for (var i = 0; i < 6; ++i) {

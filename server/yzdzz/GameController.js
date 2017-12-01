@@ -14,6 +14,7 @@ require("./GameConnection");
 // 3: 执行极限加入(targeting)
 // 4: 极限加入已完成(targeting)
 // 5: 执行极限刷新(kingwar)
+// 6: 极限丢卡(dropping)
 
 Base.extends("AccountManager", {
     _constructor:function() {
@@ -127,6 +128,18 @@ Base.extends("GameController", {
     modifyPlayerTargeting:function(key, targetingConfig) {
         return this.setRefreshFunc(key, (conn, done, taskItem) => {
             this.refreshTargeting(conn, targetingConfig, key, taskItem, done);
+        });
+    },
+
+    setPlayerDropping:function(playerData, droppingConfig) {
+        var key = this.appendRefresh(playerData, "dropping", 6, (conn, done, taskItem) => {
+            this.refreshDropping(conn, droppingConfig, taskItem, done);
+        });
+        return key;
+    },
+    modifyPlayerDropping:function(key, droppingConfig) {
+        return this.setRefreshFunc(key, (conn, done, taskItem) => {
+            this.refreshDropping(conn, droppingConfig, taskItem, done);
         });
     },
 
@@ -479,7 +492,7 @@ Base.extends("GameController", {
         }
         return tasksOrder;
     },
-    tryKingwarAssignment:function(kingwarOrder, tasksOrder, canJoin) {
+    tryTargetingAssignment:function(kingwarOrder, tasksOrder, canJoin) {
         for (var i = 0; i < kingwarOrder.length; ++i) {
             var brief = kingwarOrder[i];
             brief.possible = [];
@@ -530,17 +543,17 @@ Base.extends("GameController", {
             }
         }
     },
-    kingwarAssignment:function(tasks, defaults) {
+    targetingAssignment:function(tasks, defaults) {
         var kingwarOrder = this.getKingwarOrder(defaults);
         var tasksOrder = this.getTasksOrder(tasks);
         // try fight
         console.log("-- kingwar assignment -- try fight");
-        this.tryKingwarAssignment(kingwarOrder, tasksOrder, (taskItem, brief) => {
+        this.tryTargetingAssignment(kingwarOrder, tasksOrder, (taskItem, brief) => {
             return brief.star >= taskItem.minStar && brief.mutual <= 1 && taskItem.power * 0.96 > brief.otherMax;
         });
         // try help
         console.log("-- kingwar assignment -- try help");
-        this.tryKingwarAssignment(kingwarOrder, tasksOrder, (taskItem, brief) => {
+        this.tryTargetingAssignment(kingwarOrder, tasksOrder, (taskItem, brief) => {
             return brief.star >= taskItem.minStar && brief.mutual == 2 && taskItem.power < brief.ourMax * 0.8 && brief.helpCount < 3;
         });
         
@@ -554,12 +567,12 @@ Base.extends("GameController", {
         if (restNumber >= 8) {
             // try fight
             console.log("-- kingwar assignment -- try fight Z");
-            this.tryKingwarAssignment(kingwarOrder, tasksOrder, (taskItem, brief) => {
+            this.tryTargetingAssignment(kingwarOrder, tasksOrder, (taskItem, brief) => {
                 return brief.star >= taskItem.minStar && brief.mutual <= 1 && taskItem.power * 1.01 > brief.otherMax;
             });
             // try help
             console.log("-- kingwar assignment -- try help Z");
-            this.tryKingwarAssignment(kingwarOrder, tasksOrder, (taskItem, brief) => {
+            this.tryTargetingAssignment(kingwarOrder, tasksOrder, (taskItem, brief) => {
                 return brief.star >= taskItem.minStar && brief.mutual == 2 && taskItem.power < brief.ourMax * 0.9 && brief.helpCount < 3;
             });
         }
@@ -583,7 +596,7 @@ Base.extends("GameController", {
             this.initTargeting();
             this.setRefreshStatesOfType("kingwar", 5);
             var forceTime = new Date();
-            forceTime.setSeconds(defaults.forceSec);
+            forceTime.setSeconds(defaults.forceSec, 0);
             var next = coroutine(function*() {
                 var forceTargeting = false;
                 while(!this.constantKingwar && !forceTargeting) {
@@ -591,11 +604,11 @@ Base.extends("GameController", {
                     yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 5; }, next);
                     forceTargeting = (new Date() > forceTime);
                 }
-                while (!this.constantKingwar)
+                if (!this.constantKingwar)
                 {
                     var kingwarTaskManager = new TaskManager((tasks, total) => {
                         if (tasks.length == total) {
-                            this.kingwarAssignment(tasks, defaults);
+                            this.targetingAssignment(tasks, defaults);
                         }
                     });
                     yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 3; }, next, kingwarTaskManager);
@@ -606,6 +619,92 @@ Base.extends("GameController", {
             }, this);
         });
         this.targetingTimes.push(targetingKey);
+    },
+
+    getDroppingKingwarInfo:function(kingwarKey, defaults) {
+        var ourMax = -1;
+        var ourPlayerId = "";
+        var enemyMax = -1;
+        var enemyPlayerId = "";
+        var refData = this.kingwarRefs[kingwarKey];
+        var playerCount = (refData.players.length > 16 ? 16 : refData.players.length);
+        for (var i = 0; i < playerCount; ++i) {
+            var player = refData.players[i];
+            var playerItem = this.allPlayers[player.playerId];
+            var power = (playerItem ? playerItem.maxPower : player.power);
+            if (playerItem && playerItem.unionId == defaults.selfUnion) {
+                if (power > ourMax) {
+                    ourMax = power;
+                    ourPlayerId = player.playerId;
+                }
+            } else {
+                if (power > enemyMax) {
+                    enemyMax = power;
+                    enemyPlayerId = player.playerId;
+                }
+            }
+        }
+        return {
+            helpId: ourPlayerId,
+            damageId: enemyPlayerId,
+        };
+    },
+    droppingAssignment:function(tasks, kingwarInfos, forceTime, endTime, defaults) {
+        for (var i = 0; i < tasks.length; ++i) {
+            var taskItem = tasks[i];
+            if (!taskItem.isAssigned()) {
+                var kingwarKey = taskItem.getValue();
+                var kingwarInfo = kingwarInfos[kingwarKey];
+                if (!kingwarInfo) {
+                    kingwarInfo = this.getDroppingKingwarInfo(kingwarKey, defaults);
+                    kingwarInfo.forceTime = forceTime;
+                    kingwarInfo.endTime = endTime;
+                    kingwarInfos[kingwarKey] = kingwarInfo;
+                }
+                taskItem.setAssignment(kingwarInfo);
+            }
+        }
+    },
+    setDroppingEvent:function(defaults) {
+        this.unsetEventKeys(this.droppingTimes);
+        this.droppingTimes = [];
+        var doDropping = () => {
+            var next = coroutine(function*() {
+                var startTime = new Date();
+                startTime.setSeconds(defaults.start, 0);
+                var forceTime = new Date();
+                forceTime.setSeconds(defaults.force, 0);
+                // next minute start
+                var endTime = new Date(new Date().getTime() + 60000);
+                endTime.setSeconds(0, 0);
+                var started = false;
+                var kingwarInfos = {};
+                var lastTasks = null;
+                var droppingTaskManager = new TaskManager((tasks, total) => {
+                    lastTasks = tasks;
+                    if (started) {
+                        this.droppingAssignment(tasks, kingwarInfos, forceTime, endTime, defaults);
+                    }
+                });
+                (() => {
+                    var tnext = coroutine(function*() {
+                        while (new Date() < startTime) {
+                            yield setTimeout(tnext, 300);
+                        }
+                        started = true;
+                        if (lastTasks) {
+                            this.droppingAssignment(lastTasks, kingwarInfos, forceTime, endTime, defaults);
+                        }
+                    }, this);
+                })();
+                yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 6; }, next, kingwarTaskManager);
+            }, this);
+        };
+        for (var i = 0; i < defaults.times.length; ++i) {
+            var time = defaults.times[i];
+            var droppingKey = this.timingManager.setWeeklyEvent(time.day, time.hour, time.minute, time.second, doDropping);
+            this.droppingTimes.push(droppingKey);
+        }
     },
 
     // Private timing helpers
@@ -788,6 +887,114 @@ Base.extends("GameController", {
                 this.setRefreshState(selfKey, 4);
             }
             safe(done)();
+        }, this);
+    },
+    isValidCard:function(playerData, card) {
+        if (card.isGold) {
+            return true;
+        } else if (playerData.good < 3 && card.isGood) {
+            return true;
+        } else if (playerData.good > 0 && card.isDismissGood) {
+            return true;
+        } else if (playerData.bad < 3 && card.isBad) {
+            return true;
+        } else if (playerData.bad > 0 && card.isDismissBad) {
+            return true;
+        }
+        return false;
+    },
+    compareCards:function(cards1, cards2) {
+        if (cards2.length > cards1.length) {
+            return false;
+        }
+        for (var i = 0; i < cards2.length; ++i) {
+            if (cards1[cards1.length - 1 - i].cardType != cards2[cards2.length - 1 - i].cardType) {
+                return false;
+            }
+        }
+        return true;
+    },
+    canDropCard:function(conn, card, playerId, raceInfo) {
+        if (!playerId || playerId == conn.getGameInfo().playerId) {
+            return false;
+        }
+        for (var i = 0; i < raceInfo.players.length; ++i) {
+            var playerData = raceInfo.players[i];
+            if (playerId == playerData.playerId) {
+                if (this.isValidCard(playerData, card)) {
+                    return true;
+                }
+                break;
+            }
+        }
+        return false;
+    },
+    randomPlayer:function(conn, card, helpId, damageId, raceInfo) {
+        var players = [];
+        for (var i = 0; i < raceInfo.players.length; ++i) {
+            var playerData = raceInfo.players[i];
+            if (playerData.playerId && playerData.playerId != helpId && playerData.playerId != damageId && playerData.playerId != conn.getGameInfo().playerId) {
+                players.push(playerData);
+            }
+        }
+        while (players.length > 0) {
+            var index = rand(players.length);
+            var playerData = players[index];
+            if (this.isValidCard(playerData, card)) {
+                return playerData.playerId;
+            }
+            players.splice(index, 1);
+        }
+        return null;
+    },
+    findDroppingTarget:function(conn, kingwarInfo, cards, raceInfo, isForce) {
+        if (!raceInfo.cards || raceInfo.cards.length == 0 || !this.compareCards(cards, raceInfo.cards)) {
+            raceInfo.cards = [];
+            return null;
+        }
+        var card = raceInfo.cards[0];
+        var targetPlayerId = (card.isBenefit ? kingwarInfo.helpId : kingwarInfo.damageId);
+        if (this.canDropCard(conn, card, targetPlayerId, raceInfo)) {
+            return targetPlayerId;
+        } else if (isForce) {
+            return this.randomPlayer(conn, card, kingwarInfo.helpId, kingwarInfo.damageId, raceInfo);
+        }
+        return null;
+    },
+    refreshDropping:function(conn, droppingConfig, taskItem, done) {
+        var next = coroutine(function*() {
+            console.log("refreshDropping..", conn.getGameInfo().name);
+            var raceInfo = yield conn.getKingWarRace(next);
+            if (!raceInfo.cards) {
+                taskItem.giveup();
+            } else {
+                var cards = raceInfo.cards;
+                var kingwarKey = raceInfo.area * 100 + raceInfo.star;
+                var kingwarInfo = yield taskItem.getAssignment(kingwarKey, next);
+                while (cards.length > 0 && conn.getServerTime() <= kingwarInfo.forceTime) {
+                    var refreshRace = yield conn.getKingWarRace(next);
+                    var playerId = this.findDroppingTarget(conn, kingwarInfo, cards, refreshRace, false);
+                    cards = refreshRace.cards;
+                    if (playerId) {
+                        var useData = yield conn.useKingWarCard(playerId, next);
+                        if (useData.success) {
+                            cards.splice(0, 1);
+                        }
+                    }
+                    yield setTimeout(next, 10);
+                }
+                while (cards.length > 0 && conn.getServerTime() <= kingwarInfo.endTime) {
+                    var refreshRace = yield conn.getKingWarRace(next);
+                    var playerId = this.findDroppingTarget(conn, kingwarInfo, cards, refreshRace, true);
+                    cards = refreshRace.cards;
+                    if (playerId) {
+                        var useData = yield conn.useKingWarCard(playerId, next);
+                        if (useData.success) {
+                            cards.splice(0, 1);
+                        }
+                    }
+                }
+            }
         }, this);
     },
     initPlayerAutomation:function() {

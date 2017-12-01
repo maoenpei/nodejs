@@ -121,6 +121,14 @@ $HttpModel.addClass({
             delete settingStates.kingwar[playerKey];
             changed = true;
         }
+        if (settingStates.targeting[playerKey]) {
+            delete settingStates.targeting[playerKey];
+            changed = true;
+        }
+        if (settingStates.dropping[playerKey]) {
+            delete settingStates.dropping[playerKey];
+            changed = true;
+        }
         return changed;
     },
     startRefreshSettings:function(done) {
@@ -142,10 +150,15 @@ $HttpModel.addClass({
                 var targetingConfig = settingStates.targeting[playerKey];
                 this.startRefreshTargeting(playerKey, targetingConfig);
             }
+            for (var playerKey in settingStates.dropping) {
+                var droppingConfig = settingStates.dropping[playerKey];
+                this.startRefreshDropping(playerKey, droppingConfig);
+            }
             var defaultsStates = $StateManager.getState(GAME_DEFAULTS_CONFIG);
             this.controller.startDailyTask(defaultsStates.dailyTask);
             this.controller.setRepeatRange(defaultsStates.repeatRange.start, defaultsStates.repeatRange.end);
             this.controller.setTargetingEvent(defaultsStates.targeting);
+            this.controller.setDroppingEvent(defaultsStates.dropping);
             this.doRefresh(AllFuncStr);
             safe(done)();
         }, this);
@@ -273,6 +286,25 @@ $HttpModel.addClass({
         if (playerData.refreshTargetingKey) {
             this.controller.unsetPlayer(playerData.refreshTargetingKey);
             playerData.refreshTargetingKey = null;
+        }
+    },
+    startRefreshDropping:function(playerKey, droppingConfig) {
+        var playerData = this.players[playerKey];
+        if (!droppingConfig.allowDrop) {
+            return this.stopRefreshDropping(playerKey);
+        }
+        if (playerData.refreshDroppingKey) {
+            this.controller.modifyPlayerDropping(playerData.refreshDroppingKey, droppingConfig);
+        } else {
+            playerData.refreshDroppingKey =
+                this.controller.setPlayerDropping(playerData, droppingConfig);
+        }
+    },
+    stopRefreshDropping:function(playerKey) {
+        var playerData = this.players[playerKey];
+        if (playerData.refreshDroppingKey) {
+            this.controller.unsetPlayer(playerData.refreshDroppingKey);
+            playerData.refreshDroppingKey = null;
         }
     },
     startRefreshKingwar:function(playerKey, kingwarConfig) {
@@ -523,6 +555,19 @@ $HttpModel.addClass({
         console.log("set targeting for player", playerKey);
         settingStates.targeting[playerKey] = targetingConfig;
         this.startRefreshTargeting(playerKey, targetingConfig);
+        return true;
+    },
+    setSettingDropping:function(playerKey, dropping) {
+        var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
+        var droppingConfig = {
+            allowDrop: (dropping.allowDrop ? true : false),
+        };
+        if (this.compareSetting(droppingConfig, settingStates.dropping[playerKey])) {
+            return false;
+        }
+        console.log("set dropping for player", playerKey);
+        settingStates.dropping[playerKey] = droppingConfig;
+        this.startRefreshDropping(playerKey, droppingConfig);
         return true;
     },
 
@@ -838,6 +883,9 @@ $HttpModel.addClass({
             if (settings.targeting) {
                 changed = this.setSettingTargeting(playerKey, settings.targeting) || changed;
             }
+            if (settings.dropping) {
+                changed = this.setSettingDropping(playerKey, settings.dropping) || changed;
+            }
             if (changed) {
                 yield $StateManager.commitState(GAME_SETTING_CONFIG, next);
             }
@@ -1006,6 +1054,7 @@ $HttpModel.addClass({
                                     kingwar: (isAdmin ? this.getSettingTyped("kingwar", playerKey) : undefined),
                                     listing: (isAdmin ? this.getSettingTyped("listing", playerKey) : undefined),
                                     targeting: this.getSettingTyped("targeting", playerKey),
+                                    dropping: this.getSettingTyped("dropping", playerKey),
                                 },
                             });
                             break;

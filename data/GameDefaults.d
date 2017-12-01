@@ -55,8 +55,18 @@
         ,"end":{"hour":7,"minute":0,"second":0}
     }
     ,"targeting":{
-        "selfUnion": "b275705814a85d98"
+        "selfUnion":"b275705814a85d98"
         ,"time":{"day":2,"hour":23,"minute":59,"second":10}
         ,"forceSec":45
+    }
+    ,"dropping":{
+        "selfUnion":"b275705814a85d98"
+        ,"times":[
+            {"day":3,"hour":11,"minute":59,"second":50}
+            ,{"day":3,"hour":17,"minute":59,"second":50}
+            ,{"day":3,"hour":19,"minute":59,"second":50}
+        ]
+        ,"start":55
+        ,"force":58
     }
 }
