@@ -175,7 +175,7 @@ Global.rkey = function() {
 };
 
 Global.rand = function(num) {
-	return Math.round(Math.random() * num);
+	return Math.floor(Math.random() * num);
 };
 
 Global.stringToAscii = function(str) {
