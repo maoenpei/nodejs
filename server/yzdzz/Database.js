@@ -5,6 +5,8 @@ Database = {};
 
 Database.cardInfo = function(card) {
     return {
+        isBenefit: card == 1 || card == 4 || card == 6,
+        isHarm: card == 2 || card == 3 || card == 5,
         isGold: card == 1,
         isBad: card == 2 || card == 3,
         isGood: card == 4,
