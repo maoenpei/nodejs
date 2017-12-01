@@ -5,6 +5,7 @@ Base.extends("Task", {
     _constructor:function(manager, flag) {
         this.manager = manager;
         this.flag = flag;
+        this.assigned = false;
     },
     getAssignment:function(param, done) {
         this.value = param;
@@ -18,7 +19,11 @@ Base.extends("Task", {
         return this.value;
     },
     setAssignment:function(param) {
+        this.assigned = true;
         safe(this.finish)(param);
+    },
+    isAssigned:function() {
+        return this.assigned;
     },
 });
 
