@@ -195,6 +195,7 @@ Base.extends("GameConnection", {
                 this.onReceive(c, m, data);
             });
 
+            var startTime = new Date().getTime();
             var data = yield this.sendMsg("Role", "logins", {
                 "token":this.accountInfo.accessToken,
                 "client":99,
@@ -205,11 +206,14 @@ Base.extends("GameConnection", {
                 "channelUid":this.accountInfo.accountId,
                 "productId":182,
             }, next);
-            yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvlogin.json", JSON.stringify(data, null, 2), next);
+            var endTime = new Date().getTime();
+            //yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvlogin.json", JSON.stringify(data, null, 2), next);
             if (!data || !data.uid) {
                 this.quit();
                 return safe(done)({});
             }
+            var serverTime = data.server_time * 1000;
+            var deltaTime = serverTime - (startTime + endTime) / 2;
             this.gameInfoNumberProps = {
                 level: "level", // 等级
                 coin: "gold", // 金币
@@ -226,6 +230,8 @@ Base.extends("GameConnection", {
                 summon_soul: "redSoul", // 红魂
             };
             this.gameInfo = {
+                deltaTime: deltaTime,
+
                 playerId: data.uid,
                 name: data.role_name, // 名字
                 power: data.cpi, // 战力
@@ -253,6 +259,13 @@ Base.extends("GameConnection", {
                 success:true,
             });
         }, this);
+    },
+    getServerTime:function() {
+        var now = new Date();
+        if (this.gameInfo) {
+            now = new Date(now.getTime() + this.gameInfo.deltaTime);
+        }
+        return now;
     },
     updateGameInfo:function(data, force) {
         if (this.gameInfo && this.gameInfoNumberProps) {
@@ -701,6 +714,8 @@ Base.extends("GameConnection", {
                 var item = data.list[i];
                 players.push({
                     playerId: item.uid,
+                    good: (item.good ? item.good : 0),
+                    bad: (item.bad ? item.bad : 0),
                 });
             }
             var cards = [];
@@ -714,9 +729,21 @@ Base.extends("GameConnection", {
                 area: data.areaid,
                 star: data.star,
                 cards: cards,
+                rawCards: data.cards,
                 players: players,
             });
         }, this);
+    },
+    useKingWarCard:function(playerId, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("KingWar", "card", {type:1, uid:playerId}, next);
+            if (!data) {
+                return safe(done)({});
+            }
+            return safe(done)({
+                success: true,
+            });
+        });
     },
     getRankPlayers:function(done) {
         var next = coroutine(function*() {
