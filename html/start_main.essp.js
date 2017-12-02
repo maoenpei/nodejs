@@ -411,6 +411,7 @@ var displayAutomationModel = {
             {name: "tavern", desc: "契约之门", type: "check"},
             {name: "specCard", desc: "特点头像", type: "check"},
             {name: "redpacket", desc: "红包", type: "check"},
+            {name: "freehero", desc: "免费勇者", type: "check"},
         ]},
         {name: "autoForward", desc: "战斗，下一关", props: []},
         {name: "autoGoblin", desc: "地精商店", props: [
@@ -454,6 +455,9 @@ var displayAutomationModel = {
             {name: "buyHeroSoul", desc: "是否购买蓝魂", type: "check"},
             {name: "fightPlayer", desc: "是否攻击战力低的玩家", type: "check"},
             {name: "fightMax", desc: "攻击次数", type: "number", limit: [0, 20]},
+        ]},
+        {name: "autoRich", desc: "秘境", props:[
+            {name: "sweep", desc: "扫荡免费骰子", type: "check"},
         ]},
         {name: "autoXReward", desc: "暗金活动", props:[
             {name: "xwish", desc: "许愿次数", type: "number", limit: [0, 10]},

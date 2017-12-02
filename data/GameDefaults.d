@@ -27,6 +27,7 @@
         ,"autoLeaguewar":{"target":0,"face":20,"faceForce":false,"useFlag":false,"gold70":true}
         ,"autoUnion":{"donateMax":10}
         ,"autoArena":{"boxMax":6,"buyHeroSoul":true,"fightPlayer":true,"fightMax":10}
+        ,"autoRich":{"sweep":true}
         ,"autoXReward":{"xwish":1,"xcoin":5}
         ,"autoReward":{
             "kingwarDaily":true

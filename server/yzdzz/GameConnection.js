@@ -988,7 +988,7 @@ Base.extends("GameConnection", {
                 }
             }
             // auto hero reward
-            if (config.freehero && this.gameInfo.hasHeroReward && this.validator.checkDaily("autoHeroReward")) {
+            if (config.freehero && this.gameInfo.hasHeroReward && this.validator.checkHourly("autoHeroReward")) {
                 var data = yield this.sendMsg("ActGoldenHero", "getinfo", null, next);
                 if (data && data.list) {
                     for (var i = 0; i < data.list.length; ++i) {
@@ -1710,6 +1710,24 @@ Base.extends("GameConnection", {
             });
         }, this);
     },
+    autoRich:function(config, done) {
+        var next = coroutine(function*() {
+            if (this.validator.checkHourly("autoRich")) {
+                var data = yield this.sendMsg("Rich", "getinfo", null, next);
+                if (!data || !data.list) {
+                    return safe(done)({});
+                }
+
+                // auto sweep
+                if (config.sweep && this.gameInfo.vip >= 3 && data.done == 1 && data.num >= 15) {
+                    var data_sweep = yield this.sendMsg("Rich", "sweep", {id:data.id, num:data.num}, next);
+                }
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
     autoXReward:function(config, done) {
         var next = coroutine(function*() {
             if (this.gameInfo.hasXReward && this.validator.checkHourly("autoXReward")) {
@@ -1938,12 +1956,11 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("UnionWar", "cardlog", null, next); // 查看卡牌列表
             //var data = yield this.sendMsg("UnionWar", "ahead", null, next); // 查看名次信息
             //var data = yield this.sendMsg("UnionWar", "refreshCard", null, next); // 刷新可用卡牌
-            //var data = yield this.sendMsg("ActGoblin", "getinfo", null, next);
-            //var data = yield this.sendMsg("ActGoblin", "buy", {id:"2120004"}, next);
-            //var data = yield this.sendMsg("ActGoblin", "refresh", null, next);
             //var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next); //皇帝战
             //var data = yield this.sendMsg("Tavern", "getlog", {ids:"50016,60018,70041"}, next); // 可兑换勇者的状态
             //var data = yield this.sendMsg("Comment", "getCount", {id:80005}, next); // 勇者评论数目
+
+            //var data = yield this.sendMsg("Rich", "sweep", {id:112, num:41}, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
