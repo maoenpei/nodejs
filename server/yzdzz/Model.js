@@ -107,6 +107,7 @@ $HttpModel.addClass({
         }, this);
     },
     erasePlayerSettings:function(playerKey) {
+        console.log("erasePlayerSettings", playerKey);
         var changed = false;
         var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
         if (settingStates.automation[playerKey]) {
@@ -127,6 +128,16 @@ $HttpModel.addClass({
         }
         if (settingStates.dropping[playerKey]) {
             delete settingStates.dropping[playerKey];
+            changed = true;
+        }
+        return changed;
+    },
+    erasePlayerNames:function(playerKey) {
+        console.log("erasePlayerNames", playerKey);
+        var changed = false;
+        var allPlayerNames = $StateManager.getState(GAME_PLAYER_NAME_CONFIG);
+        if (allPlayerNames[playerKey]) {
+            delete allPlayerNames[playerKey];
             changed = true;
         }
         return changed;
@@ -265,6 +276,7 @@ $HttpModel.addClass({
             var refreshKey = playerData.refreshAutomationKey;
             playerData.refreshAutomationKey = null;
             this.noConfliction(() => {
+                console.log("unsetPlayer", playerKey);
                 this.controller.unsetPlayer(refreshKey);
             });
         }
@@ -416,10 +428,6 @@ $HttpModel.addClass({
         };
     },
     delAccount:function(accountKey) {
-        var playerKeys = this.playersOfAccount(accountKey);
-        for (var playerKey in playerKeys) {
-            this.delPlayer(playerKey);
-        }
         var accountData = this.accounts[accountKey];
         var account = accountData.account;
         this.noConfliction(() => {
@@ -571,6 +579,36 @@ $HttpModel.addClass({
         return true;
     },
 
+    delUserPlayer:function(userData, playerBelong, info) {
+        var playerKey = userData.players[playerBelong];
+        console.log("delUserPlayer", playerKey);
+
+        this.delPlayer(playerKey);
+
+        info.settingsChanged = this.erasePlayerSettings(playerKey) || info.settingsChanged;
+        info.namesChanged = this.erasePlayerNames(playerKey) || info.namesChanged;
+
+        var accountStates = $StateManager.getState(GAME_ACCOUNTS_CONFIG);
+        delete accountStates.players[playerKey];
+        userData.players.splice(playerBelong, 1);
+    },
+    delUserAccount:function(userData, accountBelong, info) {
+        var accountKey = userData.accounts[accountBelong];
+        console.log("delUserAccount", accountKey);
+
+        this.delAccount(accountKey);
+
+        var playerKeys = this.playersOfAccount(accountKey);
+        for (var playerKey in playerKeys) {
+            var playerBelong = this.getPlayerIndex(userData, playerKey);
+            this.delUserPlayer(userData, playerBelong, info);
+        }
+
+        var accountStates = $StateManager.getState(GAME_ACCOUNTS_CONFIG);
+        delete accountStates.accounts[accountKey];
+        userData.accounts.splice(accountBelong, 1);
+    },
+
     addaccount:function(requestor, responder, done) {
         var next = coroutine(function*() {
             var obj = yield this.httpServer.tokenValid(requestor, next);
@@ -677,22 +715,14 @@ $HttpModel.addClass({
                 return responder.respondJson({}, done);
             }
 
-            var playerKeys = this.playersOfAccount(accountKey);
-            var accountStates = $StateManager.getState(GAME_ACCOUNTS_CONFIG);
-            var settingsChanged = false;
-            for (var playerKey in playerKeys) {
-                settingsChanged = settingsChanged || this.erasePlayerSettings(playerKey);
-                var playerBelong = this.getPlayerIndex(userData, playerKey);
-                userData.players.splice(playerBelong, 1);
-                delete accountStates.players[playerKey];
-            }
+            var info = {};
+            this.delUserAccount(userData, accountBelong, info);
 
-            delete accountStates.accounts[accountKey];
-            this.delAccount(accountKey);
-            userData.accounts.splice(accountBelong, 1);
-
-            if (settingsChanged) {
+            if (info.settingsChanged) {
                 yield $StateManager.commitState(GAME_SETTING_CONFIG, next);
+            }
+            if (info.namesChanged) {
+                yield $StateManager.commitState(GAME_PLAYER_NAME_CONFIG, next);
             }
             yield $StateManager.commitState(GAME_ACCOUNTS_CONFIG, next);
             yield $StateManager.commitState(USER_CONFIG, next);
@@ -814,13 +844,14 @@ $HttpModel.addClass({
                 return responder.respondJson({}, done);
             }
 
-            var accountStates = $StateManager.getState(GAME_ACCOUNTS_CONFIG);
-            var settingsChanged = this.erasePlayerSettings(playerKey);
-            delete accountStates.players[playerKey];
-            this.delPlayer(playerKey);
-            userData.players.splice(playerBelong, 1);
-            if (settingsChanged) {
+            var info = {};
+            this.delUserPlayer(userData, playerBelong, info);
+
+            if (info.settingsChanged) {
                 yield $StateManager.commitState(GAME_SETTING_CONFIG, next);
+            }
+            if (info.namesChanged) {
+                yield $StateManager.commitState(GAME_PLAYER_NAME_CONFIG, next);
             }
             yield $StateManager.commitState(GAME_ACCOUNTS_CONFIG, next);
             yield $StateManager.commitState(USER_CONFIG, next);
