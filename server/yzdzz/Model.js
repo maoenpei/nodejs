@@ -262,6 +262,7 @@ $HttpModel.addClass({
         if (automationConfig.disabled) {
             return this.stopRefreshAutomation(playerKey);
         }
+        console.log("startRefreshAutomation", playerKey);
         var autoConfigs = this.generateConfig(automationConfig, false);
         if (playerData.refreshAutomationKey) {
             this.controller.modifyPlayerAutomation(playerData.refreshAutomationKey, autoConfigs);
@@ -271,6 +272,7 @@ $HttpModel.addClass({
         }
     },
     stopRefreshAutomation:function(playerKey) {
+        console.log("stopRefreshAutomation", playerKey);
         var playerData = this.players[playerKey];
         if (playerData.refreshAutomationKey) {
             var refreshKey = playerData.refreshAutomationKey;
@@ -286,6 +288,7 @@ $HttpModel.addClass({
         if (!targetingConfig.reachPLID && !targetingConfig.allowAssign) {
             return this.stopRefreshTargeting(playerKey);
         }
+        console.log("startRefreshTargeting", playerKey);
         if (playerData.refreshTargetingKey) {
             this.controller.modifyPlayerTargeting(playerData.refreshTargetingKey, targetingConfig);
         } else {
@@ -294,8 +297,10 @@ $HttpModel.addClass({
         }
     },
     stopRefreshTargeting:function(playerKey) {
+        console.log("stopRefreshTargeting", playerKey);
         var playerData = this.players[playerKey];
         if (playerData.refreshTargetingKey) {
+            console.log("unsetPlayer", playerKey);
             this.controller.unsetPlayer(playerData.refreshTargetingKey);
             playerData.refreshTargetingKey = null;
         }
@@ -305,6 +310,7 @@ $HttpModel.addClass({
         if (!droppingConfig.allowDrop) {
             return this.stopRefreshDropping(playerKey);
         }
+        console.log("startRefreshDropping", playerKey);
         if (playerData.refreshDroppingKey) {
             this.controller.modifyPlayerDropping(playerData.refreshDroppingKey, droppingConfig);
         } else {
@@ -313,8 +319,10 @@ $HttpModel.addClass({
         }
     },
     stopRefreshDropping:function(playerKey) {
+        console.log("stopRefreshDropping", playerKey);
         var playerData = this.players[playerKey];
         if (playerData.refreshDroppingKey) {
+            console.log("unsetPlayer", playerKey);
             this.controller.unsetPlayer(playerData.refreshDroppingKey);
             playerData.refreshDroppingKey = null;
         }
@@ -324,6 +332,7 @@ $HttpModel.addClass({
         if (kingwarConfig.area == 0 || kingwarConfig.star == 0) {
             return this.stopRefreshKingwar(playerKey);
         }
+        console.log("startRefreshKingwar", playerKey);
         if (playerData.refreshKingwarKey) {
             this.controller.modifyPlayerKingwar(playerData.refreshKingwarKey, kingwarConfig);
         } else {
@@ -332,11 +341,13 @@ $HttpModel.addClass({
         }
     },
     stopRefreshKingwar:function(playerKey) {
+        console.log("stopRefreshKingwar", playerKey);
         var playerData = this.players[playerKey];
         if (playerData.refreshKingwarKey) {
             var refreshKey = playerData.refreshKingwarKey;
             playerData.refreshKingwarKey = null;
             this.noConfliction(() => {
+                console.log("unsetPlayer", playerKey);
                 this.controller.unsetPlayer(refreshKey);
             });
         }
@@ -346,6 +357,7 @@ $HttpModel.addClass({
         if (listingConfig.minPower == 0 || listingConfig.limitPower == 0) {
             return this.stopRefreshListing(playerKey);
         }
+        console.log("startRefreshListing", playerKey);
         if (playerData.refreshPlayerKey) {
             this.controller.modifyPlayerListing(playerData.refreshPlayerKey, listingConfig);
         } else {
@@ -354,11 +366,13 @@ $HttpModel.addClass({
         }
     },
     stopRefreshListing:function(playerKey) {
+        console.log("stopRefreshListing", playerKey);
         var playerData = this.players[playerKey];
         if (playerData.refreshPlayerKey) {
             var refreshKey = playerData.refreshPlayerKey;
             playerData.refreshPlayerKey = null;
             this.noConfliction(() => {
+                console.log("unsetPlayer", playerKey);
                 this.controller.unsetPlayer(refreshKey);
             });
         }
@@ -422,12 +436,14 @@ $HttpModel.addClass({
         return playerKeys;
     },
     addAccount:function(accountKey, username, account) {
+        console.log("addAccount", accountKey, username, account);
         this.accounts[accountKey] = {
             username: username,
             account: account,
         };
     },
     delAccount:function(accountKey) {
+        console.log("delAccount", accountKey);
         var accountData = this.accounts[accountKey];
         var account = accountData.account;
         this.noConfliction(() => {
@@ -436,6 +452,7 @@ $HttpModel.addClass({
         delete this.accounts[accountKey];
     },
     addPlayer:function(playerKey, accountKey, server) {
+        console.log("addPlayer", playerKey, accountKey, server);
         this.players[playerKey] = {
             accountKey: accountKey,
             account: this.accounts[accountKey].account,
@@ -445,6 +462,7 @@ $HttpModel.addClass({
         };
     },
     delPlayer:function(playerKey) {
+        console.log("delPlayer", playerKey);
         this.stopRefreshAutomation(playerKey);
         this.stopRefreshTargeting(playerKey);
         this.stopRefreshListing(playerKey);
