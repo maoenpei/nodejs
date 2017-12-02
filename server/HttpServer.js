@@ -24,9 +24,12 @@ Base.extends("$HttpModel", {
             },
         });
     },
-    addClass:function(proto) {
+    addClass:function(name, proto) {
         var childClass = this.modelBase.inherit(proto);
-        this.models.push(childClass);
+        this.models.push({
+            name: name,
+            cls: childClass,
+        });
     },
     getClasses:function() {
         return this.models;
@@ -49,12 +52,12 @@ Base.extends("HttpServer", {
         var next = coroutine(function*() {
             yield $StateManager.openState(EXTENSION_CONFIG, next);
 
-            this.models = [];
+            this.models = {};
             var classes = $HttpModel.getClasses();
             for (var i = 0; i < classes.length; ++i) {
-                var ModelClass = classes[i];
+                var ModelClass = classes[i].cls;
                 var model = new ModelClass(this);
-                this.models.push(model);
+                this.models[classes[i].name] = model;
                 yield model.initialize(next);
             }
             this.ready = true;
@@ -63,6 +66,10 @@ Base.extends("HttpServer", {
     registerCommand:function(cmd, model) {
         assert(!this.commands[cmd] && model && typeof(model[cmd]) == "function");
         this.commands[cmd] = model;
+    },
+    findModel:function(name) {
+        var model = this.models[name];
+        return (model ? model : null);
     },
     onVisit:function(req, res) {
         if (!this.ready) {

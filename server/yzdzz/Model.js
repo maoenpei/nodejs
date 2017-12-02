@@ -31,7 +31,7 @@ for (var i = 0; i < AllFuncs.length; ++i) {
     AllFuncMap[funcItem.name] = funcItem;
 }
 
-$HttpModel.addClass({
+$HttpModel.addClass("YZDZZ_CLASS", {
     _constructor:function(httpServer) {
         this.httpServer = httpServer;
         this.controller = new GameController();
@@ -64,6 +64,16 @@ $HttpModel.addClass({
         httpServer.registerCommand("functions", this);
     },
     initialize:function(done) {
+
+        this.userModel = this.httpServer.findModel("USER_CLASS");
+        if (this.userModel) {
+            console.log("find user model!");
+            this.userModel.listenUserModification({
+                added:(userData) => { this.onUserAdded(userData); },
+                deleting:(userData) => { this.onUserDeleting(userData); },
+            });
+        }
+
         var next = coroutine(function*() {
             yield $StateManager.openState(GAME_ACCOUNTS_CONFIG, next);
             var accountStates = $StateManager.getState(GAME_ACCOUNTS_CONFIG);
@@ -106,6 +116,7 @@ $HttpModel.addClass({
             safe(done)();
         }, this);
     },
+
     erasePlayerSettings:function(playerKey) {
         console.log("erasePlayerSettings", playerKey);
         var changed = false;
@@ -597,6 +608,36 @@ $HttpModel.addClass({
         return true;
     },
 
+    onUserAdded:function(userData) {
+        console.log("onUserAdded");
+    },
+    onUserDeleting:function(userData) {
+        if (!userData.accounts || userData.accounts.length == 0) {
+            return;
+        }
+
+        console.log("onUserDeleting");
+        var info = {};
+        while (userData.accounts.length > 0) {
+            this.delUserAccount(userData, 0, info);
+        }
+        if (userData.players.length > 0) {
+            console.log("=================== deleting account without all players! =====================");
+            while (userData.players.length > 0) {
+                this.delUserPlayer(userData, 0, info);
+            }
+        }
+
+        var next = coroutine(function*() {
+            if (info.settingsChanged) {
+                yield $StateManager.commitState(GAME_SETTING_CONFIG, next);
+            }
+            if (info.namesChanged) {
+                yield $StateManager.commitState(GAME_PLAYER_NAME_CONFIG, next);
+            }
+            yield $StateManager.commitState(GAME_ACCOUNTS_CONFIG, next);
+        }, this);
+    },
     delUserPlayer:function(userData, playerBelong, info) {
         var playerKey = userData.players[playerBelong];
         console.log("delUserPlayer", playerKey);

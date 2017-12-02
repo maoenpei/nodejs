@@ -8,9 +8,10 @@ var AuthorizeOnlySuperAdmin = true;
 USER_CONFIG = "UserStates.d";
 BREAKIN_CONFIG = "Breakin.d";
 
-$HttpModel.addClass({
+$HttpModel.addClass("USER_CLASS", {
     _constructor:function(httpServer) {
         this.httpServer = httpServer;
+        this.userListeners = {};
 
         httpServer.registerCommand("listusers", this);
         httpServer.registerCommand("promote", this);
@@ -26,6 +27,29 @@ $HttpModel.addClass({
             yield $StateManager.openState(BREAKIN_CONFIG, next);
             safe(done)();
         }, this);
+    },
+
+    listenUserModification:function(listener) {
+        if (!listener || typeof(listener) != "object") {
+            return null;
+        }
+        var key = rkey();
+        while (this.userListeners[key]) { key = rkey(); }
+        this.userListeners[key] = listener;
+        return key;
+    },
+    removeUserListener:function(key) {
+        if (this.userListeners[key]) {
+            delete this.userListeners[key];
+        }
+    },
+    invokeUserListener:function(type, userData) {
+        for (var key in this.userListeners) {
+            var listener = this.userListeners[key];
+            if (listener[type]) {
+                listener[type](userData);
+            }
+        }
     },
 
     createUser:function() {
@@ -211,15 +235,16 @@ $HttpModel.addClass({
             }
 
             if (targetKeyData.userKey) {
-                var userData = userStates.users[targetKeyData.userKey];
-                if (!userData) {
+                var targetUserData = userStates.users[targetKeyData.userKey];
+                if (!targetUserData) {
                     responder.addError("No user data.");
                     return responder.respondJson({}, done);
                 }
-                if (userData.auth > 3) {
+                if (targetUserData.auth > 3) {
                     responder.addError("Cannot disable super administrator.");
                     return responder.respondJson({}, done);
                 }
+                this.invokeUserListener("deleting", targetUserData);
                 delete userStates.users[targetKeyData.userKey];
                 delete targetKeyData.userKey;
             }
@@ -323,7 +348,9 @@ $HttpModel.addClass({
             var lastSerial = json.next;
             if (!lastSerial) {
                 nextUserKey = this.createUser();
-                userStates.users[nextUserKey].auth = 1;
+                var nextUserData = userStates.users[nextUserKey];
+                nextUserData.auth = 1;
+                this.invokeUserListener("added", nextUserData);
             } else {
                 if (AuthorizeOnlySuperAdmin && userData.auth < 4) {
                     responder.addError("Admin level not enough.");
