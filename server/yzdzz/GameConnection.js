@@ -1719,7 +1719,7 @@ Base.extends("GameConnection", {
                 }
 
                 // auto sweep
-                if (config.sweep && this.gameInfo.vip >= 3 && data.done == 1 && data.num >= 15) {
+                if (config.sweep && this.gameInfo.vip >= 3 && data.id <= data.maxid && data.num >= 15) {
                     var data_sweep = yield this.sendMsg("Rich", "sweep", {id:data.id, num:data.num}, next);
                 }
             }
@@ -1960,6 +1960,7 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("Tavern", "getlog", {ids:"50016,60018,70041"}, next); // 可兑换勇者的状态
             //var data = yield this.sendMsg("Comment", "getCount", {id:80005}, next); // 勇者评论数目
 
+            //var data = yield this.sendMsg("Rich", "getinfo", null, next);
             //var data = yield this.sendMsg("Rich", "sweep", {id:112, num:41}, next);
 
             console.log(data);
