@@ -43,8 +43,8 @@
         "interval":360
     }
     ,"dailyTask":[
-        {"hour":0,"minute":0,"second":55}
-        ,{"hour":0,"minute":1,"second":45}
+        {"hour":0,"minute":0,"second":25}
+        ,{"hour":0,"minute":0,"second":55}
         ,{"hour":9,"minute":0,"second":55}
         ,{"hour":12,"minute":0,"second":55}
         ,{"hour":13,"minute":0,"second":55}
@@ -71,5 +71,10 @@
         ]
         ,"start":55
         ,"force":58
+    }
+    ,"heroshop":{
+        "server":"s96"
+        ,"time":{"hour":0,"minute":1,"second":25}
+        ,"reset":{"hour":0,"minute":0,"second":0}
     }
 }

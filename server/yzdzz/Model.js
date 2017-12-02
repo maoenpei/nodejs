@@ -3,6 +3,7 @@ require("../Base");
 require("../LoginManager");
 require("../Mutex");
 require("../StateManager");
+require("./Database");
 require("./GameController");
 
 GAME_ACCOUNTS_CONFIG = "GameAcounts.d";
@@ -13,6 +14,7 @@ GAME_POWER_MAX_CONFIG = "GamePowerMax.d";
 GAME_UNIONS_CONFIG = "GameUnions.d";
 GAME_KINGWAR_CONFIG = "GameKingwar.d";
 GAME_PLAYER_NAME_CONFIG = "GamePlayerNames.d";
+GAME_HEROSHOP_CONFIG = "GameHeroshop.d";
 
 var AllFuncs = [
     {name:"refresh", authBase:2},
@@ -92,6 +94,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             yield $StateManager.openState(GAME_UNIONS_CONFIG, next);
             yield $StateManager.openState(GAME_KINGWAR_CONFIG, next);
             yield $StateManager.openState(GAME_PLAYER_NAME_CONFIG, next);
+            yield $StateManager.openState(GAME_HEROSHOP_CONFIG, next);
 
             var allPowerMax = $StateManager.getState(GAME_POWER_MAX_CONFIG);
             this.playersMd5 = this.getTag(allPowerMax);
@@ -111,6 +114,12 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                     this.controller.setPlayerBrief(playerData, brief);
                 }
             }
+            var heroshopInfo = $StateManager.getState(GAME_HEROSHOP_CONFIG);
+            this.controller.setHeroshopInfo(heroshopInfo.date, heroshopInfo.info, (date, info) => {
+                heroshopInfo.date = date;
+                heroshopInfo.info = info;
+                $StateManager.commitState(GAME_HEROSHOP_CONFIG);
+            });
 
             yield this.startRefreshSettings(next);
             safe(done)();
@@ -139,6 +148,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         }
         if (settingStates.dropping[playerKey]) {
             delete settingStates.dropping[playerKey];
+            changed = true;
+        }
+        if (settingStates.heroshop[playerKey]) {
+            delete settingStates.heroshop[playerKey];
             changed = true;
         }
         return changed;
@@ -176,11 +189,16 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 var droppingConfig = settingStates.dropping[playerKey];
                 this.startRefreshDropping(playerKey, droppingConfig);
             }
+            for (var playerKey in settingStates.heroshop) {
+                var heroshopConfig = settingStates.heroshop[playerKey];
+                this.startRefreshHeroshop(playerKey, heroshopConfig);
+            }
             var defaultsStates = $StateManager.getState(GAME_DEFAULTS_CONFIG);
             this.controller.startDailyTask(defaultsStates.dailyTask);
             this.controller.setRepeatRange(defaultsStates.repeatRange.start, defaultsStates.repeatRange.end);
             this.controller.setTargetingEvent(defaultsStates.targeting);
             this.controller.setDroppingEvent(defaultsStates.dropping);
+            this.controller.setHeroshopEvent(defaultsStates.heroshop);
             this.doRefresh(AllFuncStr);
             safe(done)();
         }, this);
@@ -336,6 +354,27 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             playerData.refreshDroppingKey = null;
         }
     },
+    startRefreshHeroshop:function(playerKey, heroshopConfig) {
+        var playerData = this.players[playerKey];
+        if (!heroshopConfig.enabled) {
+            return this.stopRefreshHeroshop(playerKey);
+        }
+        console.log("startRefreshHeroshop", playerKey);
+        if (playerData.refreshHeroshopKey) {
+            this.controller.modifyPlayerHeroshop(playerData.refreshHeroshopKey, heroshopConfig);
+        } else {
+            playerData.refreshHeroshopKey =
+                this.controller.setPlayerHeroshop(playerData, heroshopConfig);
+        }
+    },
+    stopRefreshHeroshop:function(playerKey) {
+        var playerData = this.players[playerKey];
+        if (playerData.refreshHeroshopKey) {
+            console.log("stopRefreshHeroshop", playerKey);
+            this.controller.unsetPlayer(playerData.refreshHeroshopKey);
+            playerData.refreshHeroshopKey = null;
+        }
+    },
     startRefreshKingwar:function(playerKey, kingwarConfig) {
         var playerData = this.players[playerKey];
         if (kingwarConfig.area == 0 || kingwarConfig.star == 0) {
@@ -476,6 +515,8 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         this.stopRefreshTargeting(playerKey);
         this.stopRefreshListing(playerKey);
         this.stopRefreshKingwar(playerKey);
+        this.stopRefreshDropping(playerKey);
+        this.stopRefreshHeroshop(playerKey);
         delete this.players[playerKey];
     },
     getAccountIndex:function(userData, accountKey) {
@@ -603,6 +644,36 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         console.log("set dropping for player", playerKey);
         settingStates.dropping[playerKey] = droppingConfig;
         this.startRefreshDropping(playerKey, droppingConfig);
+        return true;
+    },
+    validateHeros:function(heros) {
+        if (!heros || !heros.length) {
+            return [];
+        }
+        var validHeros = [];
+        for (var i = 0; i < heros.length; ++i) {
+            var id = heros[i];
+            var heroInfo = Database.heroInfo(id);
+            if (heroInfo) {
+                validHeros.push(id);
+            }
+        }
+        return validHeros;
+    },
+    setSettingHeroshop:function(playerKey, heroshop) {
+        var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
+        var heroshopConfig = {
+            enabled: (heroshop.enabled ? true : false),
+            autoExchange: (heroshop.autoExchange ? true : false),
+            refresh: (heroshop.refresh ? Number(heroshop.refresh) : 0),
+            careAbout: this.validateHeros(heroshop.careAbout),
+        };
+        if (this.compareSetting(heroshopConfig, settingStates.heroshop[playerKey])) {
+            return false;
+        }
+        console.log("set heroshop for player", playerKey);
+        settingStates.heroshop[playerKey] = heroshopConfig;
+        this.startRefreshHeroshop(playerKey, heroshopConfig);
         return true;
     },
 
@@ -974,6 +1045,9 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             if (settings.dropping) {
                 changed = this.setSettingDropping(playerKey, settings.dropping) || changed;
             }
+            if (settings.heroshop) {
+                changed = this.setSettingHeroshop(playerKey, settings.heroshop) || changed;
+            }
             if (changed) {
                 yield $StateManager.commitState(GAME_SETTING_CONFIG, next);
             }
@@ -1143,6 +1217,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                                     listing: (isAdmin ? this.getSettingTyped("listing", playerKey) : undefined),
                                     targeting: this.getSettingTyped("targeting", playerKey),
                                     dropping: this.getSettingTyped("dropping", playerKey),
+                                    heroshop: this.getSettingTyped("heroshop", playerKey),
                                 },
                             });
                             break;

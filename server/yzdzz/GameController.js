@@ -15,6 +15,7 @@ require("./GameConnection");
 // 4: 极限加入已完成(targeting)
 // 5: 执行极限刷新(kingwar)
 // 6: 极限丢卡(dropping)
+// 7: 刷新勇者(heroshop)
 
 Base.extends("AccountManager", {
     _constructor:function() {
@@ -64,8 +65,7 @@ Base.extends("GameController", {
         this.lastPlayerInfo = {};
         this.initKingwar();
         this.initPlayerListing();
-        this.initPlayerAutomation();
-        this.initTargeting();
+        this.initHeroshop();
     },
     getAccountManager:function() {
         return this.accountManager;
@@ -311,6 +311,61 @@ Base.extends("GameController", {
                 this.kingwarRefs[kingwarKey].players.push(players[i]);
             }
         }
+    },
+
+    setPlayerHeroshop:function(playerData, heroshopConfig) {
+        return this.appendRefresh(playerData, "heroshop", 7, (conn, done) => {
+            this.refreshHeroshop(conn, heroshopConfig, done);
+        });
+    },
+    modifyPlayerHeroshop:function(key, heroshopConfig) {
+        return this.setRefreshFunc(key, (conn, done) => {
+            this.refreshHeroshop(conn, heroshopConfig, done);
+        });
+    },
+    refreshHeroshop:function(conn, heroshopConfig, done) {
+        var next = coroutine(function*() {
+            console.log("refreshHeroshop..", conn.getGameInfo().name);
+            var server = conn.getServerInfo().desc;
+            if (this.heroshopServer && this.heroshopServer == server) {
+                yield conn.updateHeroShop(heroshopConfig, this.heroshopInfo, next);
+            }
+            safe(done)();
+        }, this);
+    },
+    initHeroshop:function() {
+        this.heroshopInfo = {};
+        this.heroshopDate = -1;
+        this.heroshopUpdateCallback = null;
+        this.heroshopServer = null;
+    },
+    setHeroshopEvent:function(defaults) {
+        this.unsetEventKeys(this.heroshopTimes);
+        this.heroshopServer = defaults.server;
+        this.heroshopTimes = [];
+        var time = defaults.time;
+        this.heroshopTimes.push(this.timingManager.setDailyEvent(time.hour, time.minute, time.second, () => {
+            var next = coroutine(function*() {
+                this.heroshopDate = new Date().getDate();
+                yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 7; }, next);
+                safe(this.heroshopUpdateCallback)(this.heroshopDate, this.heroshopInfo);
+            }, this);
+        }));
+        var reset = defaults.reset;
+        this.heroshopTimes.push(this.timingManager.setDailyEvent(reset.hour, reset.minute, reset.second, () => {
+            this.heroshopInfo = {};
+            this.heroshopDate = -1;
+        }));
+    },
+    setHeroshopInfo:function(date, info, callback) {
+        if (date == new Date().getDate()) {
+            this.heroshopDate = date;
+            this.heroshopInfo = {};
+            for (var key in info) {
+                this.heroshopInfo[key] = info[key];
+            }
+        }
+        this.heroshopUpdateCallback = callback;
     },
 
     unsetPlayer:function(key) {
@@ -592,8 +647,8 @@ Base.extends("GameController", {
     setTargetingEvent:function(defaults) {
         this.unsetEventKeys(this.targetingTimes);
         this.targetingTimes = [];
-        var targetingKey = this.timingManager.setWeeklyEvent(defaults.time.day, defaults.time.hour, defaults.time.minute, defaults.time.second, () => {
-            this.initTargeting();
+        var time = defaults.time;
+        var targetingKey = this.timingManager.setWeeklyEvent(time.day, time.hour, time.minute, time.second, () => {
             this.setRefreshStatesOfType("kingwar", 5);
             var forceTime = new Date();
             forceTime.setSeconds(defaults.forceSec, 0);
@@ -670,6 +725,7 @@ Base.extends("GameController", {
         this.droppingTimes = [];
         var doDropping = () => {
             var next = coroutine(function*() {
+                console.log("dropping started!");
                 var startTime = new Date();
                 startTime.setSeconds(defaults.start, 0);
                 var forceTime = new Date();
@@ -856,8 +912,6 @@ Base.extends("GameController", {
     },
 
     // Private refresh operations
-    initTargeting:function() {
-    },
     refreshTargeting:function(conn, targetingConfig, selfKey, taskItem, done) {
         var next = coroutine(function*() {
             console.log("refreshTargeting..", conn.getGameInfo().name);
@@ -1027,8 +1081,6 @@ Base.extends("GameController", {
             }
             safe(done)();
         }, this);
-    },
-    initPlayerAutomation:function() {
     },
     refreshAutomation:function(conn, autoConfigs, done) {
         var next = coroutine(function*() {

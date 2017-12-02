@@ -862,6 +862,96 @@ Base.extends("GameConnection", {
         }, this);
     },
 
+    listHeroPrice:function(data, result) {
+        for (var id in data.players) {
+            var player = data.players[id];
+            var heroInfo = Database.heroInfo(id);
+            if (heroInfo) {
+                result[String(id)] = Number(player.per);
+            }
+        }
+    },
+    getRoomHeros:function(data) {
+        var roomHeros = [];
+        for (var i = 0; i < data.room_max; ++i) {
+            var room = data.negotiate[i];
+            if (room) {
+                roomHeros.push({
+                    id: String(room.id),
+                    per: Number(room.per),
+                });
+            }
+        }
+        return roomHeros;
+    },
+    exchangeHeroRoom:function(config, data, done) {
+        var next = coroutine(function*() {
+            var roomMax = data.room_max;
+            var roomHeros = this.getRoomHeros(data);
+            if (config.autoExchange) {
+                for (var i = 0; i < roomMax; ++i) {
+                    var changed = false;
+                    for (var id in data.players) {
+                        var player = data.players[id];
+                        if (config.careAbout[id] && player.status == 0 && roomHeros.length < roomMax) {
+                            data = yield this.sendMsg("RoleMerge", "addNegotiate", {uid:id}, next);
+                            roomHeros = this.getRoomHeros(data);
+                            changed = true;
+                            break;
+                        }
+                    }
+                    for (var i = 0; i < roomHeros.length; ++i) {
+                        var roomItem = roomHeros[i];
+                        var player = data.players[roomItem.id];
+                        if (player) {
+                            data = yield this.sendMsg("RoleMerge", "delNegotiate", {id:i}, next);
+                            roomHeros = this.getRoomHeros(data);
+                            changed = true;
+                            break;
+                        }
+                    }
+                    if (!changed) {
+                        break;
+                    }
+                }
+            }
+            var playerIds = [];
+            for (var id in data.players) {
+                playerIds.push(id);
+            }
+            for (var i = 0; i < playerIds.length; ++i) {
+                var id = playerIds[i];
+                var player = data.players[id];
+                if (config.careAbout[id] && player.status == 0 && roomHeros.length < roomMax) {
+                    data = yield this.sendMsg("RoleMerge", "addNegotiate", {uid:id}, next);
+                    roomHeros = this.getRoomHeros(data);
+                }
+            }
+            safe(done)();
+        }, this);
+    },
+    updateHeroShop:function(config, result, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("RoleMerge", "heroInfo", null, next);
+            if (!data || !data.players) {
+                return safe(done)({});
+            }
+            this.listHeroPrice(data, result);
+            yield this.exchangeHeroRoom(config, data, next);
+
+            var currentRefresh = data.flush_hero_num;
+            var maxRefresh = (config.refresh > 10 ? 10 : config.refresh);
+            for (var i = currentRefresh; i < maxRefresh; ++i) {
+                data = yield this.sendMsg("RoleMerge", "heroFlush", null, next);
+                this.listHeroPrice(data, result);
+                yield this.exchangeHeroRoom(config, data, next);
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+
     autoBenefit:function(config, done) {
         var next = coroutine(function*() {
             // auto sign
@@ -1960,8 +2050,7 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("Tavern", "getlog", {ids:"50016,60018,70041"}, next); // 可兑换勇者的状态
             //var data = yield this.sendMsg("Comment", "getCount", {id:80005}, next); // 勇者评论数目
 
-            //var data = yield this.sendMsg("Rich", "getinfo", null, next);
-            //var data = yield this.sendMsg("Rich", "sweep", {id:112, num:41}, next);
+            //var data = yield this.sendMsg("RoleMerge", "delNegotiate", {id:4}, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
