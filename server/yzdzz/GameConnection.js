@@ -987,6 +987,18 @@ Base.extends("GameConnection", {
                     }
                 }
             }
+            // auto hero reward
+            if (config.freehero && this.gameInfo.hasHeroReward && this.validator.checkDaily("autoHeroReward")) {
+                var data = yield this.sendMsg("ActGoldenHero", "getinfo", null, next);
+                if (data && data.list) {
+                    for (var i = 0; i < data.list.length; ++i) {
+                        var item = data.list[i];
+                        if (item.state == 1) {
+                            var data_reward = yield this.sendMsg("ActGoldenHero", "reward", { index:item.index }, next);
+                        }
+                    }
+                }
+            }
             return safe(done)({
                 success:true,
             });
@@ -1914,7 +1926,6 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("RoleExplore", "update", {type:'', login:1}, next); // 点击收集
             //var data = yield this.sendMsg("RoleExplore", "balance", null, next);
             //var data = yield this.sendMsg("ActLevelGift", "getinfo", null, next); // 新手等级奖励
-            //var data = yield this.sendMsg("ActGoldenHero", "getinfo", null, next); // 金币魔女
             //var data = yield this.sendMsg("ActCatchup", "info", null, next); // 后来居上
             //var data = yield this.sendMsg("ActRank", "getinfo", null, next); // 排名
             //var data = yield this.sendMsg("League", "getPosList", null, next); // 国家玩家列表

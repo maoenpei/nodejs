@@ -283,9 +283,9 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         }
     },
     stopRefreshAutomation:function(playerKey) {
-        console.log("stopRefreshAutomation", playerKey);
         var playerData = this.players[playerKey];
         if (playerData.refreshAutomationKey) {
+            console.log("stopRefreshAutomation", playerKey);
             var refreshKey = playerData.refreshAutomationKey;
             playerData.refreshAutomationKey = null;
             this.noConfliction(() => {
@@ -308,10 +308,9 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         }
     },
     stopRefreshTargeting:function(playerKey) {
-        console.log("stopRefreshTargeting", playerKey);
         var playerData = this.players[playerKey];
         if (playerData.refreshTargetingKey) {
-            console.log("unsetPlayer", playerKey);
+            console.log("stopRefreshTargeting", playerKey);
             this.controller.unsetPlayer(playerData.refreshTargetingKey);
             playerData.refreshTargetingKey = null;
         }
@@ -330,10 +329,9 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         }
     },
     stopRefreshDropping:function(playerKey) {
-        console.log("stopRefreshDropping", playerKey);
         var playerData = this.players[playerKey];
         if (playerData.refreshDroppingKey) {
-            console.log("unsetPlayer", playerKey);
+            console.log("stopRefreshDropping", playerKey);
             this.controller.unsetPlayer(playerData.refreshDroppingKey);
             playerData.refreshDroppingKey = null;
         }
@@ -352,9 +350,9 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         }
     },
     stopRefreshKingwar:function(playerKey) {
-        console.log("stopRefreshKingwar", playerKey);
         var playerData = this.players[playerKey];
         if (playerData.refreshKingwarKey) {
+            console.log("stopRefreshKingwar", playerKey);
             var refreshKey = playerData.refreshKingwarKey;
             playerData.refreshKingwarKey = null;
             this.noConfliction(() => {
@@ -377,9 +375,9 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         }
     },
     stopRefreshListing:function(playerKey) {
-        console.log("stopRefreshListing", playerKey);
         var playerData = this.players[playerKey];
         if (playerData.refreshPlayerKey) {
+            console.log("stopRefreshListing", playerKey);
             var refreshKey = playerData.refreshPlayerKey;
             playerData.refreshPlayerKey = null;
             this.noConfliction(() => {

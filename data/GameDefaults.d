@@ -8,6 +8,7 @@
             ,"tavern":true
             ,"specCard":true
             ,"redpacket":true
+            ,"freehero":true
         }
         ,"autoForward":{}
         ,"autoGoblin":{
