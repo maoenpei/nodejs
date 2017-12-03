@@ -24,9 +24,10 @@ body{
     z-index:6;
 }
 .div_sub_title_bar{
+    color: rgb(0, 127, 255);
     background-color: #bbb;
     padding:0.3rem 0;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
 }
 .div_content_panel{
     position:relative;
@@ -103,7 +104,7 @@ input[type='checkbox']{
     height:0.65rem;
 }
 
-.div_automation_sub_title{
+.div_automation_sub_title_bar{
     padding-right: 2.5rem;
 }
 .div_auto_add_field{
@@ -162,6 +163,10 @@ input[type='checkbox']{
     margin-right: 0.2rem;
 }
 
+.div_kingwar_sub_title_bar{
+}
+.div_kingwar_sub_refresh{
+}
 .div_areastar_block{
 }
 .div_areastar_title{
@@ -320,7 +325,8 @@ input[type='checkbox']{
     font-size: 0.5rem;
 }
 .div_player_sub_title_bar{
-    color: blue;
+}
+.div_player_sub_refresh{
 }
 .div_player_sub_show_item{
     display: inline-block;

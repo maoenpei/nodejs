@@ -17,7 +17,7 @@ GAME_PLAYER_NAME_CONFIG = "GamePlayerNames.d";
 GAME_HEROSHOP_CONFIG = "GameHeroshop.d";
 
 var AllFuncs = [
-    {name:"refresh", authBase:2},
+    //{name:"refresh", authBase:2},
     {name:"kingwar", authBase:1, refreshType:"kingwar", },
     {name:"playerlist", authBase:1, refreshType:"kingwar;playerlist", },
     {name:"serverInfo", authBase:1},
@@ -1372,7 +1372,8 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                     kingwar: playerItem.kingwar,
                 });
             }
-            var tag = this.getTag(playersData);
+            var hasRefresh = userData.auth >= 2;
+            var tag = this.getTag(playersData) + String(hasRefresh);
             if (!requestor.compareTags(tag)) {
                 responder.setCode(304);
                 return responder.respondData(Buffer.alloc(0), safe(done));
@@ -1380,6 +1381,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
 
             responder.setTag(tag);
             responder.respondJson({
+                hasRefresh: userData.auth >= 2,
                 players: players,
             }, done);
         }, this);
@@ -1406,13 +1408,15 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             }
 
             var kingwarData = this.controller.getKingwar();
-            var tag = this.getTag(kingwarData);
+            var hasRefresh = userData.auth >= 2;
+            var tag = this.getTag(kingwarData) + String(hasRefresh);
             if (!requestor.compareTags(tag)) {
                 responder.setCode(304);
                 return responder.respondData(Buffer.alloc(0), safe(done));
             }
             responder.setTag(tag);
             responder.respondJson({
+                hasRefresh: userData.auth >= 2,
                 areastars:kingwarData,
             }, done);
         }, this);

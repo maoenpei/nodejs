@@ -216,7 +216,7 @@ function displayLogin() {
 // supported funcs
 var displayFuncsModel = {
     supports:{
-        refresh:{name:"更新", click:clickRefresh, },
+        //refresh:{name:"更新", click:clickRefresh, },
         kingwar:{name:"帝国战", show:displayKingWar, },
         playerlist:{name:"玩家", show:displayPlayerList, },
         //serverInfo:{name:"信息", },
@@ -749,7 +749,7 @@ function displayAutomation() {
         });
 
         // display contents
-        var divSubtitleBar = divContentPanel.find(".div_sub_title_bar");
+        var divSubtitleBar = divContentPanel.find(".div_automation_sub_title_bar");
         var divAutomationContent = divContentPanel.find(".div_automation_content");
         var autoNavigateTemplate = templates.read(".hd_automation_navigate_item");
         var autoItemTemplate = templates.read(".hd_automation_item");
@@ -1078,6 +1078,7 @@ var displayPlayerListModel = {
 displayPlayerListModel.get = function(callback) {
     $this = this;
     requestGet("listplayers", function(json) {
+        $this.hasRefresh = json.hasRefresh;
         $this.players = json.players;
         callback(json);
     });
@@ -1089,7 +1090,13 @@ function displayPlayerList() {
     divContentPanel.html(waitingTemplate({refreshing_data: true}));
 
     displayPlayerListModel.get(function(data) {
-        divContentPanel.html($(".hd_player_list_all").html());
+        var playerListTemplate = templates.read(".hd_player_list_all");
+        divContentPanel.html(playerListTemplate(data));
+        adjustPageLayout();
+
+        if (data.hasRefresh) {
+            divContentPanel.find(".div_player_sub_refresh").click(clickRefresh);
+        }
 
         var inputShowKingwar = divContentPanel.find(".input_player_sub_show_kingwar");
         inputShowKingwar.change(function() {
@@ -1105,7 +1112,6 @@ function displayPlayerList() {
             loadPlayers();
         });
 
-        adjustPageLayout();
         loadPlayers();
 
         function loadPlayers() {
@@ -1168,6 +1174,7 @@ var displayKingWarModel = {
 displayKingWarModel.get = function(callback) {
     $this = this;
     requestGet("listkingwars", function(json) {
+        $this.hasRefresh = json.hasRefresh;
         $this.kingwar = json.areastars;
         for (var key in json.areastars) {
             var areastarData = json.areastars[key];
@@ -1213,7 +1220,14 @@ function displayKingWar() {
     divContentPanel.html(waitingTemplate({refreshing_data: true}));
 
     displayKingWarModel.get(function(data) {
-        divContentPanel.html($(".hd_kingwar_areastar_all").html());
+        var kingwarAreastarTemplate = templates.read(".hd_kingwar_areastar_all");
+        divContentPanel.html(kingwarAreastarTemplate(data));
+        adjustPageLayout();
+
+        if (data.hasRefresh) {
+            divContentPanel.find(".div_kingwar_sub_refresh").click(clickRefresh);
+        }
+
         var divAreaStarList = divContentPanel.find(".div_areastar_list");
         var divNavAreaList = divContentPanel.find(".div_navigate_areas");
         var divNavStarList = divContentPanel.find(".div_navigate_stars");

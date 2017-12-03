@@ -15,7 +15,7 @@
     <div class="div_content_panel">
     </div>
 <script type="text/x-handlebars-template" class="hd_automation_all">
-    <div class="div_sub_title_bar div_automation_sub_title"></div>
+    <div class="div_sub_title_bar div_automation_sub_title_bar"></div>
     <div class="div_automation_content"></div>
     <div class="div_automation_account_add_mask common_mask" style="display: none;">
         <div class="common_mask_content">
@@ -232,6 +232,11 @@
 </script>
 <script type="text/x-handlebars-template" class="hd_player_list_all">
         <div class="div_sub_title_bar div_player_sub_title_bar">
+            {{#if hasRefresh}}
+            <div class="div_player_sub_refresh div_player_sub_show_item visit_label">
+                刷新
+            </div>
+            {{/if}}
             <div class="div_player_sub_show_item">
                 显示已加入
                 <input type="checkbox" class="input_player_sub_show_kingwar">
@@ -262,6 +267,13 @@
             </div>
 </script>
 <script type="text/x-handlebars-template" class="hd_kingwar_areastar_all">
+        <div class="div_sub_title_bar div_kingwar_sub_title_bar">
+            {{#if hasRefresh}}
+            <div class="div_kingwar_sub_refresh visit_label">
+                刷新
+            </div>
+            {{/if}}
+        </div>
         <div class="div_areastar_list"></div>
         <div class="div_navigate_areas"></div>
         <div class="div_navigate_stars_mask common_mask" style="display:none">
