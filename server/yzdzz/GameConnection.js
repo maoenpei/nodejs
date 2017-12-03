@@ -959,6 +959,7 @@ Base.extends("GameConnection", {
 
             var currentRefresh = data.flush_hero_num;
             var maxRefresh = (config.refresh > 10 ? 10 : config.refresh);
+            this.log("refresh hero shop", currentRefresh, maxRefresh);
             for (var i = currentRefresh; i < maxRefresh; ++i) {
                 data = yield this.sendMsg("RoleMerge", "heroFlush", null, next);
                 this.listHeroPrice(data, result);
