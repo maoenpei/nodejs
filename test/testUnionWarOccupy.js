@@ -19,12 +19,19 @@ var accounts = [
     {u:"13719987234", p:"xwWZT123"},
     {u:"13801890722", p:"Q950318my"},
     {u:"13758796288", p:"087200"},
-
-    {u:"15171335812", p:"12345678"},
-    {u:"18983624927", p:"123456"},
-    {u:"13913945392", p:"816476"},
     {u:"18367890817", p:"62252377"},
-    {u:"18066212025", p:"1234567j"},
+
+    {u:"18066212025", p:"1234567j"}, // 审判
+    {u:"13625821126", p:"gxf396466"}, // 白菜
+    {u:"reggiesun", p:"f1032277"}, // 二哥
+    {u:"13913945392", p:"816476"}, // 幻影
+    {u:"15880877841", p:"3802832"}, // 顺金
+
+    {u:"15171335812", p:"12345678", nonWeekend: true}, // Akon
+    {u:"18983624927", p:"123456", nonWeekend: true}, // 突然的自我
+    {u:"18963940530", p:"3135134162", nonWeekend: false}, // 风继续吹
+    {u:"13862891792", p:"gch900708", nonWeekend: false}, // 殇
+    {u:"18604449044", p:"jizai1314", nonWeekend: false}, // Lc
 ];
 
 var selfUnion = "b275705814a85d98";
@@ -32,140 +39,153 @@ var selfUnion = "b275705814a85d98";
 var landTargets = (isWeekend ? [7, 3, 2, 1] : [4, 3, 1, 2]);
 //var landTargets = (isWeekend ? [7, 1, 2, 3] : [4, 3, 1, 2]);
 
-var friendUnion = ["b26d0533bba85c43"];
+var friendUnion = (isWeekend ? ["b26d0533bba85c43"] : []);
 var enemyUnion = [];
 
-var next = coroutine(function*() {
+var doUnionWarOccupy = () => {
+    var next = coroutine(function*() {
 
-    var gameController = new GameController();
-    var accountManager = gameController.getAccountManager();
-    yield $StateManager.openState(GAME_POWER_MAX_CONFIG, next);
-    var allPowerMax = $StateManager.getState(GAME_POWER_MAX_CONFIG);
-    var accountKeys = [];
-    for (var i = 0; i < accounts.length; ++i) {
-        accountKeys.push(accountManager.add(accounts[i].u, accounts[i].p));
-    }
-
-    while(true) {
-        for (var i = 0; i < accountKeys.length; ++i) {
-            var conn = accountManager.connectAccount(accountKeys[i]);
-            var data = yield conn.loginAccount(next);
-            if (!data.success) {continue;}
-            var data = yield conn.loginGame("s96", next);
-            if (!data.success) {continue;}
-            var data_UnionWar = yield conn.getUnionWar(next);
-            if (!data_UnionWar.isOpen) {
-                console.log("union war closed");
-                conn.quit();
-                continue;
+        var gameController = new GameController();
+        var accountManager = gameController.getAccountManager();
+        yield $StateManager.openState(GAME_POWER_MAX_CONFIG, next);
+        var allPowerMax = $StateManager.getState(GAME_POWER_MAX_CONFIG);
+        var accountKeys = [];
+        for (var i = 0; i < accounts.length; ++i) {
+            if (!isWeekend || !accounts[i].nonWeekend) {
+                accountKeys.push(accountManager.add(accounts[i].u, accounts[i].p));
             }
-            for (var j = 0; j < landTargets.length; ++j) {
-                var landId = landTargets[j];
-                if (data_UnionWar.lands[landId]) {
-                    console.log("land occupied:", landId);
+        }
+
+        while(true) {
+            for (var i = 0; i < accountKeys.length; ++i) {
+                var conn = accountManager.connectAccount(accountKeys[i]);
+                var data = yield conn.loginAccount(next);
+                if (!data.success) {continue;}
+                var data = yield conn.loginGame("s96", next);
+                if (!data.success) {continue;}
+                var data_UnionWar = yield conn.getUnionWar(next);
+                if (!data_UnionWar.isOpen) {
+                    console.log("union war closed");
+                    conn.quit();
                     continue;
                 }
-                var data = yield conn.enterUnionWar(landId, next);
-                if (data.mineArray) {
-                    // use card
-                    var card = data.card;
-                    if (isWeekend && card.ready) {
-                        if (card.isgood) {
-                            for (var k = 0; k < friendUnion.length; ++k) {
-                                var data_usecard = yield conn.useCard(friendUnion[k], next);
-                                if (data_usecard.success) {
-                                    break;
+                for (var j = 0; j < landTargets.length; ++j) {
+                    var landId = landTargets[j];
+                    if (data_UnionWar.lands[landId]) {
+                        console.log("land occupied:", landId);
+                        continue;
+                    }
+                    var data = yield conn.enterUnionWar(landId, next);
+                    if (data.mineArray) {
+                        // use card
+                        var card = data.card;
+                        if (isWeekend && card.ready) {
+                            if (card.isgood) {
+                                for (var k = 0; k < friendUnion.length; ++k) {
+                                    var data_usecard = yield conn.useCard(friendUnion[k], next);
+                                    if (data_usecard.success) {
+                                        break;
+                                    }
                                 }
+                            } else {
+                                for (var k = 0; k < enemyUnion.length; ++k) {
+                                    var data_usecard = yield conn.useCard(enemyUnion[k], next);
+                                    if (data_usecard.success) {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        // get mine targets
+                        var mineCount = data.mineArray.length;
+                        var mineIndices = [];
+                        if (isWeekend) {
+                            if (conn.getGameInfo().unionWarDouble < 100) {
+                                yield conn.buySpeed(300, next);
+                            }
+                            if (!data.hasSpeed) {
+                                yield conn.setSpeed(true, next);
+                            }
+                            for (var k = 0; k < mineCount - 3; ++k) {
+                                mineIndices.push(data.mineArray[k]);
                             }
                         } else {
-                            for (var k = 0; k < enemyUnion.length; ++k) {
-                                var data_usecard = yield conn.useCard(enemyUnion[k], next);
-                                if (data_usecard.success) {
-                                    break;
+                            var avoidCount = Math.floor(data.mineArray.length / 2);
+                            for (var k = mineCount-1; k > avoidCount-1; --k) {
+                                mineIndices.push(data.mineArray[k]);
+                            }
+                        }
+                        var selfOccupy = 100;
+                        var originOccupy = 100;
+                        var bestOccupy = 100;
+                        var bestFight = 100;
+                        var worstFight = 100;
+                        for (var k = 0; k < mineIndices.length; ++k) {
+                            var mineData = mineIndices[k];
+                            if (conn.getGameInfo().playerId == mineData.playerId) {
+                                selfOccupy = mineData.pos;
+                                originOccupy = mineData.pos;
+                            }
+                            if (mineData.mineLife > 0 && !mineData.playerId) {
+                                if (mineData.pos < bestOccupy) {
+                                    bestOccupy = mineData.pos;
+                                }
+                            }
+                            if (mineData.playerId && (mineData.unionId != selfUnion)) {
+                                if (mineData.pos < worstFight) {
+                                    worstFight = mineData.pos;
+                                }
+                                maxPowerPlayer = allPowerMax[mineData.playerId];
+                                if (!maxPowerPlayer || conn.getGameInfo().power + 200000 > maxPowerPlayer.maxPower){
+                                    if (mineData.pos < bestFight) {
+                                        bestFight = mineData.pos;
+                                    }
                                 }
                             }
                         }
-                    }
-                    // get mine targets
-                    var mineCount = data.mineArray.length;
-                    var mineIndices = [];
-                    if (isWeekend) {
-                        if (conn.getGameInfo().unionWarDouble < 100) {
-                            yield conn.buySpeed(300, next);
-                        }
-                        if (!data.hasSpeed) {
-                            yield conn.setSpeed(true, next);
-                        }
-                        for (var k = 0; k < mineCount - 3; ++k) {
-                            mineIndices.push(data.mineArray[k]);
-                        }
-                    } else {
-                        var avoidCount = Math.floor(data.mineArray.length / 2);
-                        for (var k = mineCount-1; k > avoidCount-1; --k) {
-                            mineIndices.push(data.mineArray[k]);
-                        }
-                    }
-                    var selfOccupy = 100;
-                    var originOccupy = 100;
-                    var bestOccupy = 100;
-                    var bestFight = 100;
-                    var worstFight = 100;
-                    for (var k = 0; k < mineIndices.length; ++k) {
-                        var mineData = mineIndices[k];
-                        if (conn.getGameInfo().playerId == mineData.playerId) {
-                            selfOccupy = mineData.pos;
-                            originOccupy = mineData.pos;
-                        }
-                        if (mineData.mineLife > 0 && !mineData.playerId) {
-                            if (mineData.pos < bestOccupy) {
-                                bestOccupy = mineData.pos;
-                            }
-                        }
-                        if (mineData.playerId && (mineData.unionId != selfUnion)) {
-                            if (mineData.pos < worstFight) {
-                                worstFight = mineData.pos;
-                            }
-                            maxPowerPlayer = allPowerMax[mineData.playerId];
-                            if (!maxPowerPlayer || conn.getGameInfo().power + 200000 > maxPowerPlayer.maxPower){
-                                if (mineData.pos < bestFight) {
-                                    bestFight = mineData.pos;
+                        var justOccupy = false;
+                        bestFight = (bestFight == 100 ? worstFight : bestFight);
+                        if (bestFight != 100 && (selfOccupy == 100 || bestFight < selfOccupy)) {
+                            var data_fire = yield conn.fire(landId, bestFight, next);
+                            // fire will lose current pos
+                            bestOccupy = (originOccupy < bestOccupy ? originOccupy : bestOccupy);
+                            console.log("data_fire", data_fire);
+                            if (data_fire.success) {
+                                selfOccupy = 100;
+                                var data_occupy = yield conn.occupy(landId, bestFight, next);
+                                console.log("data_occupy", data_occupy);
+                                if (data_occupy.success) {
+                                    selfOccupy = bestFight;
+                                    justOccupy = true;
                                 }
                             }
                         }
-                    }
-                    var justOccupy = false;
-                    bestFight = (bestFight == 100 ? worstFight : bestFight);
-                    if (bestFight != 100 && (selfOccupy == 100 || bestFight < selfOccupy)) {
-                        var data_fire = yield conn.fire(landId, bestFight, next);
-                        // fire will lose current pos
-                        bestOccupy = (originOccupy < bestOccupy ? originOccupy : bestOccupy);
-                        console.log("data_fire", data_fire);
-                        if (data_fire.success) {
-                            selfOccupy = 100;
-                            var data_occupy = yield conn.occupy(landId, bestFight, next);
-                            console.log("data_occupy", data_occupy);
+                        if (!justOccupy && bestOccupy != 100 && (selfOccupy == 100 || bestOccupy < selfOccupy)) {
+                            var data_occupy = yield conn.occupy(landId, bestOccupy, next);
                             if (data_occupy.success) {
-                                selfOccupy = bestFight;
-                                justOccupy = true;
+                                selfOccupy = bestOccupy;
                             }
                         }
-                    }
-                    if (!justOccupy && bestOccupy != 100 && (selfOccupy == 100 || bestOccupy < selfOccupy)) {
-                        var data_occupy = yield conn.occupy(landId, bestOccupy, next);
-                        if (data_occupy.success) {
-                            selfOccupy = bestOccupy;
+                        if (selfOccupy != 100) {
+                            break;
                         }
-                    }
-                    if (selfOccupy != 100) {
-                        break;
                     }
                 }
+                conn.quit();
+                yield setTimeout(next, 200);
             }
-            conn.quit();
-            yield setTimeout(next, 200);
+            console.log("waiting 5 seconds");
+            yield setTimeout(next, 5000);
         }
-        console.log("waiting 5 seconds");
-        yield setTimeout(next, 5000);
-    }
 
-}, null);
+    }, null);
+};
+
+var startTime = new Date();
+startTime.setHours(19, 59, 55, 0);
+if (new Date() > startTime) {
+    doUnionWarOccupy();
+} else {
+    var timingManager = new TimingManager();
+    timingManager.setDailyEvent(19, 59, 55, doUnionWarOccupy);
+}
