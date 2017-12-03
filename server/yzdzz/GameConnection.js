@@ -915,7 +915,7 @@ Base.extends("GameConnection", {
                 for (var j = 0; j < playerIds.length; ++j) {
                     var id = playerIds[j];
                     var player = data.players[id];
-                    if (Number(player.per) <= config.maxReduce && player.status == 0 && roomHeros.length < roomMax) {
+                    if (Number(player.per) <= config.maxReduce && Database.heroInfo(id) && player.status == 0 && roomHeros.length < roomMax) {
                         data = yield this.sendMsg("RoleMerge", "addNegotiate", {uid:id}, next);
                         roomHeros = this.getRoomHeros(data);
                         changed = true;
