@@ -219,7 +219,7 @@ var displayFuncsModel = {
         //refresh:{name:"更新", click:clickRefresh, },
         kingwar:{name:"帝国战", show:displayKingWar, },
         playerlist:{name:"玩家", show:displayPlayerList, },
-        //serverInfo:{name:"信息", },
+        serverInfo:{name:"信息", show:displayServerInfo, },
         automation:{name:"配置", show:displayAutomation, },
         //setting:{name:"设置", },
         users:{name:"用户", show:displayUsers, },
@@ -1070,6 +1070,84 @@ function displayAutomation() {
         }
         displayAccounts();
     });
+}
+
+var displayServerInfoModel = {
+};
+
+displayServerInfoModel.get = function(callback) {
+    $this = this;
+    requestPost("listserverinfo", {vulkan:true}, function(json) {
+        $this.heros = json.heros;
+        $this.heroshop = json.heroshop;
+        $this.initialize();
+        callback();
+    });
+}
+displayServerInfoModel.initialize = function() {
+    this.herosData = {};
+    for (var i = 0; i < this.heros.length; ++i) {
+        var heroItem = this.heros[i];
+        this.herosData[heroItem.id] = heroItem;
+    }
+    this.heroshopData = [];
+    var heroshop = clone(this.heroshop);
+    while (true) {
+        var hasItem = false;
+        var minPer = 500;
+        var minId = null;
+        for (var id in heroshop) {
+            hasItem = true;
+            var per = heroshop[id]
+            if (per < minPer) {
+                minPer = per;
+                minId = id;
+            }
+        }
+        if (!hasItem) {
+            break;
+        }
+        var heroInfo = this.herosData[minId];
+        var name = (heroInfo ? heroInfo.name : "不存在的勇者");
+        var cls = (heroInfo ? heroInfo.cls : "-");
+        this.heroshopData.push({
+            id: minId,
+            per: minPer,
+            name: name,
+            cls: cls,
+            isgolden: cls == "SSS" || cls == "SSS+",
+            isX: cls == "X",
+        });
+        delete heroshop[minId];
+    }
+}
+displayServerInfoModel.getHeroshop = function() {
+    return this.heroshopData;
+}
+
+function displayServerInfo() {
+    var divContentPanel = $(".div_content_panel");
+    var waitingTemplate = templates.read(".hd_display_loading");
+    divContentPanel.html(waitingTemplate({refreshing_data: true}));
+
+    var refreshData = function() {
+        var defaultServerInfo = StorageItem().defaultServerInfo;
+        defaultServerInfo = (defaultServerInfo ? defaultServerInfo : "heroshop");
+        var data = {
+            heroshop: (defaultServerInfo == "heroshop" ? displayServerInfoModel.getHeroshop() : null),
+        };
+        var serverListTemplate = templates.read(".hd_server_info_all");
+        divContentPanel.html(serverListTemplate(data));
+        adjustPageLayout();
+
+        var divServerInfoSubReduce = divContentPanel.find(".div_server_info_sub_item_reduce");
+        divServerInfoSubReduce.click(function() {
+            StorageItem().defaultServerInfo = "heroshop";
+            refreshData();
+        });
+    };
+
+    displayServerInfoModel.get(refreshData);
 }
 
 var displayPlayerListModel = {

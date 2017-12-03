@@ -57,6 +57,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         httpServer.registerCommand("listautomation", this);
         httpServer.registerCommand("checkrefresh", this);
         httpServer.registerCommand("manrefresh", this);
+        httpServer.registerCommand("listserverinfo", this);
         httpServer.registerCommand("listplayers", this);
         httpServer.registerCommand("listkingwars", this);
         httpServer.registerCommand("functions", this);
@@ -1336,6 +1337,42 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 success: true,
                 isDelay: delay,
             }, done);
+        }, this);
+    },
+    listserverinfo:function(requestor, responder, done) {
+        var next = coroutine(function*() {
+            var obj = yield this.httpServer.tokenValid(requestor, next);
+            if (!obj) {
+                responder.addError("Not valid token for logout.");
+                return responder.respondJson({}, done);
+            }
+
+            var userStates = $StateManager.getState(USER_CONFIG);
+            var keyData = userStates.keys[obj.getSerial()];
+            if (!keyData || !keyData.userKey) {
+                responder.addError("Not an authorized user.");
+                return responder.respondJson({}, done);
+            }
+
+            var userData = userStates.users[keyData.userKey];
+            if (!userData || userData.auth < 1) {
+                responder.addError("Admin level not enough.");
+                return responder.respondJson({}, done);
+            }
+
+            var json = yield requestor.visitBodyJson(next);
+            if (!json || !json.vulkan) {
+                responder.addError("Parameter data not correct.");
+                return responder.respondJson({}, done);
+            }
+
+            var heros = Database.allHeros();
+            var heroshopInfo = $StateManager.getState(GAME_HEROSHOP_CONFIG);
+
+            responder.respondJson({
+                heros: heros,
+                heroshop: heroshopInfo.info,
+            });
         }, this);
     },
     listplayers:function(requestor, responder, done) {

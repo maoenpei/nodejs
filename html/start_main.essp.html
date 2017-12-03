@@ -230,6 +230,29 @@
             {{/if}}
         </div>
 </script>
+<script type="text/x-handlebars-template" class="hd_server_info_all">
+        <div class="div_sub_title_bar div_server_info_sub_title_bar">
+            {{#if heroshop}}
+            <div class="div_server_info_sub_item_reduce visit_label">
+                勇者折扣
+            </div>
+            {{/if}}
+        </div>
+        <div class="div_server_info">
+            {{#if heroshop}}
+            <div class="common_block">
+                <div class="div_server_info_title_text">所有勇者</div>
+                {{#each heroshop}}
+                <div class="div_server_info_item_heroshop">
+                    <div class="div_server_info_item_name {{#if isgolden}}div_server_info_item_golden{{/if}} {{#if isX}}div_server_info_item_X{{/if}}">{{name}}</div>
+                    <div class="div_server_info_item_cls {{#if isgolden}}div_server_info_item_golden{{/if}} {{#if isX}}div_server_info_item_X{{/if}}">{{cls}}</div>
+                    <div class="div_server_info_item_per">{{per}}</div>
+                </div>
+                {{/each}}
+            </div>
+            {{/if}}
+        </div>
+</script>
 <script type="text/x-handlebars-template" class="hd_player_list_all">
         <div class="div_sub_title_bar div_player_sub_title_bar">
             {{#if hasRefresh}}

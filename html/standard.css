@@ -334,6 +334,38 @@ input[type='checkbox']{
     margin-right: 0.4rem;
 }
 
+.div_server_info_sub_title_bar{
+}
+.div_server_info_title_text{
+    color: #fff;
+    font-size:1rem;
+    display:inline-block;
+}
+.div_server_info_item_heroshop{
+    margin: 0.1rem;
+}
+.div_server_info_item_name{
+    display: inline-block;
+    width: 46%;
+    text-align: right;
+}
+.div_server_info_item_cls{
+    display: inline-block;
+    width: 13%;
+}
+.div_server_info_item_per{
+    display: inline-block;
+    width: 32%;
+    text-align: left;
+    color: rgb(14, 255, 14);
+}
+.div_server_info_item_golden{
+    color: rgb(255, 255, 60);
+}
+.div_server_info_item_X{
+    color: rgb(222, 185, 20);
+}
+
 .div_users_list{
 }
 .div_user_item{
