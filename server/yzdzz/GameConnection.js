@@ -884,45 +884,63 @@ Base.extends("GameConnection", {
         }
         return roomHeros;
     },
+    getShopHeros:function(data) {
+        var playerIds = [];
+        for (var id in data.players) {
+            playerIds.push(id);
+        }
+        return playerIds;
+    },
     exchangeHeroRoom:function(config, data, done) {
         var next = coroutine(function*() {
             var roomMax = data.room_max;
             var roomHeros = this.getRoomHeros(data);
-            if (config.autoExchange) {
-                for (var i = 0; i < roomMax; ++i) {
-                    var changed = false;
-                    for (var id in data.players) {
-                        var player = data.players[id];
-                        if (config.careAbout[id] && player.status == 0 && roomHeros.length < roomMax) {
-                            data = yield this.sendMsg("RoleMerge", "addNegotiate", {uid:id}, next);
-                            roomHeros = this.getRoomHeros(data);
-                            changed = true;
-                            break;
-                        }
-                    }
-                    for (var i = 0; i < roomHeros.length; ++i) {
-                        var roomItem = roomHeros[i];
-                        var player = data.players[roomItem.id];
-                        if (player) {
-                            data = yield this.sendMsg("RoleMerge", "delNegotiate", {id:i}, next);
-                            roomHeros = this.getRoomHeros(data);
-                            changed = true;
-                            break;
-                        }
-                    }
-                    if (!changed) {
+            var playerIds = this.getShopHeros(data);
+            var careAbout = {};
+            for (var i = 0; i < roomHeros.length; ++i) {
+                careAbout[roomHeros[i].id] = true;
+            }
+            for (var i = 0; i < roomMax; ++i) {
+                var changed = false;
+                for (var j = 0; j < playerIds.length; ++j) {
+                    var id = playerIds[j];
+                    var player = data.players[id];
+                    if (careAbout[id] && player.status == 0 && roomHeros.length < roomMax) {
+                        data = yield this.sendMsg("RoleMerge", "addNegotiate", {uid:id}, next);
+                        roomHeros = this.getRoomHeros(data);
+                        changed = true;
                         break;
                     }
                 }
-            }
-            var playerIds = [];
-            for (var id in data.players) {
-                playerIds.push(id);
+                for (var j = 0; j < playerIds.length; ++j) {
+                    var id = playerIds[j];
+                    var player = data.players[id];
+                    if (Number(player.per) <= config.maxReduce && player.status == 0 && roomHeros.length < roomMax) {
+                        data = yield this.sendMsg("RoleMerge", "addNegotiate", {uid:id}, next);
+                        roomHeros = this.getRoomHeros(data);
+                        changed = true;
+                        break;
+                    }
+                }
+                for (var j = 0; j < roomHeros.length; ++j) {
+                    var roomItem = roomHeros[j];
+                    var player = data.players[roomItem.id];
+                    if (player && player.status == 2) {
+                        careAbout[roomItem.id] = true;
+                        data = yield this.sendMsg("RoleMerge", "delNegotiate", {id:j}, next);
+                        roomHeros = this.getRoomHeros(data);
+                        changed = true;
+                        break;
+                    }
+                }
+                if (!changed) {
+                    break;
+                }
             }
             for (var i = 0; i < playerIds.length; ++i) {
                 var id = playerIds[i];
                 var player = data.players[id];
-                if (config.careAbout[id] && player.status == 0 && roomHeros.length < roomMax) {
+                if (careAbout[id] && player.status == 0 && roomHeros.length < roomMax) {
                     data = yield this.sendMsg("RoleMerge", "addNegotiate", {uid:id}, next);
                     roomHeros = this.getRoomHeros(data);
                 }

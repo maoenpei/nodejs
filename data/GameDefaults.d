@@ -74,7 +74,6 @@
     }
     ,"heroshop":{
         "server":"s96"
-        ,"time":{"hour":0,"minute":1,"second":25}
         ,"reset":{"hour":0,"minute":0,"second":0}
     }
 }

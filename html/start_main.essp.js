@@ -919,6 +919,8 @@ function displayAutomation() {
             templateData.targeting = !!targeting;
             var dropping = lastPlayer.copy_settings.dropping;
             templateData.dropping = !!dropping;
+            var heroshop = lastPlayer.copy_settings.heroshop;
+            templateData.heroshop = !!heroshop;
             var divAutoSettingContent = $(autoSettingsTemplate(templateData));
             divAutoSettingContent.appendTo(divAutomationContent);
 
@@ -928,6 +930,40 @@ function displayAutomation() {
                 });
             };
 
+            if (heroshop) {
+                var divHeroshopBlock = divAutoSettingContent.find(".div_auto_setting_heroshop");
+                var inputSettingEnabled = divHeroshopBlock.find(".ctrl_setting_config_prop_heroshop_enable");
+                if (heroshop.enabled) {
+                    inputSettingEnabled.attr("checked", "checked");
+                }
+                inputSettingEnabled.change(function() {
+                    heroshop.enabled = inputSettingEnabled.is(":checked");
+                    configChanged();
+                });
+                var selectSettingReduce = divHeroshopBlock.find(".ctrl_setting_config_prop_heroshop_reduce");
+                selectSettingReduce.val(heroshop.maxReduce ? heroshop.maxReduce : 55);
+                selectSettingReduce.change(function() {
+                    heroshop.maxReduce = Number(selectSettingReduce.val());
+                    configChanged();
+                });
+                var selectSettingRefresh = divHeroshopBlock.find(".ctrl_setting_config_prop_heroshop_refresh");
+                selectSettingRefresh.val(heroshop.refresh);
+                selectSettingRefresh.change(function() {
+                    heroshop.refresh = Number(selectSettingRefresh.val());
+                    configChanged();
+                });
+            }
+            if (dropping) {
+                var divDroppingBlock = divAutoSettingContent.find(".div_auto_setting_dropping");
+                var inputSettingDrop = divDroppingBlock.find(".ctrl_setting_config_prop_drop");
+                if (dropping.allowDrop) {
+                    inputSettingDrop.attr("checked", "checked");
+                }
+                inputSettingDrop.change(function() {
+                    dropping.allowDrop = inputSettingDrop.is(":checked");
+                    configChanged();
+                });
+            }
             if (targeting) {
                 var divTargetingBlock = divAutoSettingContent.find(".div_auto_setting_targeting");
                 var selectSettingPlayer = divTargetingBlock.find(".select_auto_setting_players");
@@ -948,17 +984,6 @@ function displayAutomation() {
                 selectSettingMinstar.val((targeting.minStar ? targeting.minStar : 1));
                 selectSettingMinstar.change(function() {
                     targeting.minStar = selectSettingMinstar.val();
-                    configChanged();
-                });
-            }
-            if (dropping) {
-                var divDroppingBlock = divAutoSettingContent.find(".div_auto_setting_dropping");
-                var inputSettingDrop = divDroppingBlock.find(".ctrl_setting_config_prop_drop");
-                if (dropping.allowDrop) {
-                    inputSettingDrop.attr("checked", "checked");
-                }
-                inputSettingDrop.change(function() {
-                    dropping.allowDrop = inputSettingDrop.is(":checked");
                     configChanged();
                 });
             }

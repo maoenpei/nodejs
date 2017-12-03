@@ -41,10 +41,6 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         this.accounts = {};
         this.players = {};
 
-        this.playersMd5 = "";
-        this.unionMd5 = "";
-        this.kingwarMd5 = "";
-        this.playerNamesMd5 = "";
         this.onRefreshEnd = [];
         this.delayRefresh = "";
 
@@ -115,10 +111,15 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 }
             }
             var heroshopInfo = $StateManager.getState(GAME_HEROSHOP_CONFIG);
+            this.heroshopMd5 = this.getTag(heroshopInfo);
             this.controller.setHeroshopInfo(heroshopInfo.date, heroshopInfo.info, (date, info) => {
                 heroshopInfo.date = date;
                 heroshopInfo.info = info;
-                $StateManager.commitState(GAME_HEROSHOP_CONFIG);
+                var md5 = this.getTag(heroshopInfo);
+                if (md5 != this.heroshopMd5) {
+                    this.heroshopMd5 = md5;
+                    $StateManager.commitState(GAME_HEROSHOP_CONFIG);
+                }
             });
 
             yield this.startRefreshSettings(next);
@@ -588,11 +589,19 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         }
         return true;
     },
+    getSettingNumber:function(val, min, max, def) {
+        if (typeof(val) == "number") {
+            if (val >= min && val <= max) {
+                return val;
+            }
+        }
+        return def;
+    },
     setSettingKingwar:function(playerKey, kingwar) {
         var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
         var kingwarConfig = {
-            area: (typeof(kingwar.area) == "number" && kingwar.area >= 1 && kingwar.area <= 3 ? kingwar.area : 0),
-            star: (typeof(kingwar.star) == "number" && kingwar.star >= 1 && kingwar.star <= 10 ? kingwar.star : 0),
+            area: this.getSettingNumber(kingwar.area, 1, 3, 0),
+            star: this.getSettingNumber(kingwar.star, 1, 10, 0),
         };
         if (this.compareSetting(kingwarConfig, settingStates.kingwar[playerKey])) {
             return false;
@@ -606,8 +615,8 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
         var listingConfig = {
             unionCount: 10,
-            minPower: (typeof(listing.minPower) == "number" && listing.minPower > 10 && listing.minPower < 999 ? listing.minPower : 0),
-            limitPower: (typeof(listing.limitPower) == "number" && listing.limitPower > 50 && listing.limitPower < 9999 ? listing.limitPower : 0),
+            minPower: this.getSettingNumber(listing.minPower, 10, 999, 0),
+            limitPower: this.getSettingNumber(listing.limitPower, 50, 9999, 0),
             limitDay: 20,
         };
         if (this.compareSetting(listingConfig, settingStates.listing[playerKey])) {
@@ -623,7 +632,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         var targetingConfig = {
             reachPLID: this.randKey2PlayerId[targeting.reachPLID] || "",
             allowAssign: (targeting.allowAssign ? true : false),
-            minStar: (targeting.minStar ? Number(targeting.minStar) : 0),
+            minStar: this.getSettingNumber(targeting.minStar, 1, 10, 0),
         };
         if (this.compareSetting(targetingConfig, settingStates.targeting[playerKey])) {
             return false;
@@ -646,27 +655,12 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         this.startRefreshDropping(playerKey, droppingConfig);
         return true;
     },
-    validateHeros:function(heros) {
-        if (!heros || !heros.length) {
-            return [];
-        }
-        var validHeros = [];
-        for (var i = 0; i < heros.length; ++i) {
-            var id = heros[i];
-            var heroInfo = Database.heroInfo(id);
-            if (heroInfo) {
-                validHeros.push(id);
-            }
-        }
-        return validHeros;
-    },
     setSettingHeroshop:function(playerKey, heroshop) {
         var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
         var heroshopConfig = {
             enabled: (heroshop.enabled ? true : false),
-            autoExchange: (heroshop.autoExchange ? true : false),
-            refresh: (heroshop.refresh ? Number(heroshop.refresh) : 0),
-            careAbout: this.validateHeros(heroshop.careAbout),
+            maxReduce: this.getSettingNumber(heroshop.maxReduce, 50, 60, 55),
+            refresh: this.getSettingNumber(heroshop.refresh, 0, 8, 0),
         };
         if (this.compareSetting(heroshopConfig, settingStates.heroshop[playerKey])) {
             return false;

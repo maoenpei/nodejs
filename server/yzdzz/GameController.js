@@ -10,12 +10,11 @@ require("./GameConnection");
 // states:
 // 0: 什么都不做
 // 1: 定期执行(kingwar/playerlist/automation)
-// 2: 执行每日任务(automation)
+// 2: 执行每日任务(automation/heroshop)
 // 3: 执行极限加入(targeting)
 // 4: 极限加入已完成(targeting)
 // 5: 执行极限刷新(kingwar)
 // 6: 极限丢卡(dropping)
-// 7: 刷新勇者(heroshop)
 
 Base.extends("AccountManager", {
     _constructor:function() {
@@ -314,7 +313,7 @@ Base.extends("GameController", {
     },
 
     setPlayerHeroshop:function(playerData, heroshopConfig) {
-        return this.appendRefresh(playerData, "heroshop", 7, (conn, done) => {
+        return this.appendRefresh(playerData, "heroshop", 2, (conn, done) => {
             this.refreshHeroshop(conn, heroshopConfig, done);
         });
     },
@@ -343,18 +342,11 @@ Base.extends("GameController", {
         this.unsetEventKeys(this.heroshopTimes);
         this.heroshopServer = defaults.server;
         this.heroshopTimes = [];
-        var time = defaults.time;
-        this.heroshopTimes.push(this.timingManager.setDailyEvent(time.hour, time.minute, time.second, () => {
-            var next = coroutine(function*() {
-                this.heroshopDate = new Date().getDate();
-                yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 7; }, next);
-                safe(this.heroshopUpdateCallback)(this.heroshopDate, this.heroshopInfo);
-            }, this);
-        }));
         var reset = defaults.reset;
         this.heroshopTimes.push(this.timingManager.setDailyEvent(reset.hour, reset.minute, reset.second, () => {
-            this.heroshopInfo = {};
             this.heroshopDate = -1;
+            this.heroshopInfo = {};
+            safe(this.heroshopUpdateCallback)(this.heroshopDate, this.heroshopInfo);
         }));
     },
     setHeroshopInfo:function(date, info, callback) {
@@ -436,6 +428,8 @@ Base.extends("GameController", {
             this.refreshAllPlayers((funcObj) => {
                 return funcObj.state == 2;
             }, () => {
+                this.heroshopDate = new Date().getDate();
+                safe(this.heroshopUpdateCallback)(this.heroshopDate, this.heroshopInfo);
                 console.log("daily task end!");
             });
         };
