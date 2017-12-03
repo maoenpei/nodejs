@@ -925,7 +925,7 @@ Base.extends("GameConnection", {
                 for (var j = 0; j < roomHeros.length; ++j) {
                     var roomItem = roomHeros[j];
                     var player = data.players[roomItem.id];
-                    if (player && player.status == 2) {
+                    if (player && player.status == 2 && roomItem.per >= Number(player.per)) {
                         careAbout[roomItem.id] = true;
                         data = yield this.sendMsg("RoleMerge", "delNegotiate", {id:j}, next);
                         roomHeros = this.getRoomHeros(data);
