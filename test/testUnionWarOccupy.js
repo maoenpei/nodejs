@@ -6,9 +6,6 @@ require("../server/StateManager");
 GAME_POWER_MAX_CONFIG = "GamePowerMax.d";
 $FileManager.RootDirectory = __dirname + "/..";
 
-var isWeekend = new Date().getDay() == 0;
-console.log("isWeekend", isWeekend);
-
 var accounts = [
     {u:"18551855876", p:"sdw123456"},
     {u:"tree44", p:"12345678"},
@@ -29,26 +26,37 @@ var accounts = [
 
     {u:"15171335812", p:"12345678", nonWeekend: true}, // Akon
     {u:"18983624927", p:"123456", nonWeekend: true}, // 突然的自我
-    {u:"18963940530", p:"3135134162", nonWeekend: false}, // 风继续吹
-    {u:"13862891792", p:"gch900708", nonWeekend: false}, // 殇
-    {u:"18604449044", p:"jizai1314", nonWeekend: false}, // Lc
+    //{u:"18963940530", p:"3135134162", nonWeekend: false}, // 风继续吹
+    //{u:"13862891792", p:"gch900708", nonWeekend: false}, // 殇
+    //{u:"18604449044", p:"jizai1314", nonWeekend: false}, // Lc
+    {u:"13917312804", p:"patm002", nonWeekend: false}, // 闰土
+    {u:"18030367128", p:"1234567", nonWeekend: false}, // 闷骚鱼
 ];
 
 var selfUnion = "b275705814a85d98";
 
-var landTargets = (isWeekend ? [7, 3, 2, 1] : [4, 3, 1, 2]);
-//var landTargets = (isWeekend ? [7, 1, 2, 3] : [4, 3, 1, 2]);
-
-var friendUnion = (isWeekend ? ["b26d0533bba85c43"] : []);
-var enemyUnion = [];
+var gameController = new GameController();
+var accountManager = gameController.getAccountManager();
+var allPowerMax = null;
 
 var doUnionWarOccupy = () => {
     var next = coroutine(function*() {
 
-        var gameController = new GameController();
-        var accountManager = gameController.getAccountManager();
-        yield $StateManager.openState(GAME_POWER_MAX_CONFIG, next);
-        var allPowerMax = $StateManager.getState(GAME_POWER_MAX_CONFIG);
+        var isWeekend = new Date().getDay() == 0;
+        console.log("isWeekend", isWeekend);
+        var cycle = 0;
+
+        var landTargets = (isWeekend ? [7, 3, 2, 1] : [4, 3, 1, 2]);
+        //var landTargets = (isWeekend ? [7, 1, 2, 3] : [4, 3, 1, 2]);
+
+        var friendUnion = (isWeekend ? ["b26d0533bba85c43"] : []);
+        var enemyUnion = [];
+
+        if (!allPowerMax) {
+            yield $StateManager.openState(GAME_POWER_MAX_CONFIG, next);
+            allPowerMax = $StateManager.getState(GAME_POWER_MAX_CONFIG);
+        }
+
         var accountKeys = [];
         for (var i = 0; i < accounts.length; ++i) {
             if (!isWeekend || !accounts[i].nonWeekend) {
@@ -57,6 +65,8 @@ var doUnionWarOccupy = () => {
         }
 
         while(true) {
+            var joinCount = 0;
+            var someoneFull = false;
             for (var i = 0; i < accountKeys.length; ++i) {
                 var conn = accountManager.connectAccount(accountKeys[i]);
                 var data = yield conn.loginAccount(next);
@@ -69,12 +79,14 @@ var doUnionWarOccupy = () => {
                     conn.quit();
                     continue;
                 }
+                var allFull = true;
                 for (var j = 0; j < landTargets.length; ++j) {
                     var landId = landTargets[j];
                     if (data_UnionWar.lands[landId]) {
                         console.log("land occupied:", landId);
                         continue;
                     }
+                    allFull = false;
                     var data = yield conn.enterUnionWar(landId, next);
                     if (data.mineArray) {
                         // use card
@@ -167,15 +179,32 @@ var doUnionWarOccupy = () => {
                             }
                         }
                         if (selfOccupy != 100) {
+                            joinCount++;
                             break;
                         }
                     }
                 }
                 conn.quit();
+                if (allFull) {
+                    someoneFull = true;
+                    break;
+                }
                 yield setTimeout(next, 200);
+            }
+            if (someoneFull) {
+                console.log("union lands are full!");
+                break;
+            }
+            if (joinCount > 0 && !isWeekend){
+                console.log("one cycle!");
+                break;
             }
             console.log("waiting 5 seconds");
             yield setTimeout(next, 5000);
+        }
+
+        for (var i = 0; i < accountKeys.length; ++i) {
+            accountManager.remove(accountKeys[i]);
         }
 
     }, null);
