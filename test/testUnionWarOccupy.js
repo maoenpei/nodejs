@@ -216,5 +216,6 @@ if (new Date() > startTime) {
     doUnionWarOccupy();
 } else {
     var timingManager = new TimingManager();
-    timingManager.setDailyEvent(19, 59, 55, doUnionWarOccupy);
+    timingManager.setDailyEvent(20, 00, 45, doUnionWarOccupy);
+    //timingManager.setDailyEvent(19, 59, 55, doUnionWarOccupy);
 }
