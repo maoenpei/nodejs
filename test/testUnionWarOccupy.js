@@ -29,8 +29,8 @@ var accounts = [
     //{u:"18963940530", p:"3135134162", nonWeekend: false}, // 风继续吹
     //{u:"13862891792", p:"gch900708", nonWeekend: false}, // 殇
     //{u:"18604449044", p:"jizai1314", nonWeekend: false}, // Lc
-    {u:"13917312804", p:"patm002", nonWeekend: false}, // 闰土
-    {u:"18030367128", p:"1234567", nonWeekend: false}, // 闷骚鱼
+    //{u:"13917312804", p:"patm002", nonWeekend: false}, // 闰土
+    //{u:"18030367128", p:"1234567", nonWeekend: false}, // 闷骚鱼
 ];
 
 var selfUnion = "b275705814a85d98";
@@ -38,6 +38,7 @@ var selfUnion = "b275705814a85d98";
 var gameController = new GameController();
 var accountManager = gameController.getAccountManager();
 var allPowerMax = null;
+var occupyEnd = null;
 
 var doUnionWarOccupy = () => {
     var next = coroutine(function*() {
@@ -206,6 +207,9 @@ var doUnionWarOccupy = () => {
         for (var i = 0; i < accountKeys.length; ++i) {
             accountManager.remove(accountKeys[i]);
         }
+        if (occupyEnd) {
+            occupyEnd();
+        }
 
     }, null);
 };
@@ -216,6 +220,9 @@ if (new Date() > startTime) {
     doUnionWarOccupy();
 } else {
     var timingManager = new TimingManager();
-    timingManager.setDailyEvent(20, 00, 45, doUnionWarOccupy);
-    //timingManager.setDailyEvent(19, 59, 55, doUnionWarOccupy);
+    var eventKey = timingManager.setDailyEvent(20, 00, 45, doUnionWarOccupy);
+    //var eventKey = timingManager.setDailyEvent(19, 59, 55, doUnionWarOccupy);
+    occupyEnd = () => {
+        timingManager.unsetEvent(eventKey);
+    }
 }
