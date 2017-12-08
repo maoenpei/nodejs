@@ -59,8 +59,8 @@
     }
     ,"targeting":{
         "selfUnion":"b275705814a85d98"
-        ,"time":{"day":2,"hour":23,"minute":59,"second":10}
-        ,"forceSec":45
+        ,"time":{"day":2,"hour":23,"minute":59,"second":52}
+        ,"forceSec":55
     }
     ,"dropping":{
         "selfUnion":"b275705814a85d98"
@@ -69,8 +69,8 @@
             ,{"day":3,"hour":17,"minute":59,"second":50}
             ,{"day":3,"hour":19,"minute":59,"second":50}
         ]
-        ,"start":55
-        ,"force":58
+        ,"start":58.5
+        ,"force":59
     }
     ,"heroshop":{
         "server":"s96"

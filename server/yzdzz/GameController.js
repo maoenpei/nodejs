@@ -489,12 +489,18 @@ Base.extends("GameController", {
             helpCount: helpCount,
         };
     },
+    ownPowerCoef: 0.9,
+    hopePowerCoef: 0.95,
+    drawPowerCoef: 1.01,
+    lessPowerCoef: 1.04,
     getMutualLevel:function(ourMax, otherMax) {
-        if (ourMax * 0.96 > otherMax) {
+        if (ourMax * this.ownPowerCoef > otherMax) {
+            return 4;
+        } else if (ourMax * this.hopePowerCoef > otherMax) {
             return 3;
-        } else if (ourMax * 1.02 > otherMax) {
+        } else if (ourMax * this.drawPowerCoef > otherMax) {
             return 2;
-        } else if (ourMax * 1.04 > otherMax) {
+        } else if (ourMax * this.lessPowerCoef > otherMax) {
             return 1;
         } else {
             return 0;
@@ -510,8 +516,7 @@ Base.extends("GameController", {
             brief.kingwarKey = kingwarKey;
             brief.area = areaStar.area;
             brief.star = areaStar.star;
-            console.log("-- kingwar assignment -- brief", brief);
-            var insertIndex = 0;
+            var insertIndex = kingwarOrder.length;
             for (var i = 0; i < kingwarOrder.length; ++i) {
                 if (areaStar.star > kingwarOrder[i].star) {
                     insertIndex = i;
@@ -520,13 +525,17 @@ Base.extends("GameController", {
             }
             kingwarOrder.splice(insertIndex, 0, brief);
         }
+        for (var i = 0; i < kingwarOrder.length; ++i) {
+            var brief = kingwarOrder[i];
+            console.log("-- kingwar assignment -- brief", brief);
+        }
         return kingwarOrder;
     },
     getTasksOrder:function(tasks) {
         var tasksOrder = [];
         for (var i = 0; i < tasks.length; ++i) {
             var data = tasks[i].getValue();
-            var insertIndex = 0;
+            var insertIndex = tasksOrder.length;
             for (var j = 0; j < tasksOrder.length; ++j) {
                 if (data.power > tasksOrder[j].power) {
                     insertIndex = j;
@@ -538,6 +547,10 @@ Base.extends("GameController", {
                 minStar: data.minStar,
                 task: tasks[i],
             });
+        }
+        for (var i = 0; i < tasksOrder.length; ++i) {
+            var taskItem = tasksOrder[i];
+            console.log("-- kingwar assignment -- taskItem", taskItem.power, taskItem.minStar);
         }
         return tasksOrder;
     },
@@ -553,7 +566,7 @@ Base.extends("GameController", {
             }
             for (var j = 0; j < kingwarOrder.length; ++j) {
                 var brief = kingwarOrder[j];
-                if (canJoin(taskItem, brief)) {
+                if (brief.star >= taskItem.minStar && canJoin(taskItem, brief)) {
                     console.log("-- kingwar assignment -- possible", taskItem.power, brief.kingwarKey);
                     brief.possible.push(taskItem);
                 }
@@ -598,12 +611,17 @@ Base.extends("GameController", {
         // try fight
         console.log("-- kingwar assignment -- try fight");
         this.tryTargetingAssignment(kingwarOrder, tasksOrder, (taskItem, brief) => {
-            return brief.star >= taskItem.minStar && brief.mutual <= 1 && taskItem.power * 0.96 > brief.otherMax;
+            return brief.mutual <= 1 && taskItem.power * this.hopePowerCoef > brief.otherMax;
         });
         // try help
         console.log("-- kingwar assignment -- try help");
         this.tryTargetingAssignment(kingwarOrder, tasksOrder, (taskItem, brief) => {
-            return brief.star >= taskItem.minStar && brief.mutual == 2 && taskItem.power < brief.ourMax * 0.8 && brief.helpCount < 3;
+            if (brief.mutual == 2) {
+                return taskItem.power < brief.ourMax * 0.8 && brief.helpCount < 4;
+            } else if (brief.mutual == 3) {
+                return taskItem.power < brief.ourMax * 0.8 && brief.helpCount < 3;
+            }
+            return false;
         });
         
         var restNumber = 0;
@@ -617,12 +635,17 @@ Base.extends("GameController", {
             // try fight
             console.log("-- kingwar assignment -- try fight Z");
             this.tryTargetingAssignment(kingwarOrder, tasksOrder, (taskItem, brief) => {
-                return brief.star >= taskItem.minStar && brief.mutual <= 1 && taskItem.power * 1.01 > brief.otherMax;
+                return brief.mutual <= 1 && taskItem.power * this.drawPowerCoef > brief.otherMax;
             });
             // try help
             console.log("-- kingwar assignment -- try help Z");
             this.tryTargetingAssignment(kingwarOrder, tasksOrder, (taskItem, brief) => {
-                return brief.star >= taskItem.minStar && brief.mutual == 2 && taskItem.power < brief.ourMax * 0.9 && brief.helpCount < 3;
+                if (brief.mutual == 2) {
+                    return taskItem.power < brief.ourMax * 0.9 && brief.helpCount < 4;
+                } else if (brief.mutual == 3) {
+                    return taskItem.power < brief.ourMax * 0.9 && brief.helpCount < 3;
+                }
+                return false;
             });
         }
 
@@ -859,7 +882,6 @@ Base.extends("GameController", {
             }
 
             if (executables.length > 0) {
-                console.log("refresh for player", refreshInfo.account, refreshInfo.server, executables.length);
                 this.refreshOnePlayer(refreshInfo, executables, select.setup(), (taskManager ? taskManager.addTask() : undefined));
             }
         }

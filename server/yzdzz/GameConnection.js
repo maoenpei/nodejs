@@ -2191,5 +2191,6 @@ Base.extends("GameConnection", {
         this.regMsg("RoleExplore", "update", (data) => {}); // notification
         this.regMsg("League", "kill", (data) => {}); // notification
         this.regMsg("League", "updateTop", (data) => {}); // notification
+        this.regMsg("League", "joinwar", (data) => {}); // notification
     },
 });
