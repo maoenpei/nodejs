@@ -739,19 +739,26 @@ Base.extends("GameController", {
             }
         }
     },
+    timeWithSeconds:function(sec) {
+        var time = new Date();
+        var nsec = Math.floor(sec);
+        time.setSeconds(nsec, (sec - nsec) * 1000);
+        return time;
+    },
+    timeOffset:function(time, sec) {
+        return new Date(time.getTime() + sec * 1000);
+    },
     setDroppingEvent:function(defaults) {
         this.unsetEventKeys(this.droppingTimes);
         this.droppingTimes = [];
         var doDropping = () => {
             var next = coroutine(function*() {
                 console.log("dropping started!");
-                var startTime = new Date();
-                startTime.setSeconds(defaults.start, 0);
-                var forceTime = new Date();
-                forceTime.setSeconds(defaults.force, 0);
+                var startTime = this.dateWithSeconds(defaults.start);
+                var forceTime = this.dateWithSeconds(defaults.force);
                 // next minute start
-                var endTime = new Date(new Date().getTime() + 60000);
-                endTime.setSeconds(0, 0);
+                var endTime = this.dateWithSeconds(0);
+                endTime = this.timeOffset(endTime, 60);
                 var started = false;
                 var kingwarInfos = {};
                 var lastTasks = null;
