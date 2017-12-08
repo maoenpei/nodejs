@@ -729,6 +729,8 @@ Base.extends("GameController", {
                 var kingwarInfo = kingwarInfos[kingwarKey];
                 if (!kingwarInfo) {
                     kingwarInfo = this.getDroppingKingwarInfo(kingwarKey, defaults);
+                    kingwarInfo.helpLock = new Mutex();
+                    kingwarInfo.damageLock = new Mutex();
                     kingwarInfo.forceTime = forceTime;
                     kingwarInfo.endTime = endTime;
                     kingwarInfos[kingwarKey] = kingwarInfo;
@@ -1002,8 +1004,8 @@ Base.extends("GameController", {
         for (var i = 0; i < raceInfo.players.length; ++i) {
             var playerData = raceInfo.players[i];
             if (playerId == playerData.playerId) {
-                console.log("try drop to target.", card.cardType, playerData, conn.getGameInfo().name);
                 if (this.isCardValid(card, playerData)) {
+                    console.log("try drop to target.", card.cardType, playerData, conn.getGameInfo().name);
                     return true;
                 }
                 break;
@@ -1011,11 +1013,11 @@ Base.extends("GameController", {
         }
         return false;
     },
-    randomPlayer:function(conn, card, helpId, damageId, raceInfo) {
+    randomPlayer:function(conn, card, kingwarInfo, raceInfo) {
         var players = [];
         for (var i = 0; i < raceInfo.players.length; ++i) {
             var playerData = raceInfo.players[i];
-            if (playerData.playerId && playerData.playerId != helpId && playerData.playerId != damageId && playerData.playerId != conn.getGameInfo().playerId) {
+            if (playerData.playerId && playerData.playerId != kingwarInfo.helpId && playerData.playerId != kingwarInfo.damageId && playerData.playerId != conn.getGameInfo().playerId) {
                 players.push(playerData);
             }
         }
@@ -1044,11 +1046,22 @@ Base.extends("GameController", {
             return null;
         }
         var card = raceInfo.cards[0];
+        if (card.isGold) {
+            return this.randomPlayer(conn, card, kingwarInfo, raceInfo);
+        }
         var targetPlayerId = (card.isBenefit ? kingwarInfo.helpId : kingwarInfo.damageId);
         if (this.canDropCardTo(conn, card, targetPlayerId, raceInfo)) {
             return targetPlayerId;
         } else if (isForce) {
-            return this.randomPlayer(conn, card, kingwarInfo.helpId, kingwarInfo.damageId, raceInfo);
+            return this.randomPlayer(conn, card, kingwarInfo, raceInfo);
+        }
+        return null;
+    },
+    getDroppingLock:function(kingwarInfo, playerId) {
+        if (playerId == kingwarInfo.helpId) {
+            return kingwarInfo.helpLock;
+        } else if (playerId == kingwarInfo.damageId) {
+            return kingwarInfo.damageLock;
         }
         return null;
     },
@@ -1065,32 +1078,39 @@ Base.extends("GameController", {
                 var kingwarKey = raceInfo.area * 100 + raceInfo.star;
                 var kingwarInfo = yield taskItem.getAssignment(kingwarKey, next);
                 console.log("dropping with Info", kingwarInfo, conn.getGameInfo().name);
-                while (cards.length > 0 && conn.getServerTime() <= kingwarInfo.forceTime) {
-                    var refreshRace = yield conn.getKingWarRace(next);
-                    var playerId = this.findDroppingTarget(conn, kingwarInfo, cards, refreshRace, false);
-                    cards = refreshRace.cards;
-                    if (playerId) {
-                        console.log("drop card {0} to {1}".format(cards[0].cardType, playerId), conn.getGameInfo().name);
-                        var useData = yield conn.useKingWarCard(playerId, next);
-                        if (useData.success) {
-                            console.log("drop success", conn.getGameInfo().name);
-                            cards.splice(0, 1);
+                var waitingTime = kingwarInfo.forceTime;
+                var isForce = false;
+                while (cards.length > 0) {
+                    while (cards.length > 0 && conn.getServerTime() <= waitingTime) {
+                        var refreshRace = yield conn.getKingWarRace(next);
+                        var playerId = this.findDroppingTarget(conn, kingwarInfo, cards, refreshRace, isForce);
+                        cards = refreshRace.cards;
+                        if (playerId) {
+                            var playerLock = this.getDroppingLock(kingwarInfo, playerId);
+                            if (playerLock) {
+                                console.log("locking for player", playerId, conn.getGameInfo().name);
+                                yield playerLock.lock(next);
+                            }
+                            console.log("drop card", refreshRace.rawCards, "to", playerId, conn.getGameInfo().name);
+                            var useData = yield conn.useKingWarCard(playerId, next);
+                            if (playerLock) {
+                                playerLock.unlock();
+                            }
+                            if (useData.success) {
+                                console.log("drop success", refreshRace.rawCards, playerId, "good:{0}, bad:{1},".format(useData.good, useData.bad), conn.getGameInfo().name);
+                                cards.splice(0, 1);
+                            } else {
+                                console.log("drop failed", conn.getGameInfo().name);
+                            }
                         }
                     }
-                    yield setTimeout(next, 100);
-                }
-                console.log("dropping force", conn.getGameInfo().name);
-                while (cards.length > 0 && conn.getServerTime() <= kingwarInfo.endTime) {
-                    var refreshRace = yield conn.getKingWarRace(next);
-                    var playerId = this.findDroppingTarget(conn, kingwarInfo, cards, refreshRace, true);
-                    cards = refreshRace.cards;
-                    if (playerId) {
-                        console.log("drop card {0} to {1}".format(cards[0].cardType, playerId), conn.getGameInfo().name);
-                        var useData = yield conn.useKingWarCard(playerId, next);
-                        if (useData.success) {
-                            console.log("drop success", conn.getGameInfo().name);
-                            cards.splice(0, 1);
-                        }
+                    // switch loop mode
+                    if (isForce) {
+                        break;
+                    } else {
+                        console.log("dropping force", conn.getGameInfo().name);
+                        waitingTime = kingwarInfo.endTime;
+                        isForce = true;
                     }
                 }
                 console.log("dropping end", conn.getGameInfo().name);

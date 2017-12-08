@@ -19,6 +19,9 @@ Base.extends("Task", {
         return this.value;
     },
     setAssignment:function(param) {
+        if (this.assigned) {
+            return;
+        }
         this.assigned = true;
         safe(this.finish)(param);
     },

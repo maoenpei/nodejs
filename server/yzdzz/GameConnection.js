@@ -743,6 +743,8 @@ Base.extends("GameConnection", {
             }
             return safe(done)({
                 success: true,
+                good: data.good,
+                bad: data.bad,
             });
         }, this);
     },
