@@ -43,8 +43,7 @@
         "interval":360
     }
     ,"dailyTask":[
-        {"hour":0,"minute":0,"second":25}
-        ,{"hour":0,"minute":0,"second":55}
+        {"hour":0,"minute":0,"second":55}
         ,{"hour":9,"minute":0,"second":55}
         ,{"hour":12,"minute":0,"second":55}
         ,{"hour":13,"minute":0,"second":55}
