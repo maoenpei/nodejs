@@ -290,7 +290,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
 
     startRefreshAutomation:function(playerKey, automationConfig) {
         var playerData = this.players[playerKey];
-        if (automationConfig.disabled) {
+        if (!automationConfig || automationConfig.disabled) {
             return this.stopRefreshAutomation(playerKey);
         }
         console.log("startRefreshAutomation", playerKey);
@@ -316,7 +316,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     startRefreshTargeting:function(playerKey, targetingConfig) {
         var playerData = this.players[playerKey];
-        if (!targetingConfig.reachPLID && !targetingConfig.allowAssign) {
+        if (!targetingConfig || (!targetingConfig.reachPLID && !targetingConfig.allowAssign)) {
             return this.stopRefreshTargeting(playerKey);
         }
         console.log("startRefreshTargeting", playerKey);
@@ -337,7 +337,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     startRefreshDropping:function(playerKey, droppingConfig) {
         var playerData = this.players[playerKey];
-        if (!droppingConfig.allowDrop) {
+        if (!droppingConfig || !droppingConfig.allowDrop) {
             return this.stopRefreshDropping(playerKey);
         }
         console.log("startRefreshDropping", playerKey);
@@ -358,7 +358,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     startRefreshHeroshop:function(playerKey, heroshopConfig) {
         var playerData = this.players[playerKey];
-        if (!heroshopConfig.enabled) {
+        if (!heroshopConfig || !heroshopConfig.enabled) {
             return this.stopRefreshHeroshop(playerKey);
         }
         console.log("startRefreshHeroshop", playerKey);
@@ -379,7 +379,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     startRefreshKingwar:function(playerKey, kingwarConfig) {
         var playerData = this.players[playerKey];
-        if (kingwarConfig.area == 0 || kingwarConfig.star == 0) {
+        if (!kingwarConfig || kingwarConfig.area == 0 || kingwarConfig.star == 0) {
             return this.stopRefreshKingwar(playerKey);
         }
         console.log("startRefreshKingwar", playerKey);
@@ -404,7 +404,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     startRefreshListing:function(playerKey, listingConfig) {
         var playerData = this.players[playerKey];
-        if (listingConfig.minPower == 0 || listingConfig.limitPower == 0) {
+        if (!listingConfig || listingConfig.minPower == 0 || listingConfig.limitPower == 0) {
             return this.stopRefreshListing(playerKey);
         }
         console.log("startRefreshListing", playerKey);
@@ -580,7 +580,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         }
     },
     compareSetting:function(configA, configB) {
-        if (!configB) {
+        if (!configA && !configB) {
+            return true;
+        }
+        if ((configA && !configB) || (!configA && configB)) {
             return false;
         }
         for (var key in configA) {
@@ -604,6 +607,9 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             area: this.getSettingNumber(kingwar.area, 1, 3, 0),
             star: this.getSettingNumber(kingwar.star, 1, 10, 0),
         };
+        if (kingwarConfig.area == 0 && kingwarConfig.star == 0) {
+            kingwarConfig = undefined;
+        }
         if (this.compareSetting(kingwarConfig, settingStates.kingwar[playerKey])) {
             return false;
         }
@@ -620,6 +626,9 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             limitPower: this.getSettingNumber(listing.limitPower, 50, 9999, 0),
             limitDay: 20,
         };
+        if (listingConfig.minPower == 0 && listingConfig.limitPower == 0) {
+            listingConfig = undefined;
+        }
         if (this.compareSetting(listingConfig, settingStates.listing[playerKey])) {
             return false;
         }
@@ -635,6 +644,9 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             allowAssign: (targeting.allowAssign ? true : false),
             minStar: this.getSettingNumber(targeting.minStar, 1, 10, 0),
         };
+        if (targetingConfig.reachPLID == "" && !targetingConfig.allowAssign) {
+            targetingConfig = undefined;
+        }
         if (this.compareSetting(targetingConfig, settingStates.targeting[playerKey])) {
             return false;
         }
@@ -648,6 +660,9 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         var droppingConfig = {
             allowDrop: (dropping.allowDrop ? true : false),
         };
+        if (!droppingConfig.allowDrop) {
+            droppingConfig = undefined;
+        }
         if (this.compareSetting(droppingConfig, settingStates.dropping[playerKey])) {
             return false;
         }
@@ -663,6 +678,9 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             maxReduce: this.getSettingNumber(heroshop.maxReduce, 50, 60, 55),
             refresh: this.getSettingNumber(heroshop.refresh, 0, 8, 0),
         };
+        if (!heroshopConfig.enabled) {
+            heroshopConfig = undefined;
+        }
         if (this.compareSetting(heroshopConfig, settingStates.heroshop[playerKey])) {
             return false;
         }

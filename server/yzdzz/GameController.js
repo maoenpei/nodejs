@@ -1262,6 +1262,9 @@ Base.extends("GameController", {
                     return safe(done)();
                 }
             }
+            if (!data.joined && !data.allowJoin) {
+                return safe(done)();
+            }
             if (refreshData.refData.constant && constant) {
                 return safe(done)();
             }
