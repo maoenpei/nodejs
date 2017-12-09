@@ -906,6 +906,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 }
             }
 
+            var isAdmin = userData.auth >= 3;
             var playerKey = rkey();
             while(this.players[playerKey]) { playerKey = rkey(); }
             var accountStates = $StateManager.getState(GAME_ACCOUNTS_CONFIG);
@@ -925,6 +926,13 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 success: true,
                 key: playerKey,
                 configs: this.getSettingAutomation(playerKey),
+                settings: {
+                    kingwar: (isAdmin ? this.getSettingTyped("kingwar", playerKey) : undefined),
+                    listing: (isAdmin ? this.getSettingTyped("listing", playerKey) : undefined),
+                    targeting: this.getSettingTyped("targeting", playerKey),
+                    dropping: this.getSettingTyped("dropping", playerKey),
+                    heroshop: this.getSettingTyped("heroshop", playerKey),
+                },
             }, done);
         }, this);
     },

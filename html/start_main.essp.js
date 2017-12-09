@@ -635,6 +635,7 @@ displayAutomationModel.addPlayer = function(server, callback) {
                 server: server,
                 key: json.key,
                 configs: json.configs,
+                settings: json.settings,
             });
             callback();
         }
@@ -659,6 +660,7 @@ displayAutomationModel.delPlayer = function(player, callback) {
     });
 }
 displayAutomationModel.backupPlayer = function(player) {
+    console.log("backupPlayer", player);
     player.copy_configs = deep_clone(player.configs);
     player.copy_settings = deep_clone(player.settings);
 }
