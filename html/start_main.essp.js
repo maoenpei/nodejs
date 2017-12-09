@@ -1023,6 +1023,14 @@ function displayAutomation() {
                     targeting.reachPLID = selectSettingPlayer.val();
                     configChanged();
                 });
+                var inputNoEmperor = divTargetingBlock.find(".ctrl_setting_config_prop_no_emperor");
+                if (targeting.disableEmperor) {
+                    inputNoEmperor.attr("checked", "checked");
+                }
+                inputNoEmperor.change(function() {
+                    targeting.disableEmperor = inputNoEmperor.is(":checked");
+                    configChanged();
+                });
                 var inputSettingAssign = divTargetingBlock.find(".ctrl_setting_config_prop_assign");
                 if (targeting.allowAssign) {
                     inputSettingAssign.attr("checked", "checked");
@@ -1035,6 +1043,14 @@ function displayAutomation() {
                 selectSettingMinstar.val((targeting.minStar ? targeting.minStar : 1));
                 selectSettingMinstar.change(function() {
                     targeting.minStar = selectSettingMinstar.val();
+                    configChanged();
+                });
+                var inputOnlyEmperor = divTargetingBlock.find(".ctrl_setting_config_prop_only_emperor");
+                if (targeting.forceEmperor) {
+                    inputOnlyEmperor.attr("checked", "checked");
+                }
+                inputOnlyEmperor.change(function() {
+                    targeting.forceEmperor = inputOnlyEmperor.is(":checked");
                     configChanged();
                 });
             }

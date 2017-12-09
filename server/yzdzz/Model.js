@@ -642,8 +642,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
         var targetingConfig = {
             reachPLID: this.randKey2PlayerId[targeting.reachPLID] || "",
+            disableEmperor: (targeting.disableEmperor ? true : false),
             allowAssign: (targeting.allowAssign ? true : false),
             minStar: this.getSettingNumber(targeting.minStar, 1, 10, 0),
+            forceEmperor: (targeting.forceEmperor ? true : false),
         };
         if (targetingConfig.reachPLID == "" && !targetingConfig.allowAssign) {
             targetingConfig = undefined;

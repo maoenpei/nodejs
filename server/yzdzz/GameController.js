@@ -461,6 +461,12 @@ Base.extends("GameController", {
         this.repeatRanges.push(endKey);
     },
 
+    ownPowerCoef: 0.9,
+    hopePowerCoef: 0.95,
+    drawPowerCoef: 1.01,
+    lessPowerCoef: 1.04,
+    emperorKingwarKeys: [110, 109, 210, 209],
+    emperorKingwars: {"110":true,"109":true,"210":true,"209":true},
     getAreaStar:function(kingwarKey) {
         var area = Math.floor(kingwarKey / 100);
         var star = kingwarKey % 100;
@@ -489,10 +495,6 @@ Base.extends("GameController", {
             helpCount: helpCount,
         };
     },
-    ownPowerCoef: 0.9,
-    hopePowerCoef: 0.95,
-    drawPowerCoef: 1.01,
-    lessPowerCoef: 1.04,
     getMutualLevel:function(ourMax, otherMax) {
         if (ourMax * this.ownPowerCoef > otherMax) {
             return 4;
@@ -545,6 +547,7 @@ Base.extends("GameController", {
             tasksOrder.splice(insertIndex, 0, {
                 power: data.power,
                 minStar: data.minStar,
+                forceEmperor: data.forceEmperor,
                 task: tasks[i],
             });
         }
@@ -566,7 +569,10 @@ Base.extends("GameController", {
             }
             for (var j = 0; j < kingwarOrder.length; ++j) {
                 var brief = kingwarOrder[j];
-                if (brief.star >= taskItem.minStar && canJoin(taskItem, brief)) {
+                var match = true;
+                match = match && (taskItem.forceEmperor ? this.emperorKingwars[brief.kingwarKey] : true);
+                match = match && (brief.star >= taskItem.minStar);
+                if (match && canJoin(taskItem, brief)) {
                     console.log("-- kingwar assignment -- possible", taskItem.power, brief.kingwarKey);
                     brief.possible.push(taskItem);
                 }
@@ -604,6 +610,21 @@ Base.extends("GameController", {
                 brief.mutual = this.getMutualLevel(brief.ourMax, brief.otherMax);
             }
         }
+    },
+    getMinEmperorWar:function(kingwarOrder) {
+        var minKingwarPower = 1000000000;
+        var minEmperorWar = null;
+        for (var i = 0; i < kingwarOrder.length; ++i) {
+            var brief = kingwarOrder[i];
+            var isEmperor = this.emperorKingwars[brief.kingwarKey];
+            if (isEmperor) {
+                if (brief.otherMax < minKingwarPower) {
+                    minKingwarPower = brief.otherMax;
+                    minEmperorWar = brief;
+                }
+            }
+        }
+        return minEmperorWar;
     },
     targetingAssignment:function(tasks, defaults) {
         var kingwarOrder = this.getKingwarOrder(defaults);
@@ -649,15 +670,19 @@ Base.extends("GameController", {
             });
         }
 
+        var minEmperorWar = this.getMinEmperorWar(kingwarOrder);
         var restIndex = 0;
-        var emperorKingwarKeys = [110, 109, 210, 209];
         for (var i = 0; i < tasksOrder.length; ++i) {
             var taskItem = tasksOrder[i];
             if (taskItem.assign) {
                 taskItem.task.setAssignment(taskItem.assign.kingwarKey);
             } else {
-                taskItem.task.setAssignment(emperorKingwarKeys[restIndex]);
-                restIndex = (restIndex + 1) % 4;
+                if (taskItem.forceEmperor && minEmperorWar) {
+                    taskItem.task.setAssignment(minEmperorWar.kingwarKey);
+                } else {
+                    taskItem.task.setAssignment(this.emperorKingwarKeys[restIndex]);
+                    restIndex = (restIndex + 1) % 4;
+                }
             }
         }
     },
@@ -947,6 +972,9 @@ Base.extends("GameController", {
         var next = coroutine(function*() {
             console.log("refreshTargeting..", conn.getGameInfo().name);
             var kingwarKey = this.playerToKingwar[targetingConfig.reachPLID];
+            if (kingwarKey && this.emperorKingwars[kingwarKey] && targetingConfig.disableEmperor) {
+                kingwarKey = null;
+            }
             if (kingwarKey) {
                 console.log("-- kingwar assignment -- find target", kingwarKey, targetingConfig.reachPLID, conn.getGameInfo().name);
                 var areaStar = this.getAreaStar(kingwarKey);
@@ -957,7 +985,11 @@ Base.extends("GameController", {
                         var playerId = conn.getGameInfo().playerId;
                         var playerItem = this.allPlayers[playerId];
                         var power = (playerItem ? playerItem.maxPower : conn.getGameInfo().power);
-                        var kingwarKey = yield taskItem.getAssignment({power: power, minStar: targetingConfig.minStar}, next);
+                        var kingwarKey = yield taskItem.getAssignment({
+                            power: power,
+                            minStar: targetingConfig.minStar,
+                            forceEmperor: targetingConfig.forceEmperor,
+                        }, next);
                         if (kingwarKey) {
                             console.log("-- kingwar assignment -- assign target", kingwarKey, Math.floor(power / 10000), conn.getGameInfo().name);
                             var areaStar = this.getAreaStar(kingwarKey);
