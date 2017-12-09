@@ -6,6 +6,7 @@ Base.extends("TimingManager", {
         this.events = {};
         this.eventQueue = [];
         this.consuming = false;
+        this.lastPrint = new Date().getTime();
     },
     setWeeklyEvent:function(day, hour, minute, second, callback) {
         return this.setEvent(() => {
@@ -56,6 +57,7 @@ Base.extends("TimingManager", {
                     break;
                 }
                 var eventDesc = this.eventQueue[0];
+                this.printRemaining(eventDesc.moment);
                 var event = this.events[eventDesc.key];
                 var nowTime = new Date().getTime();
                 if (nowTime > eventDesc.moment) {
@@ -99,6 +101,26 @@ Base.extends("TimingManager", {
         };
         this.queueEvent(key);
         return key;
+    },
+    printRemaining:function(moment) {
+        var now = new Date().getTime();
+        var milliDiff = moment - now;
+        var printDiff = (milliDiff < 5 * 60 * 1000 ? 5000 : 10 * 60 * 1000);
+        if (now - this.lastPrint > printDiff) {
+            this.lastPrint = now;
+            var sec = Math.floor(milliDiff / 1000);
+            if (sec < 60) {
+                return console.log("-- rest sec {0}".format(sec));
+            }
+            var minute = Math.floor(sec / 60);
+            sec = sec % 60;
+            if (minute < 60) {
+                return console.log("-- rest min {1}:{0}".format(sec, minute));
+            }
+            var hour = Math.floor(minute / 60);
+            minute = minute % 60;
+            return console.log("-- rest hour {2}:{1}:{0}".format(sec, minute, hour));
+        }
     },
 });
 
