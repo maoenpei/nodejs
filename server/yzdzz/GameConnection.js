@@ -932,6 +932,9 @@ Base.extends("GameConnection", {
                     var player = data.players[id];
                     if (careAbout[id] && player.status == 0 && roomHeros.length < roomMax) {
                         data = yield this.sendMsg("RoleMerge", "addNegotiate", {uid:id}, next);
+                        if (!data || !data.players) {
+                            return safe(done)({}});
+                        }
                         roomHeros = this.getRoomHeros(data);
                         changed = true;
                         break;
@@ -942,6 +945,9 @@ Base.extends("GameConnection", {
                     var player = data.players[id];
                     if (Number(player.per) <= config.maxReduce && Database.heroInfo(id) && player.status == 0 && roomHeros.length < roomMax) {
                         data = yield this.sendMsg("RoleMerge", "addNegotiate", {uid:id}, next);
+                        if (!data || !data.players) {
+                            return safe(done)({}});
+                        }
                         roomHeros = this.getRoomHeros(data);
                         changed = true;
                         break;
@@ -953,6 +959,9 @@ Base.extends("GameConnection", {
                     if (player && player.status == 2 && roomItem.per >= Number(player.per)) {
                         careAbout[roomItem.id] = true;
                         data = yield this.sendMsg("RoleMerge", "delNegotiate", {id:j}, next);
+                        if (!data || !data.players) {
+                            return safe(done)({}});
+                        }
                         roomHeros = this.getRoomHeros(data);
                         changed = true;
                         break;
@@ -967,10 +976,15 @@ Base.extends("GameConnection", {
                 var player = data.players[id];
                 if (careAbout[id] && player.status == 0 && roomHeros.length < roomMax) {
                     data = yield this.sendMsg("RoleMerge", "addNegotiate", {uid:id}, next);
+                    if (!data || !data.players) {
+                        return safe(done)({}});
+                    }
                     roomHeros = this.getRoomHeros(data);
                 }
             }
-            safe(done)();
+            return safe(done)({
+                success: true,
+            }});
         }, this);
     },
     updateHeroShop:function(config, result, done) {
@@ -987,8 +1001,14 @@ Base.extends("GameConnection", {
             this.log("refresh hero shop", currentRefresh, maxRefresh);
             for (var i = currentRefresh; i < maxRefresh; ++i) {
                 data = yield this.sendMsg("RoleMerge", "heroFlush", null, next);
+                if (!data || !data.players) {
+                    return safe(done)({});
+                }
                 this.listHeroPrice(data, result);
-                yield this.exchangeHeroRoom(config, data, next);
+                var data_exchange = yield this.exchangeHeroRoom(config, data, next);
+                if (!data_exchange.success) {
+                    return safe(done)({});
+                }
             }
             return safe(done)({
                 success: true,
