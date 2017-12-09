@@ -158,9 +158,6 @@ input[type='checkbox']{
     position: absolute;
     right: 0.5rem;
 }
-.div_auto_item_adjust>.div_auto_item_right{
-    display: none;
-}
 .div_auto_config_block{
     margin: 0.2rem;
     padding: 0.2rem;

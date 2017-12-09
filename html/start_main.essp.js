@@ -849,9 +849,13 @@ function displayAutomation() {
 
                         if (maxPlayer) {
                             divAutoAccountBlock.find(".div_auto_item_right").click(function() {
-                                displayAutomationModel.toAccount(account);
-                                displayAutomationModel.toPlayer(maxPlayer);
-                                displayCatalog();
+                                if (divAutoAccountBlock.hasClass("div_auto_item_adjust")) {
+                                    // do nothing
+                                } else {
+                                    displayAutomationModel.toAccount(account);
+                                    displayAutomationModel.toPlayer(maxPlayer);
+                                    displayCatalog();
+                                }
                             });
                         }
                         divAutoAccountBlock.find(".div_auto_item_delete").click(function() {
