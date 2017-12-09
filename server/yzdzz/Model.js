@@ -58,6 +58,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         httpServer.registerCommand("orderautomation", this);
         httpServer.registerCommand("checkrefresh", this);
         httpServer.registerCommand("manrefresh", this);
+        httpServer.registerCommand("setheroshop", this);
         httpServer.registerCommand("listserverinfo", this);
         httpServer.registerCommand("listplayers", this);
         httpServer.registerCommand("listkingwars", this);
@@ -1421,6 +1422,56 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             }, done);
         }, this);
     },
+    setheroshop:function(requestor, responder, done) {
+        var next = coroutine(function*() {
+            var obj = yield this.httpServer.tokenValid(requestor, next);
+            if (!obj) {
+                responder.addError("Not valid token for logout.");
+                return responder.respondJson({}, done);
+            }
+
+            var userStates = $StateManager.getState(USER_CONFIG);
+            var keyData = userStates.keys[obj.getSerial()];
+            if (!keyData || !keyData.userKey) {
+                responder.addError("Not an authorized user.");
+                return responder.respondJson({}, done);
+            }
+
+            var userData = userStates.users[keyData.userKey];
+            if (!userData || userData.auth < 1) {
+                responder.addError("Admin level not enough.");
+                return responder.respondJson({}, done);
+            }
+
+            var json = yield requestor.visitBodyJson(next);
+            if (!json || !json.heroId || !json.cmd) {
+                responder.addError("Parameter data not correct.");
+                return responder.respondJson({}, done);
+            }
+
+            var heroId = json.heroId;
+            var cmd = json.cmd;
+            var heroInfo = Database.heroInfo(heroId);
+            if (!heroInfo || (cmd != "add" && cmd != "del")) {
+                responder.addError("Parameter data not correct.");
+                return responder.respondJson({}, done);
+            }
+
+            var userHeros = userData.heros;
+            userHeros = (userHeros ? userHeros : {});
+            if (cmd == "add") {
+                userHeros[heroId] = true;
+            } else {
+                delete userHeros[heroId];
+            }
+            userData.heros = userHeros;
+            $StateManager.commitState(USER_CONFIG);
+
+            responder.respondJson({
+                success: true,
+            });
+        }, this);
+    },
     listserverinfo:function(requestor, responder, done) {
         var next = coroutine(function*() {
             var obj = yield this.httpServer.tokenValid(requestor, next);
@@ -1450,10 +1501,13 @@ $HttpModel.addClass("YZDZZ_CLASS", {
 
             var heros = Database.allHeros();
             var heroshopInfo = $StateManager.getState(GAME_HEROSHOP_CONFIG);
+            var userHeros = userData.heros;
+            userHeros = (userHeros ? userHeros : {});
 
             responder.respondJson({
                 heros: heros,
                 heroshop: heroshopInfo.info,
+                userHeros: userHeros,
             });
         }, this);
     },

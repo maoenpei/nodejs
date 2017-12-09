@@ -1147,6 +1147,7 @@ displayServerInfoModel.get = function(callback) {
     requestPost("listserverinfo", {vulkan:true}, function(json) {
         $this.heros = json.heros;
         $this.heroshop = json.heroshop;
+        $this.userHeros = json.userHeros;
         $this.initialize();
         callback();
     });
@@ -1158,6 +1159,7 @@ displayServerInfoModel.initialize = function() {
         this.herosData[heroItem.id] = heroItem;
     }
     this.heroshopData = [];
+    this.caredheroData = [];
     var heroshop = clone(this.heroshop);
     while (true) {
         var hasItem = false;
@@ -1175,9 +1177,10 @@ displayServerInfoModel.initialize = function() {
             break;
         }
         var heroInfo = this.herosData[minId];
-        var name = (heroInfo ? heroInfo.name : "不存在的勇者");
+        var name = (heroInfo ? heroInfo.name : "未知勇者");
         var cls = (heroInfo ? heroInfo.cls : "-");
-        this.heroshopData.push({
+        var toPushArray = (this.userHeros[minId] ? this.caredheroData : this.heroshopData);
+        toPushArray.push({
             id: minId,
             per: minPer,
             name: name,
@@ -1191,6 +1194,29 @@ displayServerInfoModel.initialize = function() {
 displayServerInfoModel.getHeroshop = function() {
     return this.heroshopData;
 }
+displayServerInfoModel.getcaredHeros = function() {
+    return this.caredheroData;
+}
+displayServerInfoModel.addHero = function(id, callback) {
+    $this = this;
+    requestPost("setheroshop", {heroId:id, cmd:"add"}, function(json) {
+        if (json.success) {
+            $this.userHeros[id] = true;
+            $this.initialize();
+            callback();
+        }
+    });
+}
+displayServerInfoModel.delHero = function(id, callback) {
+    $this = this;
+    requestPost("setheroshop", {heroId:id, cmd:"del"}, function(json) {
+        if (json.success) {
+            delete $this.userHeros[id];
+            $this.initialize();
+            callback();
+        }
+    });
+}
 
 function displayServerInfo() {
     var divContentPanel = $(".div_content_panel");
@@ -1201,11 +1227,28 @@ function displayServerInfo() {
         var defaultServerInfo = StorageItem().defaultServerInfo;
         defaultServerInfo = (defaultServerInfo ? defaultServerInfo : "heroshop");
         var data = {
-            heroshop: (defaultServerInfo == "heroshop" ? displayServerInfoModel.getHeroshop() : null),
+            isheroshop: defaultServerInfo == "heroshop",
+            heroshop: displayServerInfoModel.getHeroshop(),
+            caredhero: displayServerInfoModel.getcaredHeros(),
         };
         var serverListTemplate = templates.read(".hd_server_info_all");
         divContentPanel.html(serverListTemplate(data));
         adjustPageLayout();
+
+        // heroshop
+        var divHeroShopBlocks = divContentPanel.find(".div_server_info_item_heroshop");
+        for (var i = 0; i < divHeroShopBlocks.length; ++i) {
+            (function() {
+                var block = $(divHeroShopBlocks[i]);
+                var id = block.attr("heroId");
+                block.find(".div_server_info_item_del_hero").click(function() {
+                    displayServerInfoModel.delHero(id, refreshData);
+                });
+                block.find(".div_server_info_item_add_hero").click(function() {
+                    displayServerInfoModel.addHero(id, refreshData);
+                });
+            })();
+        }
 
         var divServerInfoSubReduce = divContentPanel.find(".div_server_info_sub_item_reduce");
         divServerInfoSubReduce.click(function() {

@@ -250,14 +250,28 @@
             {{/if}}
         </div>
         <div class="div_server_info">
-            {{#if heroshop}}
+            {{#if isheroshop}}
             <div class="common_block">
-                <div class="div_server_info_title_text">所有勇者</div>
-                {{#each heroshop}}
-                <div class="div_server_info_item_heroshop">
+                <div class="div_server_info_title_text">关注的勇者</div>
+                {{#each caredhero}}
+                <div class="div_server_info_item_heroshop" heroId="{{id}}">
+                    <div class="div_server_info_item_del_hero visit_label">删除</div>
                     <div class="div_server_info_item_name {{#if isgolden}}div_server_info_item_golden{{/if}} {{#if isX}}div_server_info_item_X{{/if}}">{{name}}</div>
                     <div class="div_server_info_item_cls {{#if isgolden}}div_server_info_item_golden{{/if}} {{#if isX}}div_server_info_item_X{{/if}}">{{cls}}</div>
                     <div class="div_server_info_item_per">{{per}}</div>
+                </div>
+                {{/each}}
+            </div>
+            {{/if}}
+            {{#if isheroshop}}
+            <div class="common_block">
+                <div class="div_server_info_title_text">所有勇者</div>
+                {{#each heroshop}}
+                <div class="div_server_info_item_heroshop" heroId="{{id}}">
+                    <div class="div_server_info_item_name {{#if isgolden}}div_server_info_item_golden{{/if}} {{#if isX}}div_server_info_item_X{{/if}}">{{name}}</div>
+                    <div class="div_server_info_item_cls {{#if isgolden}}div_server_info_item_golden{{/if}} {{#if isX}}div_server_info_item_X{{/if}}">{{cls}}</div>
+                    <div class="div_server_info_item_per">{{per}}</div>
+                    <div class="div_server_info_item_add_hero visit_label">关注</div>
                 </div>
                 {{/each}}
             </div>

@@ -383,6 +383,16 @@ input[type='checkbox']{
 .div_server_info_item_X{
     color: rgb(222, 185, 20);
 }
+.div_server_info_item_del_hero{
+    display: inline-block;
+    position: absolute;
+    left: 2.5rem;
+}
+.div_server_info_item_add_hero{
+    display: inline-block;
+    position: absolute;
+    right: 2.5rem;
+}
 
 .div_users_list{
 }
