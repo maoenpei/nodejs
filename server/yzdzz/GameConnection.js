@@ -1024,7 +1024,7 @@ Base.extends("GameConnection", {
                 if (data && data.list) {
                     var signed = !!(data.list[String(data.count)]);
                     if (!signed) {
-                        var data = yield this.sendMsg("Sign", "start", {point:0}, next);
+                        var data_start = yield this.sendMsg("Sign", "start", {point:0}, next);
                     }
                 }
             }
