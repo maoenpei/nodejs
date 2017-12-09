@@ -48,6 +48,7 @@ Base.extends("GameValidator", {
 
 var cachedServers = null;
 Base.extends("GameConnection", {
+    testMode: false,
     _constructor:function(username, password, managerLock, validator) {
         this.username = username;
         this.password = password;
@@ -719,6 +720,15 @@ Base.extends("GameConnection", {
                     bad: (item.bad ? item.bad : 0),
                 });
             }
+            if (this.testMode) {
+                if (!this.testKingwarCards) {
+                    this.testKingwarCards = [];
+                    for (var i = 0; i < 3; ++i) {
+                        this.testKingwarCards[i] = rand(6) + 1;
+                    }
+                }
+                data.cards = clone(this.testKingwarCards);
+            }
             var cards = [];
             if (data.cards) {
                 for (var i = 0; i < data.cards.length; ++i) {
@@ -737,15 +747,28 @@ Base.extends("GameConnection", {
     },
     useKingWarCard:function(playerId, done) {
         var next = coroutine(function*() {
-            var data = yield this.sendMsg("KingWar", "card", {type:1, uid:playerId}, next);
-            if (!data) {
-                return safe(done)({});
+            if (this.testMode) {
+                if (!this.testKingwarCards || this.testKingwarCards.length == 0) {
+                    return safe(done)({});
+                }
+                this.testKingwarCards.splice(0, 1);
+                yield setTimeout(next, 100);
+                return safe(done)({
+                    success: true,
+                    good: 1,
+                    bad: 1,
+                });
+            } else {
+                var data = yield this.sendMsg("KingWar", "card", {type:1, uid:playerId}, next);
+                if (!data) {
+                    return safe(done)({});
+                }
+                return safe(done)({
+                    success: true,
+                    good: data.good,
+                    bad: data.bad,
+                });
             }
-            return safe(done)({
-                success: true,
-                good: data.good,
-                bad: data.bad,
-            });
         }, this);
     },
     getRankPlayers:function(done) {

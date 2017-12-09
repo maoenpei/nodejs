@@ -721,7 +721,7 @@ Base.extends("GameController", {
             damageId: enemyPlayerId,
         };
     },
-    droppingAssignment:function(tasks, kingwarInfos, forceTime, endTime, defaults) {
+    droppingAssignment:function(tasks, kingwarInfos, timings, defaults) {
         for (var i = 0; i < tasks.length; ++i) {
             var taskItem = tasks[i];
             if (!taskItem.isAssigned()) {
@@ -731,8 +731,9 @@ Base.extends("GameController", {
                     kingwarInfo = this.getDroppingKingwarInfo(kingwarKey, defaults);
                     kingwarInfo.helpLock = new Mutex();
                     kingwarInfo.damageLock = new Mutex();
-                    kingwarInfo.forceTime = forceTime;
-                    kingwarInfo.endTime = endTime;
+                    kingwarInfo.startTime = timings.startTime;
+                    kingwarInfo.forceTime = timings.forceTime;
+                    kingwarInfo.endTime = timings.endTime;
                     kingwarInfos[kingwarKey] = kingwarInfo;
                 }
                 taskItem.setAssignment(kingwarInfo);
@@ -754,28 +755,33 @@ Base.extends("GameController", {
         var doDropping = () => {
             var next = coroutine(function*() {
                 console.log("dropping started!");
-                var startTime = this.dateWithSeconds(defaults.start);
-                var forceTime = this.dateWithSeconds(defaults.force);
-                // next minute start
-                var endTime = this.dateWithSeconds(0);
+                var assignTime = this.timeWithSeconds(defaults.assign);
+                var startTime = this.timeWithSeconds(defaults.start);
+                var forceTime = this.timeWithSeconds(defaults.force);
+                var endTime = this.timeWithSeconds(0);
                 endTime = this.timeOffset(endTime, 60);
+                var timings = {
+                    startTime: startTime,
+                    forceTime: forceTime,
+                    endTime: endTime,
+                };
                 var started = false;
                 var kingwarInfos = {};
                 var lastTasks = null;
                 var droppingTaskManager = new TaskManager((tasks, total) => {
                     lastTasks = tasks;
                     if (started) {
-                        this.droppingAssignment(tasks, kingwarInfos, forceTime, endTime, defaults);
+                        this.droppingAssignment(tasks, kingwarInfos, timings, defaults);
                     }
                 });
                 (() => {
                     var tnext = coroutine(function*() {
-                        while (new Date() < startTime) {
-                            yield setTimeout(tnext, 300);
+                        while (new Date() < assignTime) {
+                            yield setTimeout(tnext, 60);
                         }
                         started = true;
                         if (lastTasks) {
-                            this.droppingAssignment(lastTasks, kingwarInfos, forceTime, endTime, defaults);
+                            this.droppingAssignment(lastTasks, kingwarInfos, timings, defaults);
                         }
                     }, this);
                 })();
@@ -1076,7 +1082,7 @@ Base.extends("GameController", {
         var next = coroutine(function*() {
             console.log("refreshDropping..", conn.getGameInfo().name);
             var raceInfo = yield conn.getKingWarRace(next);
-            if (!raceInfo.cards || raceInfo.cards.length == 0) {
+            if (!raceInfo.cards || raceInfo.cards.length == 0 || raceInfo.area == 0 || raceInfo.star == 0) {
                 console.log("dropping with no cards!", conn.getGameInfo().name);
                 taskItem.giveup();
             } else {
@@ -1085,6 +1091,9 @@ Base.extends("GameController", {
                 var kingwarKey = raceInfo.area * 100 + raceInfo.star;
                 var kingwarInfo = yield taskItem.getAssignment(kingwarKey, next);
                 console.log("dropping with Info", kingwarInfo, conn.getGameInfo().name);
+                while (conn.getServerTime() < kingwarInfo.startTime) {
+                    yield setTimeout(next, 60);
+                }
                 var waitingTime = kingwarInfo.forceTime;
                 var isForce = false;
                 while (cards.length > 0) {
@@ -1104,7 +1113,8 @@ Base.extends("GameController", {
                                 playerLock.unlock();
                             }
                             if (useData.success) {
-                                console.log("drop success", refreshRace.rawCards, playerId, "good:{0}, bad:{1},".format(useData.good, useData.bad), conn.getGameInfo().name);
+                                var t = conn.getServerTime();
+                                console.log("drop success", refreshRace.rawCards, playerId, "good:{0}, bad:{1},".format(useData.good, useData.bad), conn.getGameInfo().name, t.getSeconds(), t.getMilliseconds());
                                 cards.splice(0, 1);
                             } else {
                                 console.log("drop failed", conn.getGameInfo().name);

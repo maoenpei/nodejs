@@ -69,6 +69,7 @@
             ,{"day":3,"hour":17,"minute":59,"second":50}
             ,{"day":3,"hour":19,"minute":59,"second":50}
         ]
+        ,"assign":53
         ,"start":58.5
         ,"force":59
     }
