@@ -6,7 +6,7 @@ Base.extends("TimingManager", {
         this.events = {};
         this.eventQueue = [];
         this.consuming = false;
-        this.lastPrint = new Date().getTime();
+        this.lastPrint = 0;
     },
     setWeeklyEvent:function(day, hour, minute, second, callback) {
         return this.setEvent(() => {
@@ -108,18 +108,19 @@ Base.extends("TimingManager", {
         var printDiff = (milliDiff < 5 * 60 * 1000 ? 5000 : 10 * 60 * 1000);
         if (now - this.lastPrint > printDiff) {
             this.lastPrint = now;
+            var targetTime = new Date(moment);
             var sec = Math.floor(milliDiff / 1000);
             if (sec < 60) {
-                return console.log("-- rest sec {0}".format(sec));
+                return console.log("-- rest sec {0}".format(sec), "target {0}:{1}:{2}".format(targetTime.getHours(), targetTime.getMinutes(), targetTime.getSeconds()));
             }
             var minute = Math.floor(sec / 60);
             sec = sec % 60;
             if (minute < 60) {
-                return console.log("-- rest min {1}:{0}".format(sec, minute));
+                return console.log("-- rest min {1}:{0}".format(sec, minute), "target {0}:{1}:{2}".format(targetTime.getHours(), targetTime.getMinutes(), targetTime.getSeconds()));
             }
             var hour = Math.floor(minute / 60);
             minute = minute % 60;
-            return console.log("-- rest hour {2}:{1}:{0}".format(sec, minute, hour));
+            return console.log("-- rest hour {2}:{1}:{0}".format(sec, minute, hour), "target {0}:{1}:{2}".format(targetTime.getHours(), targetTime.getMinutes(), targetTime.getSeconds()));
         }
     },
 });
