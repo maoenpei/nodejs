@@ -148,6 +148,12 @@ input[type='checkbox']{
 .div_auto_item_adjust>.div_auto_item_delete{
     display: none;
 }
+.div_auto_item_name_up{
+    display: none;
+}
+.div_auto_item_adjust>.clickable>.div_auto_item_name_up{
+    display: inline-block;
+}
 .div_auto_item_right{
     position: absolute;
     right: 0.5rem;
