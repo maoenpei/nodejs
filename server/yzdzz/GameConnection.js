@@ -933,7 +933,7 @@ Base.extends("GameConnection", {
                     if (careAbout[id] && player.status == 0 && roomHeros.length < roomMax) {
                         data = yield this.sendMsg("RoleMerge", "addNegotiate", {uid:id}, next);
                         if (!data || !data.players) {
-                            return safe(done)({}});
+                            return safe(done)({});
                         }
                         roomHeros = this.getRoomHeros(data);
                         changed = true;
@@ -946,7 +946,7 @@ Base.extends("GameConnection", {
                     if (Number(player.per) <= config.maxReduce && Database.heroInfo(id) && player.status == 0 && roomHeros.length < roomMax) {
                         data = yield this.sendMsg("RoleMerge", "addNegotiate", {uid:id}, next);
                         if (!data || !data.players) {
-                            return safe(done)({}});
+                            return safe(done)({});
                         }
                         roomHeros = this.getRoomHeros(data);
                         changed = true;
@@ -960,7 +960,7 @@ Base.extends("GameConnection", {
                         careAbout[roomItem.id] = true;
                         data = yield this.sendMsg("RoleMerge", "delNegotiate", {id:j}, next);
                         if (!data || !data.players) {
-                            return safe(done)({}});
+                            return safe(done)({});
                         }
                         roomHeros = this.getRoomHeros(data);
                         changed = true;
@@ -977,14 +977,14 @@ Base.extends("GameConnection", {
                 if (careAbout[id] && player.status == 0 && roomHeros.length < roomMax) {
                     data = yield this.sendMsg("RoleMerge", "addNegotiate", {uid:id}, next);
                     if (!data || !data.players) {
-                        return safe(done)({}});
+                        return safe(done)({});
                     }
                     roomHeros = this.getRoomHeros(data);
                 }
             }
             return safe(done)({
                 success: true,
-            }});
+            });
         }, this);
     },
     updateHeroShop:function(config, result, done) {
