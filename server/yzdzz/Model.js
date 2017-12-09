@@ -55,6 +55,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         httpServer.registerCommand("playerautomation", this);
         httpServer.registerCommand("playermanual", this);
         httpServer.registerCommand("listautomation", this);
+        httpServer.registerCommand("orderautomation", this);
         httpServer.registerCommand("checkrefresh", this);
         httpServer.registerCommand("manrefresh", this);
         httpServer.registerCommand("listserverinfo", this);
@@ -1266,6 +1267,59 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 accounts: accounts,
                 players: players,
             }, done);
+        }, this);
+    },
+    orderautomation:function(requestor, responder, done) {
+        var next = coroutine(function*() {
+            var obj = yield this.httpServer.tokenValid(requestor, next);
+            if (!obj) {
+                responder.addError("Not valid token for logout.");
+                return responder.respondJson({}, done);
+            }
+
+            var userStates = $StateManager.getState(USER_CONFIG);
+            var keyData = userStates.keys[obj.getSerial()];
+            if (!keyData || !keyData.userKey) {
+                responder.addError("Not an authorized user.");
+                return responder.respondJson({}, done);
+            }
+
+            var userData = userStates.users[keyData.userKey];
+            if (!userData || userData.auth < 2) {
+                responder.addError("Admin level not enough.");
+                return responder.respondJson({}, done);
+            }
+
+            var json = yield requestor.visitBodyJson(next);
+            if (!json || !json.orders) {
+                responder.addError("Parameter data not correct.");
+                return responder.respondJson({}, done);
+            }
+
+            // use new order
+            var orders = json.orders;
+            var oldAccounts = clone(userData.accounts);
+            var newAccounts = [];
+            for (var i = 0; i < orders.length; ++i) {
+                var accountKey = orders[i];
+                for (var j = 0; j < oldAccounts.length; ++j) {
+                    if (accountKey == oldAccounts[j]) {
+                        newAccounts.push(accountKey);
+                        oldAccounts.splice(j, 1);
+                        break;
+                    }
+                }
+            }
+            // append the rest
+            for (var i = 0; i < oldAccounts.length; ++i) {
+                newAccounts.push(oldAccounts[i]);
+            }
+            userData.accounts = newAccounts;
+            yield $StateManager.commitState(USER_CONFIG, next);
+
+            responder.respondJson({
+                success: true,
+            });
         }, this);
     },
     checkrefresh:function(requestor, responder, done) {

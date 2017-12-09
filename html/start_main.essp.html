@@ -152,7 +152,7 @@
     </div>
 </script>
 <script type="text/x-handlebars-template" class="hd_automation_item">
-        <div class="div_auto_item_block common_block">
+        <div class="div_auto_item_block {{#if isAdjust}}div_auto_item_adjust{{/if}} common_block">
             {{#if hasDel}}
             <div class="div_auto_item_delete visit_label">删除</div>
             {{/if}}

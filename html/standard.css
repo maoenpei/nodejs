@@ -127,21 +127,33 @@ input[type='checkbox']{
     display: inline-block;
     font-size: 0.5rem;
 }
-.div_auto_navigate_extra{
+.div_auto_navigate_right{
     position: absolute;
     right: 0.5rem;
+}
+.div_auto_navigate_left{
+    position: absolute;
+    left: 0.5rem;
 }
 .div_auto_item_block{
     margin: 0.2rem;
     padding-right: 2.5rem;
 }
+.div_auto_item_adjust{
+}
 .div_auto_item_delete{
     position: absolute;
     left: 1rem;
 }
+.div_auto_item_adjust>.div_auto_item_delete{
+    display: none;
+}
 .div_auto_item_right{
     position: absolute;
     right: 0.5rem;
+}
+.div_auto_item_adjust>.div_auto_item_right{
+    display: none;
 }
 .div_auto_config_block{
     margin: 0.2rem;

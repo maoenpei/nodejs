@@ -623,6 +623,18 @@ displayAutomationModel.delAccount = function(account, callback) {
         }
     });
 }
+displayAutomationModel.orderAccounts = function(callback) {
+    $this = this;
+    var orders = [];
+    for (var i = 0; i < this.accounts.length; ++i) {
+        orders.push(this.accounts[i].key);
+    }
+    requestPost("orderautomation", { orders: orders }, function(json) {
+        if (json.success) {
+            return callback();
+        }
+    });
+}
 displayAutomationModel.addPlayer = function(server, callback) {
     $this = this;
     var account = this.lastAccount;
@@ -760,7 +772,7 @@ function displayAutomation() {
         var autoSettingsTemplate = templates.read(".hd_automation_settings");
 
         var allCommands = [displayAccounts, displayPlayers, displayCatalog, displayDetail];
-        var displayCommands = function(extraCommand) {
+        var displayCommands = function(rightCommand, leftCommand) {
             var levels = displayAutomationModel.getLevels();
             divSubtitleBar.html("");
             for (var i = 0; i < levels.length; ++i) {
@@ -779,54 +791,91 @@ function displayAutomation() {
                     }
                 })();
             }
-            if (extraCommand) {
-                var divAutoNavigateExtraBlock = $(autoNavigateTemplate({name: extraCommand.name}));
+            if (rightCommand) {
+                var divAutoNavigateExtraBlock = $(autoNavigateTemplate({name: rightCommand.name}));
                 divAutoNavigateExtraBlock.appendTo(divSubtitleBar);
-                divAutoNavigateExtraBlock.addClass("div_auto_navigate_extra");
-                divAutoNavigateExtraBlock.find(".clickable").click(extraCommand.func);
+                divAutoNavigateExtraBlock.addClass("div_auto_navigate_right");
+                divAutoNavigateExtraBlock.find(".clickable").click(rightCommand.func);
+            }
+            if (leftCommand) {
+                var divAutoNavigateExtraBlock = $(autoNavigateTemplate({name: leftCommand.name}));
+                divAutoNavigateExtraBlock.appendTo(divSubtitleBar);
+                divAutoNavigateExtraBlock.addClass("div_auto_navigate_left");
+                divAutoNavigateExtraBlock.find(".clickable").click(leftCommand.func);
             }
             adjustPageLayout();
         }
         function displayAccounts() {
             displayAutomationModel.toRoot();
 
+            var isAdjust = false;
+            var adjustChanged = false;
             displayCommands({name: "添加账号", func: function() {
                 inputAccountUsername.val("");
                 inputAccountPassword.val("");
                 divAccountAddMask.show();
-            }});
-
-            divAutomationContent.html("");
-            for (var i = 0; i < data.accounts.length; ++i) {
-                (function() {
-                    var account = data.accounts[i];
-                    var maxPlayer = displayAutomationModel.getMaxPlayer(account);
-                    var divAutoAccountBlock = $(autoItemTemplate({
-                        name: account.username,
-                        hasDel: true,
-                        rightText: (maxPlayer ? maxPlayer.name : null)
-                    }));
-                    divAutoAccountBlock.appendTo(divAutomationContent);
-
-                    if (maxPlayer) {
-                        divAutoAccountBlock.find(".div_auto_item_right").click(function() {
-                            displayAutomationModel.toAccount(account);
-                            displayAutomationModel.toPlayer(maxPlayer);
-                            displayCatalog();
+            }}, {name: "调整顺序", func: function() {
+                var divAutoItemBlocks = divAutomationContent.find(".div_auto_item_block");
+                if (isAdjust) {
+                    isAdjust = false;
+                    divAutoItemBlocks.removeClass("div_auto_item_adjust");
+                    if (adjustChanged) {
+                        displayAutomationModel.orderAccounts(function() {
+                            // Do nothing
                         });
                     }
-                    divAutoAccountBlock.find(".div_auto_item_delete").click(function() {
-                        if (confirm("确定删除账号'" + account.username + "'？")) {
-                            displayAutomationModel.delAccount(account, function() {
-                                displayAccounts();
+                } else {
+                    isAdjust = true;
+                    divAutoItemBlocks.addClass("div_auto_item_adjust");
+                }
+            }});
+
+            refreshContent();
+
+            function refreshContent() {
+                divAutomationContent.html("");
+                for (var i = 0; i < data.accounts.length; ++i) {
+                    (function() {
+                        var index = i;
+                        var account = data.accounts[index];
+                        var maxPlayer = displayAutomationModel.getMaxPlayer(account);
+                        var divAutoAccountBlock = $(autoItemTemplate({
+                            name: account.username,
+                            hasDel: true,
+                            rightText: (maxPlayer ? maxPlayer.name : null),
+                            isAdjust: isAdjust,
+                        }));
+                        divAutoAccountBlock.appendTo(divAutomationContent);
+
+                        if (maxPlayer) {
+                            divAutoAccountBlock.find(".div_auto_item_right").click(function() {
+                                displayAutomationModel.toAccount(account);
+                                displayAutomationModel.toPlayer(maxPlayer);
+                                displayCatalog();
                             });
                         }
-                    });
-                    divAutoAccountBlock.find(".clickable").click(function() {
-                        displayAutomationModel.toAccount(account);
-                        displayPlayers();
-                    });
-                })();
+                        divAutoAccountBlock.find(".div_auto_item_delete").click(function() {
+                            if (confirm("确定删除账号'" + account.username + "'？")) {
+                                displayAutomationModel.delAccount(account, function() {
+                                    displayAccounts();
+                                });
+                            }
+                        });
+                        divAutoAccountBlock.find(".clickable").click(function() {
+                            if (divAutoAccountBlock.hasClass("div_auto_item_adjust")) {
+                                if (index > 0) {
+                                    adjustChanged = true;
+                                    var previousAccount = data.accounts[index - 1];
+                                    data.accounts.splice(index - 1, 2, account, previousAccount);
+                                    refreshContent();
+                                }
+                            } else {
+                                displayAutomationModel.toAccount(account);
+                                displayPlayers();
+                            }
+                        });
+                    })();
+                }
             }
         }
         function displayPlayers() {
