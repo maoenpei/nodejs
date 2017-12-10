@@ -16,21 +16,22 @@ var accounts = [
     {u:"13719987234", p:"xwWZT123"},
     {u:"13801890722", p:"Q950318my"},
     {u:"13758796288", p:"087200"},
-    {u:"18367890817", p:"62252377"},
 
+    {u:"18367890817", p:"62252377"}, // 挖机
     {u:"18066212025", p:"1234567j"}, // 审判
     {u:"13625821126", p:"gxf396466"}, // 白菜
     {u:"reggiesun", p:"f1032277"}, // 二哥
     {u:"13913945392", p:"816476"}, // 幻影
     {u:"15880877841", p:"3802832"}, // 顺金
+    {u:"13671682107", p:"1234567a"}, // 恶人
+    {u:"18604449044", p:"jizai1314"}, // Lc
+    //{u:"18963940530", p:"3135134162"}, // 风继续吹
+    //{u:"13862891792", p:"gch900708"}, // 殇
+    //{u:"13917312804", p:"patm002"}, // 闰土
+    //{u:"18030367128", p:"1234567"}, // 闷骚鱼
 
     {u:"15171335812", p:"12345678", nonWeekend: true}, // Akon
     {u:"18983624927", p:"123456", nonWeekend: true}, // 突然的自我
-    //{u:"18963940530", p:"3135134162", nonWeekend: false}, // 风继续吹
-    //{u:"13862891792", p:"gch900708", nonWeekend: false}, // 殇
-    //{u:"18604449044", p:"jizai1314", nonWeekend: false}, // Lc
-    //{u:"13917312804", p:"patm002", nonWeekend: false}, // 闰土
-    //{u:"18030367128", p:"1234567", nonWeekend: false}, // 闷骚鱼
 ];
 
 var selfUnion = "b275705814a85d98";
@@ -50,8 +51,10 @@ var doUnionWarOccupy = () => {
         var landTargets = (isWeekend ? [7, 3, 2, 1] : [4, 3, 1, 2]);
         //var landTargets = (isWeekend ? [7, 1, 2, 3] : [4, 3, 1, 2]);
 
-        var friendUnion = (isWeekend ? ["b26d0533bba85c43"] : []);
-        var enemyUnion = [];
+        //var friendUnion = (isWeekend ? ["b26d0533bba85c43"] : []);
+        var friendUnion = (isWeekend ? [] : []);
+        //var enemyUnion = (isWeekend ? ["b26d0533bba85c43"] : []);
+        var enemyUnion = (isWeekend ? [] : []);
 
         if (!allPowerMax) {
             yield $StateManager.openState(GAME_POWER_MAX_CONFIG, next);
@@ -200,8 +203,8 @@ var doUnionWarOccupy = () => {
                 console.log("one cycle!");
                 break;
             }
-            console.log("waiting 5 seconds");
-            yield setTimeout(next, 5000);
+            console.log("waiting 2 seconds");
+            yield setTimeout(next, 2000);
         }
 
         for (var i = 0; i < accountKeys.length; ++i) {
@@ -217,11 +220,12 @@ var doUnionWarOccupy = () => {
 var startTime = new Date();
 startTime.setHours(19, 59, 55, 0);
 if (new Date() > startTime) {
+//if (true) {
     doUnionWarOccupy();
 } else {
     var timingManager = new TimingManager();
-    var eventKey = timingManager.setDailyEvent(20, 00, 45, doUnionWarOccupy);
-    //var eventKey = timingManager.setDailyEvent(19, 59, 55, doUnionWarOccupy);
+    //var eventKey = timingManager.setDailyEvent(20, 00, 45, doUnionWarOccupy);
+    var eventKey = timingManager.setDailyEvent(19, 59, 55, doUnionWarOccupy);
     occupyEnd = () => {
         timingManager.unsetEvent(eventKey);
     }

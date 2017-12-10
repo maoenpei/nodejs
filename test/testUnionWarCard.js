@@ -16,6 +16,10 @@ var accounts = [
     {u:"eyexiaohao003", p:"123456"},
     {u:"eyexiaohao004", p:"123456"},
     {u:"eyexiaohao005", p:"123456"},
+    {u:"eyexiaohao006", p:"123456"},
+    {u:"lv35679183", p:"zhangpeng1989", no96:true},
+    {u:"13719987234", p:"xwWZT123", no96:true},
+    {u:"13801890722", p:"Q950318my", no96:true},
 ];
 
 if (false) {
@@ -47,6 +51,9 @@ var doUnionWarCard = () => {
                 console.log("account", data.success);
                 if (!data.success) {continue;}
                 for (var m = 0; m < servers.length; ++m) {
+                    if (servers[m] == "s96" && accounts[i].no96) {
+                        continue;
+                    }
                     yield setTimeout(next, 100);
                     var data = yield conn.loginGame(servers[m], next);
                     console.log("game", data.success);
