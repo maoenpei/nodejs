@@ -19,15 +19,15 @@ Database.cardInfo = function(card) {
 Database.goblinInfo = function(id) {
     var iId = Number(id) % 1000000;
     var reduceInfo = this.goblin_reduce[Math.floor(iId / 10000)];
-    var itemInfo = this.goblin_item[iId % 10000];
-    if (!reduceInfo || !itemInfo) {
+    var goblin_info = this.goblin_item[iId % 10000];
+    if (!reduceInfo || !goblin_info) {
         return null;
     }
     return {
         reduce: reduceInfo,
-        itemName: itemInfo.item_id,
-        buyCount: itemInfo.count,
-        useDiamond: itemInfo.buy == 2,
+        itemName: goblin_info.item_id,
+        buyCount: goblin_info.count,
+        useDiamond: goblin_info.buy == 2,
     };
 }
 
@@ -51,13 +51,59 @@ Database.allHeros = function() {
     return heros;
 }
 
+Database.itemInfo = function(sysid) {
+    var heroId = undefined;
+    for (var i = 0; i < this.herobase.length; ++i) {
+        var id_base = this.herobase[i];
+        if (sysid.substr(0, id_base.length) == id_base && Number(sysid.substr(id_base.length, 1)) > 0) {
+            heroId = sysid.substr(id_base.length);
+            sysid = sysid.substr(0, id_base.length + 1);
+            break;
+        }
+    }
+    for (var equip_base in this.equipbase) {
+        if (sysid.substr(0, equip_base.length) == equip_base) {
+            return this.equipbase[equip_base];
+        }
+    }
+    var item_info = this.items[sysid];
+    if (!item_info) {
+        return null;
+    }
+    return {
+        name: item_info.name,
+        piece: item_info.piece,
+        use: item_info.use,
+        heroId: heroId,
+    };
+}
+
 Database.items = {
+    "hero_card_piece_2":{name:"绿色特定勇者卡碎片", piece:10, },
+    "hero_card_piece_3":{name:"蓝色特定勇者卡碎片", piece:10, },
+    "hero_card_piece_4":{name:"紫色特定勇者卡碎片", piece:10, },
+    "hero_card_piece_5":{name:"橙色特定勇者卡碎片", piece:30, },
+    "hero_card_piece_6":{name:"红色特定勇者卡碎片", piece:50, },
+    "hero_card_piece_7":{name:"金色特定勇者卡碎片", piece:100, },
+    "hero_1":{name:"未知勇者卡(已经不存在)", },
+    "hero_2":{name:"绿色特定勇者卡", },
+    "hero_3":{name:"蓝色特定勇者卡", },
+    "hero_4":{name:"紫色特定勇者卡", },
+    "hero_5":{name:"橙色特定勇者卡", },
+    "hero_6":{name:"红色特定勇者卡", },
+    "hero_7":{name:"金色特定勇者卡", },
+    "hero_8":{name:"暗金特定勇者卡", },
+
     "coin":{name:"万金币", },
+
+    "miaoli_1":{name:"喵丽神社1元券", },
+    "miaoli_2":{name:"喵丽神社6元券", },
+    "miaoli_3":{name:"喵丽神社12元券", },
     "summon_book":{name:"勇者契约书", },
     "league_war_horn":{name:"国战笑脸", },
     "league_war_life":{name:"国战旗帜", },
-    "magical_girl_hook_2":{name:"资深魔女书", },
-    "magical_girl_hook_3":{name:"传说魔女书", },
+    "magical_girl_book_2":{name:"资深魔女书", },
+    "magical_girl_book_3":{name:"传说魔女书", },
     "dungeon_dice":{name:"秘境骰子", },
     "hero_upgrade_card":{name:"主角进化卡", },
     "hero_upgrade_card_piece":{name:"主角进化卡碎片", piece: 50, },
@@ -74,12 +120,6 @@ Database.items = {
     "coin_card_1":{name:"5w金砖", use:true, },
     "coin_card_2":{name:"20w金砖", use:true, },
     "coin_card_3":{name:"88w金砖", use:true, },
-    "hero_card_piece_2":{name:"绿色特定勇者卡碎片", piece:10, },
-    "hero_card_piece_3":{name:"蓝色特定勇者卡碎片", piece:10, },
-    "hero_card_piece_4":{name:"紫色特定勇者卡碎片", piece:10, },
-    "hero_card_piece_5":{name:"橙色特定勇者卡碎片", piece:30, },
-    "hero_card_piece_6":{name:"红色特定勇者卡碎片", piece:50, },
-    "hero_card_piece_7":{name:"金色特定勇者卡碎片", piece:100, },
     "hero_card_random_2":{name:"绿色勇者卡", use:true, },
     "hero_card_random_3":{name:"蓝色勇者卡", use:true, },
     "hero_card_random_4":{name:"紫色勇者卡", use:true, },
@@ -192,12 +232,43 @@ Database.items = {
     "stone_piece_hp_7":{name:"金色生命石碎片", piece:30, },
     "stone_piece_speed_7":{name:"金色疾风石碎片", piece:30, },
     "stone_piece_tenacity_7":{name:"金色恩惠石碎片", piece:30, },
+    "stone_atk_8":{name:"暗金强攻石", },
+    "stone_crit_8":{name:"暗金致命石", },
+    "stone_def_8":{name:"暗金守护石", },
+    "stone_dodge_8":{name:"暗金精巧石", },
+    "stone_hit_8":{name:"暗金鹰眼石", },
+    "stone_hp_8":{name:"暗金生命石", },
+    "stone_speed_8":{name:"暗金疾风石", },
+    "stone_tenacity_8":{name:"暗金恩惠石", },
+    "stone_piece_atk_8":{name:"暗金强攻石碎片", piece:50, },
+    "stone_piece_crit_8":{name:"暗金致命石碎片", piece:50, },
+    "stone_piece_def_8":{name:"暗金守护石碎片", piece:50, },
+    "stone_piece_dodge_8":{name:"暗金精巧石碎片", piece:50, },
+    "stone_piece_hit_8":{name:"暗金鹰眼石碎片", piece:50, },
+    "stone_piece_hp_8":{name:"暗金生命石碎片", piece:50, },
+    "stone_piece_speed_8":{name:"暗金疾风石碎片", piece:50, },
+    "stone_piece_tenacity_8":{name:"暗金恩惠石碎片", piece:50, },
     "stone_piece_random_2":{name:"绿色随机石碎片", use:true, },
     "stone_piece_random_3":{name:"蓝色随机石碎片", use:true, },
     "stone_piece_random_4":{name:"紫色随机石碎片", use:true, },
     "stone_piece_random_5":{name:"橙色随机石碎片", use:true, },
     "stone_piece_random_6":{name:"红色随机石碎片", use:true, },
     "stone_piece_random_7":{name:"金色随机石碎片", use:true, },
+    "equip_compose_1_any":{name:"精铁锭", },
+    "equip_compose_1_a":{name:"1阶武具图纸", },
+    "equip_compose_1_b":{name:"1阶防具图纸", },
+    "equip_compose_1_c":{name:"1阶饰品图纸", },
+    "equip_compose_1_extra":{name:"1阶龙石", },
+    "equip_compose_2_any":{name:"红钢锭", },
+    "equip_compose_2_a":{name:"2阶武具图纸", },
+    "equip_compose_2_b":{name:"2阶防具图纸", },
+    "equip_compose_2_c":{name:"2阶饰品图纸", },
+    "equip_compose_2_extra":{name:"2阶龙石", },
+    "equip_compose_3_any":{name:"秘银锭", },
+    "equip_compose_3_a":{name:"3阶武具图纸", },
+    "equip_compose_3_b":{name:"3阶防具图纸", },
+    "equip_compose_3_c":{name:"3阶饰品图纸", },
+    "equip_compose_3_extra":{name:"3阶龙石", },
     "equip_compose_4_any":{name:"神金锭", },
     "equip_compose_4_a":{name:"4阶武具图纸", },
     "equip_compose_4_b":{name:"4阶防具图纸", },
@@ -205,7 +276,12 @@ Database.items = {
     "equip_compose_4_extra":{name:"4阶龙石", },
 };
 
-Database.equips = {
+Database.herobase = [
+    "hero_card_piece_",
+    "hero_",
+];
+
+Database.equipbase = {
     "amulet":{name:"护身符"},
     "armor":{name:"护肩"},
     "boots":{name:"靴子"},
