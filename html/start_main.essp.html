@@ -49,7 +49,7 @@
 </script>
 <script type="text/x-handlebars-template" class="hd_automation_settings">
     <div class="div_auto_setting_content">
-    {{#if targeting}}
+        {{#if targeting}}
         <div class="div_auto_setting_targeting common_block">
             <div class="div_auto_setting_detail">
                 <div class="div_auto_setting_name">帝国战目标</div>
@@ -85,8 +85,8 @@
                 </div>
             </div>
         </div>
-    {{/if}}
-    {{#if dropping}}
+        {{/if}}
+        {{#if dropping}}
         <div class="div_auto_setting_dropping common_block">
             <div class="div_auto_setting_detail">
                 <div class="div_auto_setting_name">帝国战丢卡</div>
@@ -98,8 +98,8 @@
                 </div>
             </div>
         </div>
-    {{/if}}
-    {{#if heroshop}}
+        {{/if}}
+        {{#if heroshop}}
         <div class="div_auto_setting_heroshop common_block">
             <div class="div_auto_setting_detail">
                 <div class="div_auto_setting_name">共享勇者商店数据</div>
@@ -141,7 +141,28 @@
                 </div>
             </div>
         </div>
-    {{/if}}
+        {{/if}}
+        {{#if unionwar}}
+        <div class="div_auto_setting_unionwar common_block">
+            <div class="div_auto_setting_detail">
+                <div class="div_auto_setting_name">领地战(周日除外)</div>
+            </div>
+            <div class="div_auto_setting_props">
+                <div class="div_auto_setting_detail">
+                    <div class="div_auto_setting_prop_name">启用领地战</div>
+                    <input type="checkbox" class="ctrl_setting_config_prop_unionwar_enable">
+                </div>
+                <div class="div_auto_setting_detail">
+                    <div class="div_auto_setting_prop_name">只进入有占领需要的领地</div>
+                    <input type="checkbox" class="ctrl_setting_config_prop_unionwar_limited">
+                </div>
+                <div class="div_auto_setting_detail">
+                    <div class="div_auto_setting_prop_name">从低到高占领(给小号用)</div>
+                    <input type="checkbox" class="ctrl_setting_config_prop_unionwar_reverse">
+                </div>
+            </div>
+        </div>
+        {{/if}}
     </div>
 </script>
 <script type="text/x-handlebars-template" class="hd_automation_player_servers">

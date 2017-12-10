@@ -976,6 +976,8 @@ function displayAutomation() {
             templateData.dropping = !!dropping;
             var heroshop = lastPlayer.copy_settings.heroshop;
             templateData.heroshop = !!heroshop;
+            var unionwar = lastPlayer.copy_settings.unionwar;
+            templateData.unionwar = !!unionwar;
             var divAutoSettingContent = $(autoSettingsTemplate(templateData));
             divAutoSettingContent.appendTo(divAutomationContent);
 
@@ -985,6 +987,33 @@ function displayAutomation() {
                 });
             };
 
+            if (unionwar) {
+                var divHeroshopBlock = divAutoSettingContent.find(".div_auto_setting_unionwar");
+                var inputSettingUnionwarEnabled = divHeroshopBlock.find(".ctrl_setting_config_prop_unionwar_enable");
+                if (unionwar.enabled) {
+                    inputSettingUnionwarEnabled.attr("checked", "checked");
+                }
+                inputSettingUnionwarEnabled.change(function() {
+                    unionwar.enabled = inputSettingUnionwarEnabled.is(":checked");
+                    configChanged();
+                });
+                var inputSettingLimited = divHeroshopBlock.find(".ctrl_setting_config_prop_unionwar_limited");
+                if (unionwar.onlyOccupy) {
+                    inputSettingLimited.attr("checked", "checked");
+                }
+                inputSettingLimited.change(function() {
+                    unionwar.onlyOccupy = inputSettingLimited.is(":checked");
+                    configChanged();
+                });
+                var inputSettingReverse = divHeroshopBlock.find(".ctrl_setting_config_prop_unionwar_reverse");
+                if (unionwar.reverseOrder) {
+                    inputSettingReverse.attr("checked", "checked");
+                }
+                inputSettingReverse.change(function() {
+                    unionwar.reverseOrder = inputSettingReverse.is(":checked");
+                    configChanged();
+                });
+            }
             if (heroshop) {
                 var divHeroshopBlock = divAutoSettingContent.find(".div_auto_setting_heroshop");
                 var inputSettingEnabled = divHeroshopBlock.find(".ctrl_setting_config_prop_heroshop_enable");

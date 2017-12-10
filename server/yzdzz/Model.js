@@ -158,6 +158,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             delete settingStates.heroshop[playerKey];
             changed = true;
         }
+        if (settingStates.unionwar[playerKey]) {
+            delete settingStates.unionwar[playerKey];
+            changed = true;
+        }
         return changed;
     },
     erasePlayerNames:function(playerKey) {
@@ -197,12 +201,17 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 var heroshopConfig = settingStates.heroshop[playerKey];
                 this.startRefreshHeroshop(playerKey, heroshopConfig);
             }
+            for (var playerKey in settingStates.unionwar) {
+                var unionwarConfig = settingStates.unionwar[playerKey];
+                this.startRefreshUnionwar(playerKey, unionwarConfig);
+            }
             var defaultsStates = $StateManager.getState(GAME_DEFAULTS_CONFIG);
             this.controller.startDailyTask(defaultsStates.dailyTask);
             this.controller.setRepeatRange(defaultsStates.repeatRange.start, defaultsStates.repeatRange.end);
             this.controller.setTargetingEvent(defaultsStates.targeting);
             this.controller.setDroppingEvent(defaultsStates.dropping);
             this.controller.setHeroshopEvent(defaultsStates.heroshop);
+            this.controller.setUnionwarEvent(defaultsStates.unionwar);
             this.doRefresh(AllFuncStr);
             safe(done)();
         }, this);
@@ -377,6 +386,27 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             console.log("stopRefreshHeroshop", playerKey);
             this.controller.unsetPlayer(playerData.refreshHeroshopKey);
             playerData.refreshHeroshopKey = null;
+        }
+    },
+    startRefreshUnionwar:function(playerKey, unionwarConfig) {
+        var playerData = this.players[playerKey];
+        if (!unionwarConfig || !unionwarConfig.enabled) {
+            return this.stopRefreshHeroshop(playerKey);
+        }
+        console.log("startRefreshUnionwar", playerKey);
+        if (playerData.refreshUnionwarKey) {
+            this.controller.modifyPlayerUnionwar(playerData.refreshUnionwarKey, unionwarConfig);
+        } else {
+            playerData.refreshUnionwarKey =
+                this.controller.setPlayerUnionwar(playerData, unionwarConfig);
+        }
+    },
+    stopRefreshUnionwar:function(playerKey) {
+        var playerData = this.players[playerKey];
+        if (playerData.refreshUnionwarKey) {
+            console.log("stopRefreshUnionwar", playerKey);
+            this.controller.unsetPlayer(playerData.refreshUnionwarKey);
+            playerData.refreshUnionwarKey = null;
         }
     },
     startRefreshKingwar:function(playerKey, kingwarConfig) {
@@ -595,6 +625,9 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         }
         return true;
     },
+    getSettingBool:function(val) {
+        return (val ? true : false);
+    },
     getSettingNumber:function(val, min, max, def) {
         if (typeof(val) == "number") {
             if (val >= min && val <= max) {
@@ -643,10 +676,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
         var targetingConfig = {
             reachPLID: this.randKey2PlayerId[targeting.reachPLID] || "",
-            disableEmperor: (targeting.disableEmperor ? true : false),
-            allowAssign: (targeting.allowAssign ? true : false),
+            disableEmperor: this.getSettingBool(targeting.disableEmperor),
+            allowAssign: this.getSettingBool(targeting.allowAssign),
             minStar: this.getSettingNumber(targeting.minStar, 1, 10, 0),
-            forceEmperor: (targeting.forceEmperor ? true : false),
+            forceEmperor: this.getSettingBool(targeting.forceEmperor),
         };
         if (targetingConfig.reachPLID == "" && !targetingConfig.allowAssign) {
             targetingConfig = undefined;
@@ -662,7 +695,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     setSettingDropping:function(playerKey, dropping) {
         var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
         var droppingConfig = {
-            allowDrop: (dropping.allowDrop ? true : false),
+            allowDrop: this.getSettingBool(dropping.allowDrop),
         };
         if (!droppingConfig.allowDrop) {
             droppingConfig = undefined;
@@ -678,7 +711,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     setSettingHeroshop:function(playerKey, heroshop) {
         var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
         var heroshopConfig = {
-            enabled: (heroshop.enabled ? true : false),
+            enabled: this.getSettingBool(heroshop.enabled),
             maxReduce: this.getSettingNumber(heroshop.maxReduce, 50, 60, 55),
             refresh: this.getSettingNumber(heroshop.refresh, 0, 8, 0),
         };
@@ -691,6 +724,24 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         console.log("set heroshop for player", playerKey);
         settingStates.heroshop[playerKey] = heroshopConfig;
         this.startRefreshHeroshop(playerKey, heroshopConfig);
+        return true;
+    },
+    setSettingUnionwar:function(playerKey, unionwar) {
+        var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
+        var unionwarConfig = {
+            enabled: this.getSettingBool(unionwar.enabled),
+            onlyOccupy: this.getSettingBool(unionwar.onlyOccupy),
+            reverseOrder: this.getSettingBool(unionwar.reverseOrder),
+        };
+        if (!unionwarConfig.enabled) {
+            unionwarConfig = undefined;
+        }
+        if (this.compareSetting(unionwarConfig, settingStates.unionwar[playerKey])) {
+            return false;
+        }
+        console.log("set unionwar for player", playerKey);
+        settingStates.unionwar[playerKey] = unionwarConfig;
+        this.startRefreshUnionwar(playerKey, unionwarConfig);
         return true;
     },
 
@@ -954,6 +1005,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                     targeting: this.getSettingTyped("targeting", playerKey),
                     dropping: this.getSettingTyped("dropping", playerKey),
                     heroshop: this.getSettingTyped("heroshop", playerKey),
+                    unionwar: this.getSettingTyped("unionwar", playerKey),
                 },
             }, done);
         }, this);
@@ -1072,6 +1124,9 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             }
             if (settings.heroshop) {
                 changed = this.setSettingHeroshop(playerKey, settings.heroshop) || changed;
+            }
+            if (settings.unionwar) {
+                changed = this.setSettingUnionwar(playerKey, settings.unionwar) || changed;
             }
             if (changed) {
                 yield $StateManager.commitState(GAME_SETTING_CONFIG, next);
@@ -1243,6 +1298,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                                     targeting: this.getSettingTyped("targeting", playerKey),
                                     dropping: this.getSettingTyped("dropping", playerKey),
                                     heroshop: this.getSettingTyped("heroshop", playerKey),
+                                    unionwar: this.getSettingTyped("unionwar", playerKey),
                                 },
                             });
                             break;

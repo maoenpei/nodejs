@@ -76,4 +76,23 @@
         "server":"s96"
         ,"reset":{"hour":0,"minute":0,"second":0}
     }
+    ,"unionwar":{
+        "selfUnion":"b275705814a85d98"
+        ,"normal":[
+            {"day":2,"hour":20,"minute":0,"second":55}
+            ,{"day":4,"hour":20,"minute":0,"second":55}
+            ,{"day":6,"hour":20,"minute":0,"second":55}
+            ,{"day":2,"hour":20,"minute":10,"second":55}
+            ,{"day":4,"hour":20,"minute":10,"second":55}
+            ,{"day":6,"hour":20,"minute":10,"second":55}
+            ,{"day":2,"hour":20,"minute":20,"second":55}
+            ,{"day":4,"hour":20,"minute":20,"second":55}
+            ,{"day":6,"hour":20,"minute":20,"second":55}
+        ]
+        ,"normal_order":[4,3,1,2]
+        ,"fighting":[
+            {"day":0,"hour":19,"minute":59,"second":55}
+        ]
+        ,"fighting_order":[7,3,2,1]
+    }
 }

@@ -535,6 +535,7 @@ Base.extends("GameConnection", {
                     unionId: gem.union_id,
                     life: gem.hp,
                     mineLife: gem.gem,
+                    quality: gem.quality,
                 });
             }
             return safe(done)({

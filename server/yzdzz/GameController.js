@@ -15,6 +15,7 @@ require("./GameConnection");
 // 4: 极限加入已完成(targeting)
 // 5: 执行极限刷新(kingwar)
 // 6: 极限丢卡(dropping)
+// 7: 平时领地站(unionwar)
 
 Base.extends("AccountManager", {
     _constructor:function() {
@@ -358,6 +359,110 @@ Base.extends("GameController", {
             }
         }
         this.heroshopUpdateCallback = callback;
+    },
+
+    unionwarlands: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    setPlayerUnionwar:function(playerData, unionwarConfig) {
+        return this.appendRefresh(playerData, "unionwar", 7, (conn, done) => {
+            this.refreshUnionwar(conn, unionwarConfig, done);
+        });
+    },
+    modifyPlayerUnionwar:function(key, unionwarConfig) {
+        return this.setRefreshFunc(key, (conn, done) => {
+            this.refreshUnionwar(conn, unionwarConfig, done);
+        });
+    },
+    refreshUnionwar:function(conn, unionwarConfig, done) {
+        var next = coroutine(function*() {
+            console.log("refreshUnionwar..", conn.getGameInfo().name);
+            var unionwarInfo = yield conn.getUnionWar(next);
+            if (!unionwarInfo.lands) {
+                return safe(done)();
+            }
+            var playerId = conn.getGameInfo().playerId;
+            var targetLands = (unionwarConfig.onlyOccupy ? this.unionwarOrder : this.unionwarlands);
+            var myQuality = 0;
+            for (var i = 0; i < targetLands.length; ++i) {
+                var landId = targetLands[i];
+                if (unionwarInfo.lands[landId]) {
+                    continue;
+                }
+                var unionwarLandInfo = yield conn.enterUnionWar(landId, next);
+                if (!unionwarLandInfo.mineArray) {
+                    continue;
+                }
+                for (var i = 0; i < unionwarLandInfo.mineArray.length; ++i) {
+                    var mineData = unionwarLandInfo.mineArray[i];
+                    if (mineData.playerId == playerId) {
+                        myQuality = mineData.quality;
+                        if (unionwarConfig.reverseOrder) {
+                            return safe(done)();
+                        }
+                        break;
+                    }
+                }
+                if (myQuality) {
+                    break;
+                }
+            }
+
+            do {
+                var newOccupy = false;
+                for (var i = 0; i < targetLands.length; ++i) {
+                    var landId = targetLands[i];
+                    if (unionwarInfo.lands[landId]) {
+                        continue;
+                    }
+                    var randTime = rand(1500);
+                    yield setTimeout(next, randTime);
+                    var unionwarLandInfo = yield conn.enterUnionWar(landId, next);
+                    if (!unionwarLandInfo.mineArray) {
+                        continue;
+                    }
+                    var mineCount = data.mineArray.length;
+                    var mineAvailable = null;
+                    if (unionwarConfig.reverseOrder) {
+                        mineAvailable = [];
+                        for (var j = mineCount - 1; j >= Math.floor(mineCount / 2); --j) {
+                            mineAvailable.push(unionwarLandInfo.mineArray[j]);
+                        }
+                    } else {
+                        mineAvailable = data.mineArray;
+                    }
+                    var maxQualityPos = 0;
+                    var maxQuality = 0;
+                    for (var j = 0; j < mineAvailable.length; ++j) {
+                        var mineData = mineAvailable[j];
+                        if (!mineData.playerId && mineData.mineLife > 0 && mineData.quality > maxQuality) {
+                            maxQuality = mineData.quality;
+                            maxQualityPos = mineData.pos;
+                        }
+                    }
+                    if (maxQuality > myQuality) {
+                        var occupyData = yield conn.occupy(landId, maxQualityPos, next);
+                        if (occupyData.success) {
+                            newOccupy = true;
+                            myQuality = maxQuality;
+                            yield setTimeout(next, 7000);
+                        }
+                    }
+                }
+            } while(newOccupy);
+            safe(done)();
+        }, this);
+    },
+    setUnionwarEvent:function(defaults) {
+        this.unsetEventKeys(this.unionwarTimes);
+        this.unionwarOrder = defaults.normal_order;
+        this.unionwarTimes = [];
+        var doUnionwar = () => {
+            this.refreshAllPlayers((funcObj) => { return funcObj.state == 7; });
+        };
+        for (var i = 0; i < defaults.normal.length; ++i) {
+            var time = defaults.normal[i];
+            var unionwarKey = this.timingManager.setWeeklyEvent(time.day, time.hour, time.minute, time.second, doUnionwar);
+            this.unionwarTimes.push(unionwarKey);
+        }
     },
 
     unsetPlayer:function(key) {
