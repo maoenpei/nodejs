@@ -34,6 +34,8 @@
             "kingwarDaily":true
             ,"kingwarRank":true
             ,"nekoMax":4
+            ,"shareAchievement":true
+            ,"shareWeekly":true
             ,"actDaily":true
             ,"quest":true
             ,"splendid":true

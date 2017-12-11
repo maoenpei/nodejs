@@ -2029,6 +2029,25 @@ Base.extends("GameConnection", {
                     }
                 }
             }
+            // 分享获得钻石
+            if (config.shareAchievement && this.validator.checkHourly("autoShareAchievement")) {
+                var data = yield this.sendMsg("ActShare", "getinfo", null, next);
+                if (data && data.list) {
+                    for (var i = 0; i < data.list.length; ++i) {
+                        var item = data.list[i];
+                        var data_reward = yield this.sendMsg("ActShare", "reward", {id:item.id}, next);
+                        if (!data_reward) {
+                            break;
+                        }
+                    }
+                }
+            }
+            if (config.shareWeekly && this.validator.checkHourly("autoShareWeekly")) {
+                var data = yield this.sendMsg("ActShare", "getinfo2", null, next);
+                if (data.day == 0) {
+                    var data_reward = yield this.sendMsg("ActShare", "reward2", null, next);
+                }
+            }
             // 活跃日历
             if (config.actDaily && this.validator.checkHourly("autoActDaily")) {
                 var data = yield this.sendMsg("ActActive", "getinfo", null, next);
@@ -2161,7 +2180,8 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("Tavern", "getlog", {ids:"50016,60018,70041"}, next); // 可兑换勇者的状态
             //var data = yield this.sendMsg("Comment", "getCount", {id:80005}, next); // 勇者评论数目
 
-            //var data = yield this.sendMsg("RoleMerge", "delNegotiate", {id:4}, next);
+            //var data = yield this.sendMsg("ActShare", "getinfo2", null, next);
+            //var data = yield this.sendMsg("ActShare", "reward", {id:10012}, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);

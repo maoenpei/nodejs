@@ -471,6 +471,8 @@ var displayAutomationModel = {
             {name: "kingwarDaily", desc: "帝国战每日奖励", type: "check"},
             {name: "kingwarRank", desc: "帝国战排名奖励", type: "check"},
             {name: "nekoMax", desc: "招财猫次数", type: "number", limit: [0, 10]},
+            {name: "shareAchievement", desc: "成就分享", type: "check"},
+            {name: "shareWeekly", desc: "7天分享", type: "check"},
             {name: "actDaily", desc: "活跃日历", type: "check"},
             {name: "quest", desc: "任务", type: "check"},
             {name: "splendid", desc: "福利活动", type: "check"},
