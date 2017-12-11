@@ -459,6 +459,10 @@ var displayAutomationModel = {
         {name: "autoRich", desc: "秘境", props:[
             {name: "sweep", desc: "扫荡免费骰子", type: "check"},
         ]},
+        {name: "autoConsume", desc: "消耗物品", props: [
+            {name: "useItem", desc: "使用物品", type: "check"},
+            {name: "mergeItem", desc: "合成物品", type: "check"},
+        ]},
         {name: "autoXReward", desc: "暗金活动", props:[
             {name: "xwish", desc: "许愿次数", type: "number", limit: [0, 10]},
             {name: "xcoin", desc: "白钻购买暗金币个数", type: "number", limit: [0, 5]},

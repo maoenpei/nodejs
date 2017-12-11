@@ -301,6 +301,9 @@ Base.extends("GameConnection", {
     },
     readAllItems: function(done) {
         var next = coroutine(function*() {
+            if (this.itemsInfo) {
+                return safe(done)();
+            }
             yield this.itemsLock.lock(next);
             if (!this.itemsInfo || !this.itemsQuick) {
                 var data = yield this.getItems(next);
@@ -318,9 +321,7 @@ Base.extends("GameConnection", {
     getItemCount:function(itemName, done) {
         var next = coroutine(function*() {
             var count = 0;
-            if (!this.itemsInfo) {
-                yield this.readAllItems(next);
-            }
+            yield this.readAllItems(next);
             if (this.itemsInfo) {
                 var item = this.itemsInfo[itemName];
                 count = (item ? item.count : 0);
@@ -1102,7 +1103,7 @@ Base.extends("GameConnection", {
                     }
                 }
             }
-            // 特点头像
+            // 特典头像
             if (config.specCard && this.validator.checkDaily("autoSpecCard")) {
                 var data = yield this.sendMsg("ActCollectCard", "getinfo", null, next);
                 if (data && data.list) {
@@ -1883,6 +1884,53 @@ Base.extends("GameConnection", {
             });
         }, this);
     },
+    autoConsume:function(config, done) {
+        var next = coroutine(function*() {
+            if (this.validator.checkHourly("autoConsume")) {
+                yield this.readAllItems(next);
+                // Use items
+                var hasItems = true;
+                while ((config.useItem || config.mergeItem) && hasItems && this.itemsInfo) {
+                    hasItems = false;
+                    for (var itemName in this.itemsInfo) {
+                        var itemData = this.itemsInfo[itemName];
+                        var itemInfo = Database.itemInfo(itemName);
+                        if (!itemInfo) {
+                            this.log("Non-existing item id '{0}'".format(itemName));
+                        } else {
+                            if (config.useItem && itemInfo.use && itemData.count > 0) {
+                                this.log("--- using item", itemName, itemInfo, itemData);
+                                hasItems = true;
+                                var itemDetails = clone(itemData.details);
+                                for (var i = 0; i < itemDetails.length; ++i) {
+                                    var detail = itemDetails[i];
+                                    var data_use = yield this.sendMsg("RoleItem", "use", detail, next);
+                                    if (!data_use) {
+                                        hasItems = false;
+                                        this.log("using item failed, id '{0}'".format(itemName));
+                                        break;
+                                    }
+                                }
+                            } else if (config.mergeItem && itemInfo.piece && itemData.count >= itemInfo.piece) {
+                                this.log("--- merge item", itemName, itemInfo, itemData);
+                                hasItems = true;
+                                var data_merge = yield this.sendMsg("RoleItem", "merge", {itemid:itemName}, next);
+                                if (!data_merge) {
+                                    hasItems = false;
+                                }
+                            }
+                        }
+                    }
+                }
+                // 契约之门
+                if (config.tavern) {
+                }
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
     autoXReward:function(config, done) {
         var next = coroutine(function*() {
             if (this.gameInfo.hasXReward && this.validator.checkHourly("autoXReward")) {
@@ -1935,8 +1983,6 @@ Base.extends("GameConnection", {
                         }
                     }
                 }
-            }
-            if (config.tavern) {
             }
             return safe(done)({
                 success: true,
@@ -2227,6 +2273,9 @@ Base.extends("GameConnection", {
             }
             safe(this.events["break"])();
         });
+        this.regMsg("RoleScout", "notify", (data) => {
+            console.log("RoleScout_notify", data);
+        }); // {first: [ 13002 ]}
         this.regMsg("UnionRace", "notify", (data) => {});
         this.regMsg("UnionWar", "kill", (data) => {});
         this.regMsg("UnionWar", "sync", (data) => {});
