@@ -318,16 +318,13 @@ Base.extends("GameConnection", {
             return safe(done)();
         }, this);
     },
-    getItemCount:function(itemName, done) {
-        var next = coroutine(function*() {
-            var count = 0;
-            yield this.readAllItems(next);
-            if (this.itemsInfo) {
-                var item = this.itemsInfo[itemName];
-                count = (item ? item.count : 0);
-            }
-            return safe(done)(count);
-        }, this);
+    getItemCount:function(itemName) {
+        var count = 0;
+        if (this.itemsInfo) {
+            var item = this.itemsInfo[itemName];
+            count = (item ? item.count : 0);
+        }
+        return count;
     },
     updateItem:function(items, quick, itemData) {
         var id = Number(itemData.id);
@@ -1630,7 +1627,8 @@ Base.extends("GameConnection", {
 
             var faceUse = (config.face > 200 ? 200 : config.face);
             if (faceUse > 0 && !config.faceForce) {
-                var faceCount = yield this.getItemCount("league_war_horn", next);
+                yield this.readAllItems(next);
+                var faceCount = this.getItemCount("league_war_horn");
                 faceUse = (faceUse > faceCount ? faceCount : faceUse);
             }
             var used = (data.morale - 100) / 20;
@@ -1656,7 +1654,8 @@ Base.extends("GameConnection", {
             };
             var flagNum = 0;
             if (config.useFlag) {
-                flagNum = yield this.getItemCount("league_war_life", next);
+                yield this.readAllItems(next);
+                flagNum = this.getItemCount("league_war_life");
             }
 
             var fightCount = 0;
@@ -1923,13 +1922,32 @@ Base.extends("GameConnection", {
                     }
                 }
                 // 契约之门
-                var summonBookInfo = this.itemsInfo["summon_book"];
-                if (config.tavern && summonBookInfo.count >= 8) {
-                    while (summonBookInfo.count >= 8) {
-                        this.log("using summon_book", summonBookInfo.count);
+                if (config.tavern && this.getItemCount("summon_book") >= 8) {
+                    while (this.getItemCount("summon_book") >= 8) {
+                        this.log("using summon_book", this.getItemCount("summon_book"));
                         var data_start = yield this.sendMsg("Tavern", "start", {type:1,batch:1}, next);
                         if (!data_start) {
                             break;
+                        }
+                    }
+                }
+                // 专精
+                var weaponUpdateCounts = [
+                    this.getItemCount("master_scroll_1"),
+                    this.getItemCount("master_scroll_2"),
+                    this.getItemCount("master_scroll_3"),
+                    this.getItemCount("master_scroll_4"),
+                    this.getItemCount("master_scroll_5"),
+                ];
+                if (config.updateWeapon) {
+                    for (var i = 0; i < weaponUpdateCounts.length; ++i) {
+                        var total = Math.floor(weaponUpdateCounts[i] / 200);
+                        this.log("updating weapon, type:", i+1, " number:", total);
+                        for (var j = 0; j < total; ++j) {
+                            var data_up = yield this.sendMsg("RoleTeam", "upWeaponType", {type:i+1}, next);
+                            if (!data_up) {
+                                break;
+                            }
                         }
                     }
                 }
@@ -2187,9 +2205,9 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next); //皇帝战
             //var data = yield this.sendMsg("Tavern", "getlog", {ids:"50016,60018,70041"}, next); // 可兑换勇者的状态
             //var data = yield this.sendMsg("Comment", "getCount", {id:80005}, next); // 勇者评论数目
+            //var data = yield this.sendMsg("RoleTeam", "getWeaponTypes", null, next); // 获取专精等级
 
-            //var data = yield this.sendMsg("ActShare", "getinfo2", null, next);
-            //var data = yield this.sendMsg("ActShare", "reward", {id:10012}, next);
+            var data = yield this.sendMsg("RoleTeam", "getWeaponTypes", null, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);

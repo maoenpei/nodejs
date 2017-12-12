@@ -463,6 +463,7 @@ var displayAutomationModel = {
             {name: "useItem", desc: "使用物品", type: "check"},
             {name: "mergeItem", desc: "合成物品", type: "check"},
             {name: "tavern", desc: "使用契约书", type: "check"},
+            {name: "updateWeapon", desc: "升级专精", type: "check"},
         ]},
         {name: "autoXReward", desc: "暗金活动", props:[
             {name: "xwish", desc: "许愿次数", type: "number", limit: [0, 10]},
