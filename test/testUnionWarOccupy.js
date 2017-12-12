@@ -23,8 +23,8 @@ var accounts = [
     {u:"reggiesun", p:"f1032277"}, // 二哥
     {u:"13913945392", p:"816476"}, // 幻影
     {u:"15880877841", p:"3802832"}, // 顺金
-    {u:"13671682107", p:"1234567a"}, // 恶人
-    {u:"18604449044", p:"jizai1314"}, // Lc
+    //{u:"13671682107", p:"1234567a"}, // 恶人
+    //{u:"18604449044", p:"jizai1314"}, // Lc
     //{u:"18963940530", p:"3135134162"}, // 风继续吹
     //{u:"13862891792", p:"gch900708"}, // 殇
     //{u:"13917312804", p:"patm002"}, // 闰土
@@ -224,8 +224,8 @@ if (new Date() > startTime) {
     doUnionWarOccupy();
 } else {
     var timingManager = new TimingManager();
-    //var eventKey = timingManager.setDailyEvent(20, 00, 45, doUnionWarOccupy);
-    var eventKey = timingManager.setDailyEvent(19, 59, 55, doUnionWarOccupy);
+    var eventKey = timingManager.setDailyEvent(20, 00, 45, doUnionWarOccupy);
+    //var eventKey = timingManager.setDailyEvent(19, 59, 55, doUnionWarOccupy);
     occupyEnd = () => {
         timingManager.unsetEvent(eventKey);
     }

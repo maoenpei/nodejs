@@ -1923,7 +1923,15 @@ Base.extends("GameConnection", {
                     }
                 }
                 // 契约之门
-                if (config.tavern) {
+                var summonBookInfo = this.itemsInfo["summon_book"];
+                if (config.tavern && summonBookInfo.count >= 8) {
+                    while (summonBookInfo.count >= 8) {
+                        this.log("using summon_book", summonBookInfo.count);
+                        var data_start = yield this.sendMsg("Tavern", "start", {type:1,batch:1}, next);
+                        if (!data_start) {
+                            break;
+                        }
+                    }
                 }
             }
             return safe(done)({
