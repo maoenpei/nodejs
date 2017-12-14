@@ -890,7 +890,7 @@ Base.extends("GameConnection", {
         for (var id in data.players) {
             var player = data.players[id];
             var heroInfo = Database.heroInfo(id);
-            if (heroInfo) {
+            if (heroInfo && heroInfo.level >= 8) {
                 result[String(id)] = Number(player.per);
             }
         }
@@ -942,7 +942,8 @@ Base.extends("GameConnection", {
                 for (var j = 0; j < playerIds.length; ++j) {
                     var id = playerIds[j];
                     var player = data.players[id];
-                    if (Number(player.per) <= config.maxReduce && Database.heroInfo(id) && player.status == 0 && roomHeros.length < roomMax) {
+                    var heroInfo = Database.heroInfo(id);
+                    if (Number(player.per) <= config.maxReduce && heroInfo && heroInfo.level >= 8 && player.status == 0 && roomHeros.length < roomMax) {
                         data = yield this.sendMsg("RoleMerge", "addNegotiate", {uid:id}, next);
                         if (!data || !data.players) {
                             return safe(done)({});
@@ -1950,6 +1951,9 @@ Base.extends("GameConnection", {
                             }
                         }
                     }
+                }
+                // 勇者合成
+                if (config.roleMerge > 2) {
                 }
             }
             return safe(done)({

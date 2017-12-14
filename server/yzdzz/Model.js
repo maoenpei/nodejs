@@ -1508,7 +1508,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             var heroId = json.heroId;
             var cmd = json.cmd;
             var heroInfo = Database.heroInfo(heroId);
-            if (!heroInfo || (cmd != "add" && cmd != "del")) {
+            if (!heroInfo || heroInfo.level < 8 || (cmd != "add" && cmd != "del")) {
                 responder.addError("Parameter data not correct.");
                 return responder.respondJson({}, done);
             }
@@ -1555,7 +1555,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 return responder.respondJson({}, done);
             }
 
-            var heros = Database.allHeros();
+            var heros = Database.allHeros(8); // at least 'SSS'
             var heroshopInfo = $StateManager.getState(GAME_HEROSHOP_CONFIG);
             var userHeros = userData.heros;
             userHeros = (userHeros ? userHeros : {});
