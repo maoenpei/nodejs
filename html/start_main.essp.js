@@ -464,6 +464,16 @@ var displayAutomationModel = {
             {name: "mergeItem", desc: "合成物品", type: "check"},
             {name: "tavern", desc: "使用契约书", type: "check"},
             {name: "updateWeapon", desc: "升级专精", type: "check"},
+            {name: "roleMerge", desc: "合成勇者", type: "number", limit:[0, 7], alias: [
+                "不合成",
+                "C级以下合成B级",
+                "B级以下合成A级",
+                "A级以下合成S级",
+                "S级以下合成S+级",
+                "S+级以下合成SS级",
+                "SS级以下合成SS+级",
+                "SS+级以下合成SSS级",
+            ]},
         ]},
         {name: "autoXReward", desc: "暗金活动", props:[
             {name: "xwish", desc: "许愿次数", type: "number", limit: [0, 10]},
@@ -939,7 +949,7 @@ function displayAutomation() {
                 name: "日常",
                 hasCheck: true,
                 enabled: !lastPlayer.copy_configs.disabled,
-                rightText: "手动",
+                rightText: "收菜一次",
             }));
             divAutoConfigsBlock.appendTo(divAutomationContent);
 
@@ -949,7 +959,7 @@ function displayAutomation() {
             });
             divAutoConfigsBlock.find(".div_auto_item_right").click(function() {
                 displayAutomationModel.manualConfig(lastPlayer, function(success) {
-                    alert(success ? "手动成功，请登陆游戏查看" : "手动失败");
+                    alert(success ? "收菜成功，请登陆游戏查看" : "收菜失败");
                 });
             });
             var inputEnablePlayer = divAutoConfigsBlock.find(".input_check_auto_item");

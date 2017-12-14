@@ -1953,7 +1953,50 @@ Base.extends("GameConnection", {
                     }
                 }
                 // 勇者合成
-                if (config.roleMerge > 2) {
+                var maxMergeLevel = (config.roleMerge > 7 ? 7 : config.roleMerge);
+                if (maxMergeLevel >= 1) {
+                    for (var level = 1; level <= maxMergeLevel; ++level) {
+                        var heros = [];
+                        var heroNames = [];
+                        for (var itemName in this.itemsInfo) {
+                            var itemData = this.itemsInfo[itemName];
+                            if (itemData.count == 0) {
+                                continue;
+                            }
+                            var heroInfo = Database.heroCardInfo(itemName);
+                            if (!heroInfo || heroInfo.level != level) {
+                                continue;
+                            }
+                            this.log("enumerating heros", heroInfo, itemData.details.length);
+                            for (var i = 0; i < itemData.details.length; ++i) {
+                                var detail = itemData.details[i];
+                                heros.push(detail.id);
+                                heroNames.push(itemName);
+                                if (detail.num != 1) {
+                                    console.log("============ hero card >1 detected ===============", itemName, detail);
+                                }
+                            }
+                        }
+                        var mergeNames = [];
+                        var id_arr = "";
+                        var arr_num = 0;
+                        for (var i = 0; i < heros.length; ++i) {
+                            mergeNames.push(heroNames[i]);
+                            var id = String(heros[i]);
+                            id_arr += (arr_num == 0 ? id : "," + id);
+                            arr_num ++;
+                            if (arr_num == 5) {
+                                this.log("merging heros", level, mergeNames);
+                                var data_merge = yield this.sendMsg("RoleMerge", "hero", {data:id_arr}, next);
+                                if (!data_merge) {
+                                    break;
+                                }
+                                arr_num = 0;
+                                id_arr = "";
+                                mergeNames = [];
+                            }
+                        }
+                    }
                 }
             }
             return safe(done)({

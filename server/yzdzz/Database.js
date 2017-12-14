@@ -38,11 +38,12 @@ Database.heroInfo = function(id) {
     return this.heros[id];
 }
 
-Database.allHeros = function(baseLevel) {
+Database.allHeros = function(minLevel, maxLevel) {
     var heros = [];
     for (var id in this.heros) {
         var heroData = this.heros[id];
-        if (heroData.level >= baseLevel) {
+        var matchLevel = ((!minLevel || heroData.level >= minLevel) && (!maxLevel || heroData.level <= maxLevel));
+        if (matchLevel) {
             heros.push({
                 id: id,
                 name: heroData.name,
@@ -51,6 +52,15 @@ Database.allHeros = function(baseLevel) {
         }
     }
     return heros;
+}
+
+Database.heroCardInfo = function(sysid) {
+    var heroid_base = "hero_";
+    if (sysid.substr(0, heroid_base.length) != heroid_base) {
+        return null;
+    }
+    var heroid = sysid.substr(heroid_base.length);
+    return this.heros[heroid];
 }
 
 Database.itemInfo = function(sysid) {

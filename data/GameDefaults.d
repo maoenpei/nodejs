@@ -28,7 +28,13 @@
         ,"autoUnion":{"donateMax":10}
         ,"autoArena":{"boxMax":6,"buyHeroSoul":true,"fightPlayer":true,"fightMax":10}
         ,"autoRich":{"sweep":true}
-        ,"autoConsume":{"useItem":false,"mergeItem":false,"tavern":false,"updateWeapon":false}
+        ,"autoConsume":{
+            "useItem":false
+            ,"mergeItem":false
+            ,"tavern":false
+            ,"updateWeapon":false
+            ,"roleMerge":0
+        }
         ,"autoXReward":{"xwish":1,"xcoin":5}
         ,"autoReward":{
             "kingwarDaily":true
