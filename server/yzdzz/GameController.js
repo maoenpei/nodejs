@@ -419,7 +419,7 @@ Base.extends("GameController", {
                     if (!unionwarLandInfo.mineArray) {
                         continue;
                     }
-                    var mineCount = data.mineArray.length;
+                    var mineCount = unionwarLandInfo.mineArray.length;
                     var mineAvailable = null;
                     if (unionwarConfig.reverseOrder) {
                         mineAvailable = [];
@@ -427,7 +427,7 @@ Base.extends("GameController", {
                             mineAvailable.push(unionwarLandInfo.mineArray[j]);
                         }
                     } else {
-                        mineAvailable = data.mineArray;
+                        mineAvailable = unionwarLandInfo.mineArray;
                     }
                     var maxQualityPos = 0;
                     var maxQuality = 0;
