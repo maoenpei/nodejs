@@ -347,15 +347,16 @@ Database.goblin_reduce = {
 };
 
 Database.heros = {
-    "80005":{name:"潘多拉", cls:"X", level:10},
-    "80010":{name:"青鸾", cls:"X", level:10},
-    "80003":{name:"路西法", cls:"X", level:10},
     "80001":{name:"妲己", cls:"X", level:10},
-    "80008":{name:"波塞冬", cls:"X", level:10},
-    "80006":{name:"美杜莎", cls:"X", level:10},
-    "80004":{name:"伏羲", cls:"X", level:10},
-    "80009":{name:"苍龙", cls:"X", level:10},
     "80002":{name:"哈迪斯", cls:"X", level:10},
+    "80003":{name:"路西法", cls:"X", level:10},
+    "80004":{name:"伏羲", cls:"X", level:10},
+    "80005":{name:"潘多拉", cls:"X", level:10},
+    "80006":{name:"美杜莎", cls:"X", level:10},
+    "80007":{name:"蚩尤", cls:"X", level:10},
+    "80008":{name:"波塞冬", cls:"X", level:10},
+    "80009":{name:"苍龙", cls:"X", level:10},
+    "80010":{name:"青鸾", cls:"X", level:10},
     "70001":{name:"吾王", cls:"SSS+", level:9},
     "70002":{name:"黑焰射手", cls:"SSS+", level:9},
     "70003":{name:"枭之店长", cls:"SSS+", level:9},
