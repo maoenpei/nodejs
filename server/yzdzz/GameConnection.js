@@ -2117,7 +2117,7 @@ Base.extends("GameConnection", {
             }
             if (config.shareWeekly && this.validator.checkHourly("autoShareWeekly")) {
                 var data = yield this.sendMsg("ActShare", "getinfo2", null, next);
-                if (data.day == 0) {
+                if (data && data.day == 0) {
                     var data_reward = yield this.sendMsg("ActShare", "reward2", null, next);
                 }
             }
