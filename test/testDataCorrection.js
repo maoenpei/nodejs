@@ -39,47 +39,13 @@ var next = coroutine(function*() {
     var stateUnions = $StateManager.getState(GAME_UNIONS_CONFIG);
     var statePlayerName = $StateManager.getState(GAME_PLAYER_NAME_CONFIG);
 
-    var playerKeys = [];
-    for (var playerKey in stateAccounts.players) {
-        playerKeys.push(playerKey);
+    var briefs = clone(statePlayerName);
+    for (var playerKey in statePlayerName) {
+        delete statePlayerName[playerKey];
     }
-    var repeatKeys = {};
-    for (var i = 0; i < playerKeys.length; ++i) {
-        var key1 = playerKeys[i];
-        var player1 = stateAccounts.players[key1];
-        for (var j = i + 1; j < playerKeys.length; ++j) {
-            var key2 = playerKeys[j];
-            var player2 = stateAccounts.players[key2];
-            if (player1.account == player2.account && player1.server == player2.server) {
-                if (!repeatKeys[key2]) {
-                    repeatKeys[key2] = key1;
-                }
-            }
-        }
-    }
-
-    for (var userKey in stateUser.users) {
-        var userData = stateUser.users[userKey];
-        if (userData.players) {
-            for (var i = 0; i < userData.players.length; ++i) {
-                var playerKey = userData.players[i];
-                var playerTarget = repeatKeys[playerKey];
-                if (playerTarget) {
-                    userData.players.splice(i, 1, playerTarget);
-                }
-            }
-        }
-    }
-    for (var repeated in repeatKeys) {
-        var target = repeatKeys[repeated];
-
-        delete stateAccounts.players[repeated];
-        delete statePlayerName[repeated];
-        if (stateSetting.automation[repeated]) {
-            stateSetting.automation[target] = stateSetting.automation[repeated];
-            delete stateSetting.automation[repeated];
-        }
-    }
+    statePlayerName.savedDay = -1;
+    statePlayerName.briefs = briefs;
+    statePlayerName.daily = {};
 
     yield $StateManager.commitState(USER_CONFIG, next);
     yield $StateManager.commitState(GAME_ACCOUNTS_CONFIG, next);

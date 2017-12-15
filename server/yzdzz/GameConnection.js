@@ -11,17 +11,27 @@ Base.extends("GameValidator", {
         this.setDay = {}; // day of a week
         this.setHour = {}; // hour of a day
     },
-    checkDaily:function(name) {
-        var currTime = new Date();
-        var compareTime = new Date();
-        compareTime.setHours(0, 0, 0, 0);
-        var timeDiff = (currTime.getTime() - compareTime.getTime()) / 1000;
-        if (timeDiff < 10 || timeDiff + 10 > secOfDay) {
-            return false;
+    getDailyState:function(currDay) {
+        var dailyNames = [];
+        for (var name in this.setDay) {
+            if (this.setDay[name] == currDay) {
+                dailyNames.push(name);
+            }
         }
+        return dailyNames;
+    },
+    setDailyState:function(currDay, dailyNames) {
+        for (var i = 0; i < dailyNames.length; ++i) {
+            var name = dailyNames[i];
+            if (typeof(this.setDay[name]) == "undefined") {
+                this.setDay[name] = currDay;
+            }
+        }
+    },
+    checkDaily:function(name) {
+        var currDay = new Date().getDay();
         var lastDay = this.setDay[name];
         lastDay = (typeof(lastDay) != "undefined" ? lastDay : -1);
-        var currDay = currTime.getDay();
         if (lastDay == currDay) {
             return false;
         }
@@ -1517,36 +1527,36 @@ Base.extends("GameConnection", {
                         }
                     }
                 }
-                if (this.validator.checkDaily("autoLeague")) {
-                    // auto donate
-                    var alreadyNum = 10 - data.donate_role_max / 1000000;
-                    var donateNum = (data.donate_role_max < data.donate_max ? data.donate_role_max : data.donate_max) / 1000000;
-                    donateNum = (donateNum < (config.donateMax - alreadyNum) ? donateNum : (config.donateMax - alreadyNum));
-                    if (donateNum > 0) {
-                        var data_goddess = yield this.sendMsg("League", "getGoddess", null, next);
-                        if (data_goddess && data_goddess.list) {
-                            var goddessData = {};
-                            for (var i in data_goddess.list) {
-                                var goddess = data_goddess.list[i];
-                                goddessData[goddess.id] = goddess;
-                            }
-                            var donateOrder = [1, 4, 2, 5, 6, 3];
-                            for (var i = 0; i < donateOrder.length; ++i) {
-                                var id = donateOrder[i];
-                                var goddess = goddessData[id];
-                                if (goddess.level < 120) {
-                                    if (donateNum == 10) {
-                                        var data_donate = yield this.sendMsg("League", "donate", {id:id, type:2}, next);
-                                    } else {
-                                        for (var j = 0; j < donateNum; ++j) {
-                                            var data_donate = yield this.sendMsg("League", "donate", {id:id, type:1}, next);
-                                        }
+                // auto donate
+                var alreadyNum = 10 - data.donate_role_max / 1000000;
+                var donateNum = (data.donate_role_max < data.donate_max ? data.donate_role_max : data.donate_max) / 1000000;
+                donateNum = (donateNum < (config.donateMax - alreadyNum) ? donateNum : (config.donateMax - alreadyNum));
+                if (donateNum > 0) {
+                    var data_goddess = yield this.sendMsg("League", "getGoddess", null, next);
+                    if (data_goddess && data_goddess.list) {
+                        var goddessData = {};
+                        for (var i in data_goddess.list) {
+                            var goddess = data_goddess.list[i];
+                            goddessData[goddess.id] = goddess;
+                        }
+                        var donateOrder = [1, 4, 2, 5, 6, 3];
+                        for (var i = 0; i < donateOrder.length; ++i) {
+                            var id = donateOrder[i];
+                            var goddess = goddessData[id];
+                            if (goddess.level < 120) {
+                                if (donateNum == 10) {
+                                    var data_donate = yield this.sendMsg("League", "donate", {id:id, type:2}, next);
+                                } else {
+                                    for (var j = 0; j < donateNum; ++j) {
+                                        var data_donate = yield this.sendMsg("League", "donate", {id:id, type:1}, next);
                                     }
-                                    break;
                                 }
+                                break;
                             }
                         }
                     }
+                }
+                if (this.validator.checkDaily("autoLeague")) {
                     // auto gift
                     if (data.is_gift == 0) {
                         var data_gift = yield this.sendMsg("League", "gift", null, next);
@@ -1840,23 +1850,23 @@ Base.extends("GameConnection", {
                         }
                     }
                 }
+                // auto achievement
+                var data_achievement = yield this.sendMsg("Arena", "achievement", null, next);
+                if (!data_achievement || !data_achievement.list) {
+                    return safe(done)({});
+                }
+                for (var i = 0; i < data_achievement.list.length; ++i) {
+                    var item = data_achievement.list[i];
+                    if (item.state == 1) {
+                        var data_res = yield this.sendMsg("Arena", "achievementres", { id: item.id }, next);
+                    }
+                }
                 if (this.validator.checkDaily("autoArena")) {
                     // auto like
                     if (data.like == 0) {
                         var data_rank = yield this.sendMsg("Arena", "getrank", null, next);
                         if (data_rank && data_rank.list) {
                             var data_like = yield this.sendMsg("Arena", "like", { id:data_rank.list[0].uid }, next);
-                        }
-                    }
-                    // auto achievement
-                    var data_achievement = yield this.sendMsg("Arena", "achievement", null, next);
-                    if (!data_achievement || !data_achievement.list) {
-                        return safe(done)({});
-                    }
-                    for (var i = 0; i < data_achievement.list.length; ++i) {
-                        var item = data_achievement.list[i];
-                        if (item.state == 1) {
-                            var data_res = yield this.sendMsg("Arena", "achievementres", { id: item.id }, next);
                         }
                     }
                 }

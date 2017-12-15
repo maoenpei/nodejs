@@ -108,9 +108,13 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             this.playerNamesMd5 = this.getTag(allPlayerNames);
             for (var playerKey in this.players) {
                 var playerData = this.players[playerKey];
-                var brief = allPlayerNames[playerKey];
+                var brief = allPlayerNames.briefs[playerKey];
                 if (brief) {
                     this.controller.setPlayerBrief(playerData, brief);
+                }
+                var daily = allPlayerNames.daily[playerKey];
+                if (daily) {
+                    playerData.validator.setDailyState(allPlayerNames.savedDay, daily);
                 }
             }
             var heroshopInfo = $StateManager.getState(GAME_HEROSHOP_CONFIG);
@@ -168,8 +172,12 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         console.log("erasePlayerNames", playerKey);
         var changed = false;
         var allPlayerNames = $StateManager.getState(GAME_PLAYER_NAME_CONFIG);
-        if (allPlayerNames[playerKey]) {
-            delete allPlayerNames[playerKey];
+        if (allPlayerNames.briefs[playerKey]) {
+            delete allPlayerNames.briefs[playerKey];
+            changed = true;
+        }
+        if (allPlayerNames.daily[playerKey]) {
+            delete allPlayerNames.daily[playerKey];
             changed = true;
         }
         return changed;
@@ -269,11 +277,19 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 }
                 // Save player names for added accounts
                 var allPlayerNames = $StateManager.getState(GAME_PLAYER_NAME_CONFIG);
+                var currDay = new Date().getDay();
+                allPlayerNames.savedDay = currDay;
                 for (var playerKey in this.players) {
                     var playerData = this.players[playerKey];
                     var brief = this.controller.getPlayerBrief(playerData);
                     if (brief) {
-                        allPlayerNames[playerKey] = brief;
+                        allPlayerNames.briefs[playerKey] = brief;
+                    }
+                    var daily = playerData.validator.getDailyState(currDay);
+                    if (daily.length > 0) {
+                        allPlayerNames.daily[playerKey] = daily;
+                    } else {
+                        delete allPlayerNames.daily[playerKey];
                     }
                 }
                 var md5 = this.getTag(allPlayerNames);
@@ -1184,7 +1200,6 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 return responder.respondJson({}, done);
             }
 
-            playerData.validator.resetDaily();
             playerData.validator.resetHourly();
             this.setSettingAutomation(playerKey, automationConfig);
             yield $StateManager.commitState(GAME_SETTING_CONFIG, next);
@@ -1235,7 +1250,6 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             }
 
             var autoConfigs = this.getSettingAutomation(playerKey);
-            playerData.validator.resetDaily();
             playerData.validator.resetHourly();
             var data = yield this.controller.manualPlayerAutomation(playerData, autoConfigs, next);
             console.log("Manual finished!");
