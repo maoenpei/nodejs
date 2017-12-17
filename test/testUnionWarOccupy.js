@@ -21,14 +21,16 @@ var accounts = [
     {u:"18066212025", p:"1234567j"}, // 审判
     {u:"13625821126", p:"gxf396466"}, // 白菜
     //{u:"reggiesun", p:"f1032277"}, // 二哥
+    {u:"13819153071", p:"123456"}, // 头很铁
     {u:"13913945392", p:"816476"}, // 幻影
     {u:"15880877841", p:"3802832"}, // 顺金
-    //{u:"13671682107", p:"1234567a"}, // 恶人
-    //{u:"18604449044", p:"jizai1314"}, // Lc
+    {u:"13671682107", p:"1234567a"}, // 恶人
+    {u:"18604449044", p:"jizai1314"}, // Lc
     //{u:"18963940530", p:"3135134162"}, // 风继续吹
-    //{u:"13862891792", p:"gch900708"}, // 殇
-    //{u:"13917312804", p:"patm002"}, // 闰土
-    //{u:"18030367128", p:"1234567"}, // 闷骚鱼
+    {u:"13862891792", p:"gch900708"}, // 殇
+    {u:"13917312804", p:"patm002"}, // 闰土
+    {u:"18030367128", p:"1234567"}, // 闷骚鱼
+    {u:"13560446211", p:"17140456"}, // 雷顿皇
 
     {u:"15171335812", p:"12345678", nonWeekend: true}, // Akon
     {u:"18983624927", p:"123456", nonWeekend: true}, // 突然的自我
@@ -52,7 +54,7 @@ var doUnionWarOccupy = () => {
         //var landTargets = (isWeekend ? [7, 1, 2, 3] : [4, 3, 1, 2]);
 
         //var friendUnion = (isWeekend ? ["b26d0533bba85c43"] : []);
-        var friendUnion = (isWeekend ? [] : []);
+        var friendUnion = (isWeekend ? ["b2726df76e285c3b", "b3b459f1b6a85a2a", "b3b4598779a85b15", "b3b455b0e2a85cc1"] : []);
         //var enemyUnion = (isWeekend ? ["b26d0533bba85c43"] : []);
         var enemyUnion = (isWeekend ? [] : []);
 
@@ -97,11 +99,9 @@ var doUnionWarOccupy = () => {
                         var card = data.card;
                         if (isWeekend && card.ready) {
                             if (card.isgood) {
-                                for (var k = 0; k < friendUnion.length; ++k) {
-                                    var data_usecard = yield conn.useCard(friendUnion[k], next);
-                                    if (data_usecard.success) {
-                                        break;
-                                    }
+                                if (friendUnion.length > 0) {
+                                    var friendUnionId = friendUnion[rand(friendUnion.length)];
+                                    var data_usecard = yield conn.useCard(friendUnionId, next);
                                 }
                             } else {
                                 for (var k = 0; k < enemyUnion.length; ++k) {
@@ -224,8 +224,8 @@ if (new Date() > startTime) {
     doUnionWarOccupy();
 } else {
     var timingManager = new TimingManager();
-    var eventKey = timingManager.setDailyEvent(20, 00, 45, doUnionWarOccupy);
-    //var eventKey = timingManager.setDailyEvent(19, 59, 55, doUnionWarOccupy);
+    //var eventKey = timingManager.setDailyEvent(20, 0, 45, doUnionWarOccupy);
+    var eventKey = timingManager.setDailyEvent(20, 0, 1, doUnionWarOccupy);
     occupyEnd = () => {
         timingManager.unsetEvent(eventKey);
     }
