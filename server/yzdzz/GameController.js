@@ -372,16 +372,12 @@ Base.extends("GameController", {
             this.refreshUnionwar(conn, unionwarConfig, done);
         });
     },
-    refreshUnionwar:function(conn, unionwarConfig, done) {
+    enumUnionwarlands:function(conn, targetLands, deal, done) {
         var next = coroutine(function*() {
-            console.log("refreshUnionwar..", conn.getGameInfo().name);
             var unionwarInfo = yield conn.getUnionWar(next);
             if (!unionwarInfo.lands) {
                 return safe(done)();
             }
-            var playerId = conn.getGameInfo().playerId;
-            var targetLands = (unionwarConfig.onlyOccupy ? this.unionwarOrder : this.unionwarlands);
-            var myQuality = 0;
             for (var i = 0; i < targetLands.length; ++i) {
                 var landId = targetLands[i];
                 if (unionwarInfo.lands[landId]) {
@@ -391,63 +387,83 @@ Base.extends("GameController", {
                 if (!unionwarLandInfo.mineArray) {
                     continue;
                 }
-                for (var i = 0; i < unionwarLandInfo.mineArray.length; ++i) {
-                    var mineData = unionwarLandInfo.mineArray[i];
-                    if (mineData.playerId == playerId) {
-                        myQuality = mineData.quality;
-                        if (unionwarConfig.reverseOrder) {
-                            return safe(done)();
+                for (var j = 0; j < unionwarLandInfo.mineArray.length; ++j) {
+                    var mineData = unionwarLandInfo.mineArray[j];
+                    var finish = safe(deal)(mineData, landId);
+                    if (finish) {
+                        return safe(done)();
+                    }
+                }
+            }
+            safe(done)();
+        }, this);
+    },
+    refreshUnionwar:function(conn, unionwarConfig, done) {
+        var next = coroutine(function*() {
+            console.log("refreshUnionwar..", conn.getGameInfo().name);
+            var unionwarInfo = yield conn.getUnionWar(next);
+            if (!unionwarInfo.isOpen) {
+                return safe(done)();
+            }
+            var targetLands = (unionwarConfig.onlyOccupy ? this.unionwarOrder : this.unionwarlands);
+            var playerId = conn.getGameInfo().playerId;
+            var myQuality = 0;
+            yield this.enumUnionwarlands(conn, targetLands, (mineData, landId) => {
+                if (mineData.playerId == playerId) {
+                    conn.log("Found self at union war:", landId, mineData.pos, mineData.quality);
+                    myQuality = mineData.quality;
+                    return true; // finish loop
+                }
+            }, next);
+
+            if (myQuality && unionwarConfig.reverseOrder) {
+                return safe(done)();
+            }
+
+            var randTime = rand(1500);
+            yield setTimeout(next, randTime);
+            var lock = this.unionwarLock;
+            yield lock.lock(next);
+
+            var maxQuality = 0;
+            var maxLand = [];
+            var maxPos = [];
+            yield this.enumUnionwarlands(conn, targetLands, (mineData, landId) => {
+                if (!mineData.playerId && mineData.mineLife > 0) {
+                    var match = false;
+                    if (unionwarConfig.reverseOrder) {
+                        if (maxQuality == 0 || mineData.quality < maxQuality) {
+                            match = true;
                         }
+                    } else {
+                        if (mineData.quality > maxQuality) {
+                            match = true;
+                        }
+                    }
+                    if (match) {
+                        conn.log("Found new available pos:", landId, mineData.pos, mineData.quality);
+                        maxQuality = mineData.quality;
+                        maxLand = [landId];
+                        maxPos = [mineData.pos];
+                    } else if (maxQuality == mineData.quality) {
+                        conn.log("Found same available pos:", landId, mineData.pos, mineData.quality);
+                        maxLand.push(landId);
+                        maxPos.push(mineData.pos);
+                    }
+                }
+            }, next);
+            if (maxQuality) {
+                for (var i = 0; i < maxLand.length; ++i) {
+                    var landId = maxLand[i];
+                    var pos = maxPos[i];
+                    var occupyData = yield conn.occupy(landId, pos, next);
+                    if (occupyData.success) {
                         break;
                     }
                 }
-                if (myQuality) {
-                    break;
-                }
             }
 
-            do {
-                var newOccupy = false;
-                for (var i = 0; i < targetLands.length; ++i) {
-                    var landId = targetLands[i];
-                    if (unionwarInfo.lands[landId]) {
-                        continue;
-                    }
-                    var randTime = rand(1500);
-                    yield setTimeout(next, randTime);
-                    var unionwarLandInfo = yield conn.enterUnionWar(landId, next);
-                    if (!unionwarLandInfo.mineArray) {
-                        continue;
-                    }
-                    var mineCount = unionwarLandInfo.mineArray.length;
-                    var mineAvailable = null;
-                    if (unionwarConfig.reverseOrder) {
-                        mineAvailable = [];
-                        for (var j = mineCount - 1; j >= Math.floor(mineCount / 2); --j) {
-                            mineAvailable.push(unionwarLandInfo.mineArray[j]);
-                        }
-                    } else {
-                        mineAvailable = unionwarLandInfo.mineArray;
-                    }
-                    var maxQualityPos = 0;
-                    var maxQuality = 0;
-                    for (var j = 0; j < mineAvailable.length; ++j) {
-                        var mineData = mineAvailable[j];
-                        if (!mineData.playerId && mineData.mineLife > 0 && mineData.quality > maxQuality) {
-                            maxQuality = mineData.quality;
-                            maxQualityPos = mineData.pos;
-                        }
-                    }
-                    if (maxQuality > myQuality) {
-                        var occupyData = yield conn.occupy(landId, maxQualityPos, next);
-                        if (occupyData.success) {
-                            newOccupy = true;
-                            myQuality = maxQuality;
-                            yield setTimeout(next, 7000);
-                        }
-                    }
-                }
-            } while(newOccupy);
+            lock.unlock();
             safe(done)();
         }, this);
     },
@@ -455,6 +471,7 @@ Base.extends("GameController", {
         this.unsetEventKeys(this.unionwarTimes);
         this.unionwarOrder = defaults.normal_order;
         this.unionwarTimes = [];
+        this.unionwarLock = new Mutex();
         var doUnionwar = () => {
             this.refreshAllPlayers((funcObj) => { return funcObj.state == 7; });
         };
