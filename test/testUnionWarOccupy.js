@@ -28,8 +28,8 @@ var accounts = [
     {u:"18604449044", p:"jizai1314"}, // Lc
     //{u:"18963940530", p:"3135134162"}, // 风继续吹
     {u:"13862891792", p:"gch900708"}, // 殇
-    {u:"13917312804", p:"patm002"}, // 闰土
-    {u:"18030367128", p:"1234567"}, // 闷骚鱼
+    //{u:"13917312804", p:"patm002"}, // 闰土
+    //{u:"18030367128", p:"1234567"}, // 闷骚鱼
     {u:"13560446211", p:"17140456"}, // 雷顿皇
 
     {u:"15171335812", p:"12345678", nonWeekend: true}, // Akon
@@ -50,7 +50,7 @@ var doUnionWarOccupy = () => {
         console.log("isWeekend", isWeekend);
         var cycle = 0;
 
-        var landTargets = (isWeekend ? [7, 3, 2, 1] : [4, 3, 1, 2]);
+        var landTargets = (isWeekend ? [7, 3, 2, 1, 4, 5, 6, 8, 9] : [4, 3, 1, 2]);
         //var landTargets = (isWeekend ? [7, 1, 2, 3] : [4, 3, 1, 2]);
 
         //var friendUnion = (isWeekend ? ["b26d0533bba85c43"] : []);

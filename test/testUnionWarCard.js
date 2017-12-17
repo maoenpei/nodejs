@@ -30,9 +30,9 @@ if (false) {
 
 var servers = (isWeekend ? ["s95", "s96", "s93", "s94", ] : [ "s96", ]);
 
-var friendUnion = (isWeekend ? ["b275705814a85d98", "b3b459f1b6a85a2a", "b3b455b0e2a85cc1"] : ["b275705814a85d98"]);
-//var enemyUnion = (isWeekend ? ["b26d0533bba85c43"] : ["b3bdc946b8285de7", "b3b4461918285dc2"]);
-var enemyUnion = (isWeekend ? [] : ["b3bdc946b8285de7", "b3b4461918285dc2"]);
+var friendUnion = (isWeekend ? ["b275705814a85d98"] : ["b275705814a85d98"]);
+//var enemyUnion = (isWeekend ? ["b26d0533bba85c43"] : []);
+var enemyUnion = (isWeekend ? [] : []);
 
 var doUnionWarCard = () => {
     var next = coroutine(function*() {
