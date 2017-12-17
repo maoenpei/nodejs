@@ -1302,7 +1302,10 @@ Base.extends("GameConnection", {
                     if (!data_change) {
                         return safe(done)({});
                     }
-                    for (var j = searched[i]; j < config.searchNumber; ++j) {
+                    var hour = new Date().getHours();
+                    var searchNum = (hour >= 0 && hour < 12 ? config.searchNumber0 : config.searchNumber);
+                    searchNum = (searchNum > 13 ? 13 : searchNum);
+                    for (var j = searched[i]; j < searchNum; ++j) {
                         var data_search = yield this.sendMsg("Maze", "search", null, next);
                         if (!data_search) {
                             return safe(done)({});

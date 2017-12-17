@@ -425,7 +425,8 @@ var displayAutomationModel = {
             {name: "heroUpgradeDiamond", desc: "主角进化卡(钻石)", type: "number", limit: [0, 3], alias:["不购买", "3折以下", "5折以下", "8折以下"]},
         ]},
         {name: "autoMaze", desc: "迷宫", props: [
-            {name: "searchNumber", desc: "每个迷宫的寻宝次数", type: "number", limit: [0, 13]},
+            {name: "searchNumber0", desc: "每日12点以前迷宫的寻宝次数", type: "number", limit: [0, 13]},
+            {name: "searchNumber", desc: "其余每个迷宫的寻宝次数", type: "number", limit: [0, 13]},
         ]},
         {name: "autoFriendWar", desc: "友谊战", props: [
             {name: "baseInspire", desc: "基础加成", type: "number", limit: [0, 6]},
