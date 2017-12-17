@@ -413,6 +413,7 @@ var displayAutomationModel = {
             {name: "redpacket", desc: "红包", type: "check"},
             {name: "freehero", desc: "免费勇者", type: "check"},
             {name: "speak", desc: "聊天频道发送'这游戏不错'", type: "check"},
+            {name: "herolike", desc: "勇者随机点赞", type: "check"},
         ]},
         {name: "autoForward", desc: "战斗，下一关", props: []},
         {name: "autoGoblin", desc: "地精商店", props: [

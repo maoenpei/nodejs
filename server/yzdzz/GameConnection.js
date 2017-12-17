@@ -1167,6 +1167,28 @@ Base.extends("GameConnection", {
             if (config.speak && this.validator.checkDaily("autoSpeak")) {
                 var data = yield this.sendMsg("Chat", "send", {type:3,msg:"\\u8FD9\\u6E38\\u620F\\u4E0D\\u9519",uid:this.gameInfo.playerId}, next, {hasUnicode:true});
             }
+            // auto like
+            if (config.herolike && this.validator.checkDaily("autoHeroLike")) {
+                var liked = false;
+                for (var i = 0; i < 15; ++i) {
+                    var heroInfo = Database.randHero();
+                    var data = yield this.sendMsg("Comment", "getTops", {heroid:heroInfo.id}, next);
+                    if (data && data.list && data.list.length > 0) {
+                        for (var j = 0; j < data.list.length; ++j) {
+                            var item = data.list[j];
+                            var data_like = yield this.sendMsg("Comment", "like", {heroid:heroInfo.id,msgid:item.id}, next);
+                            if (data_like) {
+                                this.log("like hero", heroInfo.name, item.role_name, heroInfo.id, item.id);
+                                liked = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (liked) {
+                        break;
+                    }
+                }
+            }
             return safe(done)({
                 success:true,
             });
@@ -2270,10 +2292,11 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("UnionWar", "refreshCard", null, next); // 刷新可用卡牌
             //var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next); //皇帝战
             //var data = yield this.sendMsg("Tavern", "getlog", {ids:"50016,60018,70041"}, next); // 可兑换勇者的状态
-            //var data = yield this.sendMsg("Comment", "getCount", {id:80005}, next); // 勇者评论数目
+            //var data = yield this.sendMsg("Comment", "getCount", {id:80005}, next); // 勇者评论数目 {count:5}
             //var data = yield this.sendMsg("RoleTeam", "getWeaponTypes", null, next); // 获取专精等级
 
-            //var data = yield this.sendMsg("Chat", "send", {type:3,msg:"\\u8FD9\\u6E38\\u620F\\u4E0D\\u9519",uid:this.gameInfo.playerId}, next, {hasUnicode:true});
+            //var data = yield this.sendMsg("Comment", "getTops", {heroid:70019}, next);
+            //var data = yield this.sendMsg("Comment", "like", {heroid:70019,msgid:3316}, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);

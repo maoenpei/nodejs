@@ -54,6 +54,22 @@ Database.allHeros = function(minLevel, maxLevel) {
     return heros;
 }
 
+Database.randHero = function() {
+    if (!this.heroIds) {
+        this.heroIds = [];
+        for (var id in this.heros) {
+            this.heroIds.push(id);
+        }
+    }
+    var randId = this.heroIds[rand(this.heroIds.length)];
+    var heroData = this.heros[randId];
+    return {
+        id: randId,
+        name: heroData.name,
+        cls: heroData.cls,
+    };
+}
+
 Database.heroCardInfo = function(sysid) {
     var heroid_base = "hero_";
     if (sysid.substr(0, heroid_base.length) != heroid_base) {

@@ -10,6 +10,7 @@
             ,"redpacket":true
             ,"freehero":true
             ,"speak":true
+            ,"herolike":true
         }
         ,"autoForward":{}
         ,"autoGoblin":{
