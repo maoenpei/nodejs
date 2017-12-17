@@ -135,7 +135,7 @@ var doUnionWarOccupy = () => {
                         var originOccupy = 100;
                         var bestOccupy = 100;
                         var bestFight = 100;
-                        var worstFight = 100;
+                        var worstFights = [];
                         for (var k = 0; k < mineIndices.length; ++k) {
                             var mineData = mineIndices[k];
                             if (conn.getGameInfo().playerId == mineData.playerId) {
@@ -148,9 +148,7 @@ var doUnionWarOccupy = () => {
                                 }
                             }
                             if (mineData.playerId && (mineData.unionId != selfUnion)) {
-                                if (mineData.pos < worstFight) {
-                                    worstFight = mineData.pos;
-                                }
+                                worstFights.push(mineData.pos);
                                 maxPowerPlayer = allPowerMax[mineData.playerId];
                                 if (!maxPowerPlayer || conn.getGameInfo().power + 200000 > maxPowerPlayer.maxPower){
                                     if (mineData.pos < bestFight) {
@@ -160,7 +158,7 @@ var doUnionWarOccupy = () => {
                             }
                         }
                         var justOccupy = false;
-                        bestFight = (bestFight == 100 ? worstFight : bestFight);
+                        bestFight = (bestFight == 100 ? worstFights[rand(worstFights.length)] : bestFight);
                         if (bestFight != 100 && (selfOccupy == 100 || bestFight < selfOccupy)) {
                             var data_fire = yield conn.fire(landId, bestFight, next);
                             // fire will lose current pos
