@@ -308,7 +308,9 @@ Base.extends("GameController", {
         for (var kingwarKey in kingwarPlayers) {
             var players = kingwarPlayers[kingwarKey];
             for (var i = 0; i < players.length; ++i) {
-                this.kingwarRefs[kingwarKey].players.push(players[i]);
+                var playerData = players[i];
+                this.playerToKingwar[playerData.playerId] = kingwarKey;
+                this.kingwarRefs[kingwarKey].players.push(playerData);
             }
         }
     },
@@ -1402,7 +1404,7 @@ Base.extends("GameController", {
             var star = refreshData.star;
             var server = conn.getServerInfo().desc;
             var validator = conn.getValidator();
-            if (this.constantKingwar && !validator.checkDaily("refreshKingwar")) {
+            if (this.constantKingwar) {
                 return safe(done)();
             }
             var data = yield conn.getKingWarState(next);
