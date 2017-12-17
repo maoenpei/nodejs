@@ -35,13 +35,16 @@ var StrMd5 = function(str) {
     return md5.substr(0, 4);
 }
 
-var ObjectWithSig = function(c, m, data) {
+var ObjectWithSig = function(c, m, data, options) {
     var object = {
         c:c,
         m:m,
         data:data,
     };
     var strToMd5 = JSON.stringify(object);
+    if (options && options.hasUnicode) {
+        strToMd5 = strToMd5.replace(/\\\\/g, "\\");
+    }
     object.s = StrMd5(strToMd5);
     return object;
 }
@@ -87,9 +90,13 @@ GameSock.receive = function(sock, callback) {
     });
 }
 
-GameSock.send = function(sock, c, m, data, done) {
-    var obj = ObjectWithSig(c, m, data);
-    var package = new Buffer(JSON.stringify(obj));
+GameSock.send = function(sock, c, m, data, options, done) {
+    var obj = ObjectWithSig(c, m, data, options);
+    var objStr = JSON.stringify(obj);
+    if (options && options.hasUnicode) {
+        objStr = objStr.replace(/\\\\/g, "\\");
+    }
+    var package = new Buffer(objStr);
     var lenBuf = Buffer.alloc(4);
     lenBuf.writeInt32BE(package.length, 0);
     sock.write(Buffer.concat([lenBuf, package]), safe(done));

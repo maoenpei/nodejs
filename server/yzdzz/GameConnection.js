@@ -2264,7 +2264,7 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("Comment", "getCount", {id:80005}, next); // 勇者评论数目
             //var data = yield this.sendMsg("RoleTeam", "getWeaponTypes", null, next); // 获取专精等级
 
-            var data = yield this.sendMsg("RoleTeam", "getWeaponTypes", null, next);
+            var data = yield this.sendMsg("Chat", "send", {type:3,msg:"\\u8FD9\\u6E38\\u620F\\u4E0D\\u9519",uid:this.gameInfo.playerId}, next, {hasUnicode:true});
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
@@ -2277,11 +2277,11 @@ Base.extends("GameConnection", {
         var appendArgs = (this.gameInfo ? [">> Player -", this.gameInfo.name] : [">> Username -", this.username]);
         console.log.apply(console, appendArgs.concat(Array.prototype.slice.call(arguments)));
     },
-    sendNotify:function(c, m, data, callback) {
+    sendNotify:function(c, m, data, callback, options) {
         if (!this.sock) {
             return later(callback, null);
         }
-        GameSock.send(this.sock, c, m, data, callback);
+        GameSock.send(this.sock, c, m, data, options, callback);
     },
     onReceive:function(c, m, data) {
         var key = c + "." + m;
@@ -2294,7 +2294,7 @@ Base.extends("GameConnection", {
             this.onCommonMsg(c, m, data);
         }
     },
-    sendMsg:function(c, m, data, callback) {
+    sendMsg:function(c, m, data, callback, options) {
         if (!this.sock) {
             return later(callback, null);
         }
@@ -2310,7 +2310,7 @@ Base.extends("GameConnection", {
             safe(callback)(data);
         });
         this.recvCallbacks[key] = callbackArray;
-        GameSock.send(this.sock, c, m, data);
+        GameSock.send(this.sock, c, m, data, options);
     },
     onCommonMsg:function(c, m, data) {
         var key = c + "." + m;
