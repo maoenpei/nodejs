@@ -1163,6 +1163,10 @@ Base.extends("GameConnection", {
                     }
                 }
             }
+            // auto speak
+            if (config.speak && this.validator.checkDaily("autoSpeak")) {
+                var data = yield this.sendMsg("Chat", "send", {type:3,msg:"\\u8FD9\\u6E38\\u620F\\u4E0D\\u9519",uid:this.gameInfo.playerId}, next, {hasUnicode:true});
+            }
             return safe(done)({
                 success:true,
             });
@@ -1953,7 +1957,9 @@ Base.extends("GameConnection", {
                 if (config.updateWeapon) {
                     for (var i = 0; i < weaponUpdateCounts.length; ++i) {
                         var total = Math.floor(weaponUpdateCounts[i] / 200);
-                        this.log("updating weapon, type:", i+1, " number:", total);
+                        if (total > 0) {
+                            this.log("updating weapon, type:", i+1, " number:", total);
+                        }
                         for (var j = 0; j < total; ++j) {
                             var data_up = yield this.sendMsg("RoleTeam", "upWeaponType", {type:i+1}, next);
                             if (!data_up) {
@@ -1977,7 +1983,7 @@ Base.extends("GameConnection", {
                             if (!heroInfo || heroInfo.level != level) {
                                 continue;
                             }
-                            this.log("enumerating heros", heroInfo, itemData.details.length);
+                            this.log("enumerating heros:", heroInfo, "num:", itemData.details.length);
                             for (var i = 0; i < itemData.details.length; ++i) {
                                 var detail = itemData.details[i];
                                 heros.push(detail.id);
@@ -2264,7 +2270,7 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("Comment", "getCount", {id:80005}, next); // 勇者评论数目
             //var data = yield this.sendMsg("RoleTeam", "getWeaponTypes", null, next); // 获取专精等级
 
-            var data = yield this.sendMsg("Chat", "send", {type:3,msg:"\\u8FD9\\u6E38\\u620F\\u4E0D\\u9519",uid:this.gameInfo.playerId}, next, {hasUnicode:true});
+            //var data = yield this.sendMsg("Chat", "send", {type:3,msg:"\\u8FD9\\u6E38\\u620F\\u4E0D\\u9519",uid:this.gameInfo.playerId}, next, {hasUnicode:true});
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);

@@ -9,6 +9,7 @@
             ,"specCard":true
             ,"redpacket":true
             ,"freehero":true
+            ,"speak":true
         }
         ,"autoForward":{}
         ,"autoGoblin":{
