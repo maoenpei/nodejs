@@ -756,6 +756,10 @@ Base.extends("GameController", {
         this.tryTargetingAssignment(kingwarOrder, tasksOrder, (taskItem, brief) => {
             return brief.mutual <= 1 && taskItem.power * this.hopePowerCoef > brief.otherMax;
         });
+        console.log("-- kingwar assignment -- try fight - draw");
+        this.tryTargetingAssignment(kingwarOrder, tasksOrder, (taskItem, brief) => {
+            return brief.mutual <= 2 && taskItem.power * this.ownPowerCoef > brief.otherMax;
+        });
         // try help
         console.log("-- kingwar assignment -- try help");
         this.tryTargetingAssignment(kingwarOrder, tasksOrder, (taskItem, brief) => {
