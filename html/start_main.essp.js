@@ -409,7 +409,7 @@ var displayAutomationModel = {
             {name: "friend", desc: "好友送钻石", type: "check"},
             {name: "email", desc: "邮件", type: "check"},
             {name: "tavern", desc: "契约之门", type: "check"},
-            {name: "specCard", desc: "特点头像", type: "check"},
+            {name: "specCard", desc: "特典头像", type: "check"},
             {name: "redpacket", desc: "红包", type: "check"},
             {name: "freehero", desc: "免费勇者", type: "check"},
             {name: "speak", desc: "聊天频道发送'这游戏不错'", type: "check"},
@@ -428,6 +428,7 @@ var displayAutomationModel = {
         {name: "autoMaze", desc: "迷宫", props: [
             {name: "searchNumber0", desc: "每日12点以前迷宫的寻宝次数", type: "number", limit: [0, 13]},
             {name: "searchNumber", desc: "其余每个迷宫的寻宝次数", type: "number", limit: [0, 13]},
+            {name: "randwalk", desc: "找个空位来回走20步", type: "check"},
         ]},
         {name: "autoFriendWar", desc: "友谊战", props: [
             {name: "baseInspire", desc: "基础加成", type: "number", limit: [0, 6]},

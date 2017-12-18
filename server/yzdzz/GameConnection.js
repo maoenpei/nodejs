@@ -802,20 +802,64 @@ Base.extends("GameConnection", {
         }, this);
     },
 
+    getMazeInfo:function(data_maze) {
+        var eventInfo = {};
+        for (var i = 0; i < data_maze.events.length; ++i) {
+            var event = data_maze.events[i];
+            var cfg = data_maze.event_cfgs[i];
+            var posKey = event.row * 100 + event.col;
+            eventInfo[posKey] = {
+                row: event.row,
+                col: event.col,
+                id: event.id,
+                done: event.done == 1,
+                type: cfg.type,
+                isMonster: cfg.type == 1,
+                isBoss: cfg.type == 2,
+                isStatus: cfg.type == 3,
+                isBox: cfg.type == 4,
+            };
+        }
+        var nowSec = new Date().getTime() / 1000;
+        var diffMin = Math.floor((nowSec + 180 * 60 - data_maze.expire) / 60);
+        diffMin = (diffMin > 180 ? 180 : diffMin);
+        return {
+            mazeId: data_maze.type,
+            pos: { row: data_maze.row, col: data_maze.col },
+            eventInfo: eventInfo,
+            steps: diffMin,
+            searchs: [
+                data_maze.search_num_1,
+                data_maze.search_num_2,
+                data_maze.search_num_3,
+            ],
+        };
+    },
+    mazeDirs:[{row:2,col:0},{row:-2,col:0},{row:0,col:2},{row:0,col:-2}],
+    getMazeAvailable:function(mazeInfo) {
+        var available = [];
+        for (var i = 0; i < this.mazeDirs.length; ++i) {
+            var dir = this.mazeDirs[i];
+            var pos = { row: mazeInfo.pos.row + dir.row, col: mazeInfo.pos.col + dir.col };
+            // out of maze
+            if (pos.row < 0 || pos.row > 12 || pos.col < 0 || pos.col > 14) {
+                continue;
+            }
+            var posKey = pos.row * 100 + pos.col;
+            if (mazeInfo.eventInfo[posKey]) {
+                continue;
+            }
+            available.push(pos);
+        }
+        return available;
+    },
     getMaze:function(done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("Maze", "getinfo", null, next);
             if (!data || !data.type) {
                 return safe(done)({});
             }
-            return safe(done)({
-                mazeId: data.type,
-                searchs: [
-                    data.search_num_1,
-                    data.search_num_2,
-                    data.search_num_3,
-                ],
-            });
+            return safe(done)(this.getMazeInfo(data));
         }, this);
     },
     changeMaze:function(mazeId, done) {
@@ -824,9 +868,7 @@ Base.extends("GameConnection", {
             if (!data || data.type != mazeId) {
                 return safe(done)({});
             }
-            return safe(done)({
-                success:true,
-            });
+            return safe(done)(this.getMazeInfo(data));
         }, this);
     },
     mazeSearch:function(count, done) {
@@ -1324,13 +1366,30 @@ Base.extends("GameConnection", {
                     if (!data_change) {
                         return safe(done)({});
                     }
+                    if (config.randwalk) {
+                        var mazeInfo = this.getMazeInfo(data_change);
+                        console.log("mazeInfo", mazeInfo);
+                        var available = this.getMazeAvailable(mazeInfo);
+                        if (available.length > 0 && mazeInfo.steps >= 20) {
+                            if (this.validator.checkDaily("autoMazeWalk")) {
+                                var twoPos = [available[0], mazeInfo.pos];
+                                for (var j = 0; j < 20; ++j) {
+                                    var posNext = twoPos[j % 2];
+                                    var data_run = yield this.sendMsg("Maze", "run", posNext, next);
+                                    if (!data_run) {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
                     var hour = new Date().getHours();
                     var searchNum = (hour >= 0 && hour < 12 ? config.searchNumber0 : config.searchNumber);
                     searchNum = (searchNum > 13 ? 13 : searchNum);
                     for (var j = searched[i]; j < searchNum; ++j) {
                         var data_search = yield this.sendMsg("Maze", "search", null, next);
                         if (!data_search) {
-                            return safe(done)({});
+                            break;
                         }
                     }
                 }
@@ -2296,7 +2355,7 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("RoleTeam", "getWeaponTypes", null, next); // 获取专精等级
 
             //var data = yield this.sendMsg("Comment", "getTops", {heroid:70019}, next);
-            //var data = yield this.sendMsg("Comment", "like", {heroid:70019,msgid:3316}, next);
+            //var data = yield this.sendMsg("Maze", "run", {row:2, col:10}, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);

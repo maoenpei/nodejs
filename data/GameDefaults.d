@@ -22,7 +22,7 @@
             ,"heroUpgradeGold":3
             ,"heroUpgradeDiamond":0
         }
-        ,"autoMaze":{"searchNumber0":8,"searchNumber":3}
+        ,"autoMaze":{"searchNumber0":8,"searchNumber":3,"randwalk":true}
         ,"autoFriendWar":{"baseInspire":3,"advanceInspire":3,"buyBlueCard":true}
         ,"autoLadder":{"fightPlayer":false,"useCard":true}
         ,"autoLeague":{"prayNumber":10,"donateMax":10,"warPay":0}
