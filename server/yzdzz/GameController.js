@@ -1403,10 +1403,7 @@ Base.extends("GameController", {
             var area = refreshData.area;
             var star = refreshData.star;
             var server = conn.getServerInfo().desc;
-            var validator = conn.getValidator();
-            if (this.constantKingwar) {
-                return safe(done)();
-            }
+
             var data = yield conn.getKingWarState(next);
             var constant = !data.allowJoin;
             if (this.constantKingwar && !constant) {
