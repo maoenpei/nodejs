@@ -22,12 +22,6 @@ var accounts = [
     {u:"13801890722", p:"Q950318my", no96:true},
 ];
 
-if (false) {
-    accounts.push({u:"lv35679183", p:"zhangpeng1989"});
-    accounts.push({u:"13719987234", p:"xwWZT123"});
-    accounts.push({u:"13801890722", p:"Q950318my"});
-}
-
 var servers = (isWeekend ? ["s95", "s96", "s93", "s94", ] : [ "s96", ]);
 
 var friendUnion = (isWeekend ? ["b275705814a85d98"] : ["b275705814a85d98"]);
