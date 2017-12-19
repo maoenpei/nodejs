@@ -454,7 +454,7 @@ Base.extends("GameController", {
                     }
                 }
             }, next);
-            if (maxQuality) {
+            if (maxQuality > myQuality) {
                 for (var i = 0; i < maxLand.length; ++i) {
                     var landId = maxLand[i];
                     var pos = maxPos[i];
