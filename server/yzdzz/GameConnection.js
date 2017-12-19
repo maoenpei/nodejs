@@ -1361,22 +1361,30 @@ Base.extends("GameConnection", {
                 searched[1] = data.search_num_1;
                 searched[2] = data.search_num_2;
                 searched[3] = data.search_num_3;
-                for (var i = 1; i <= 3; ++i) {
-                    var data_change = yield this.sendMsg("Maze", "change", {type:i}, next);
+                for (var mazeId = 1; mazeId <= 3; ++mazeId) {
+                    var data_change = yield this.sendMsg("Maze", "change", {type:mazeId}, next);
                     if (!data_change) {
                         return safe(done)({});
                     }
                     if (config.randwalk) {
                         var mazeInfo = this.getMazeInfo(data_change);
-                        console.log("mazeInfo", mazeInfo);
                         var available = this.getMazeAvailable(mazeInfo);
+                        this.log("Maze walk", mazeId, mazeInfo.pos, mazeInfo.steps, available);
                         if (available.length > 0 && mazeInfo.steps >= 20) {
-                            if (this.validator.checkDaily("autoMazeWalk")) {
-                                var twoPos = [available[0], mazeInfo.pos];
-                                for (var j = 0; j < 20; ++j) {
-                                    var posNext = twoPos[j % 2];
+                            var twoPos = [mazeInfo.pos];
+                            for (var i = 0; i < available.length; ++i) {
+                                var data_run = yield this.sendMsg("Maze", "run", available[i], next);
+                                if (data_run) {
+                                    twoPos.push(available[i]);
+                                    break;
+                                }
+                            }
+                            if (twoPos.length == 2 && this.validator.checkDaily("autoMazeWalk")) {
+                                for (var i = 0; i < 20; ++i) {
+                                    var posNext = twoPos[i % 2];
                                     var data_run = yield this.sendMsg("Maze", "run", posNext, next);
                                     if (!data_run) {
+                                        this.log("Maze run error on pos:", posNext);
                                         break;
                                     }
                                 }
