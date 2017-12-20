@@ -845,6 +845,9 @@ Base.extends("GameConnection", {
             if (pos.row < 0 || pos.row > 12 || pos.col < 0 || pos.col > 14) {
                 continue;
             }
+            if (pos.row == 12 && pos.col == 0) {
+                continue;
+            }
             var posKey = pos.row * 100 + pos.col;
             if (mazeInfo.eventInfo[posKey]) {
                 continue;
@@ -1394,7 +1397,7 @@ Base.extends("GameConnection", {
                     var hour = new Date().getHours();
                     var searchNum = (hour >= 0 && hour < 12 ? config.searchNumber0 : config.searchNumber);
                     searchNum = (searchNum > 13 ? 13 : searchNum);
-                    for (var j = searched[i]; j < searchNum; ++j) {
+                    for (var j = searched[mazeId]; j < searchNum; ++j) {
                         var data_search = yield this.sendMsg("Maze", "search", null, next);
                         if (!data_search) {
                             break;
@@ -2363,7 +2366,7 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("RoleTeam", "getWeaponTypes", null, next); // 获取专精等级
 
             //var data = yield this.sendMsg("Comment", "getTops", {heroid:70019}, next);
-            //var data = yield this.sendMsg("Maze", "run", {row:2, col:10}, next);
+            var data = yield this.sendMsg("RoleMerge", "decompose", {type:0,value:"1,2,3,4",op:1}, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
