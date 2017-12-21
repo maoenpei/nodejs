@@ -1846,6 +1846,9 @@ Base.extends("GameConnection", {
                     } else {
                         for (var i = 0; i < donateNum; ++i) {
                             var data_donate = yield this.sendMsg("Union", "donate", {type:1}, next);
+                            if (!data_donate) {
+                                break;
+                            }
                         }
                     }
                 }
