@@ -1210,7 +1210,7 @@ Base.extends("GameConnection", {
             }
             // auto speak
             if (config.speak && this.validator.checkDaily("autoSpeak")) {
-                var data = yield this.sendMsg("Chat", "send", {type:3,msg:"\\u8FD9\\u6E38\\u620F\\u4E0D\\u9519",uid:this.gameInfo.playerId}, next, {hasUnicode:true});
+                var data = yield this.sendMsg("Chat", "send", {type:3,msg:"这游戏不错",uid:this.gameInfo.playerId}, next, {hasUnicode:true});
             }
             // auto like
             if (config.herolike && this.validator.checkDaily("autoHeroLike")) {
@@ -2377,7 +2377,7 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("RoleTeam", "getWeaponTypes", null, next); // 获取专精等级
 
             //var data = yield this.sendMsg("Comment", "getTops", {heroid:70019}, next);
-            var data = yield this.sendMsg("RoleMerge", "decompose", {type:0,value:"1,2,3,4",op:1}, next);
+            //var data = yield this.sendMsg("RoleMerge", "decompose", {type:0,value:"1,2,3,4",op:1}, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);

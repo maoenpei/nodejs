@@ -35,6 +35,19 @@ var StrMd5 = function(str) {
     return md5.substr(0, 4);
 }
 
+var ReplaceUnicode = function(str) {
+    var result = "";
+    for (var i = 0; i < str.length; ++i) {
+        var code = str.charCodeAt(i);
+        if (code > 127) {
+            result += "\\u" + code.toString(16);
+        } else {
+            result += str.charAt(i);
+        }
+    }
+    return result;
+}
+
 var ObjectWithSig = function(c, m, data, options) {
     var object = {
         c:c,
@@ -43,7 +56,7 @@ var ObjectWithSig = function(c, m, data, options) {
     };
     var strToMd5 = JSON.stringify(object);
     if (options && options.hasUnicode) {
-        strToMd5 = strToMd5.replace(/\\\\/g, "\\");
+        strToMd5 = ReplaceUnicode(strToMd5);
     }
     object.s = StrMd5(strToMd5);
     return object;
@@ -94,7 +107,7 @@ GameSock.send = function(sock, c, m, data, options, done) {
     var obj = ObjectWithSig(c, m, data, options);
     var objStr = JSON.stringify(obj);
     if (options && options.hasUnicode) {
-        objStr = objStr.replace(/\\\\/g, "\\");
+        objStr = ReplaceUnicode(objStr);
     }
     var package = new Buffer(objStr);
     var lenBuf = Buffer.alloc(4);
