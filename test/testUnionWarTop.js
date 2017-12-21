@@ -9,6 +9,7 @@ var account = {u:"13905903138", p:"mingming", s:"s96"};
 
 var doUnionWarTop = function() {
     var next = coroutine(function*() {
+        console.log("start");
         var gameController = new GameController();
         var accountManager = gameController.getAccountManager();
         var accountKey = accountManager.add(account.u, account.p);
@@ -29,22 +30,23 @@ var doUnionWarTop = function() {
                 var data_Occupy = null;
                 for (var i = 0; i < data_Enter.mineArray.length; ++i) {
                     data_Occupy = yield conn.occupy(1, i+1, next);
-                    if (data_Occupy.success) {
+                    if (data_Occupy && data_Occupy.success) {
                         break;
                     }
                 }
-                console.log(data_Double);
-                console.log(data_Enter);
-                console.log(data_Occupy);
+                console.log("data_Double", data_Double);
+                console.log("data_Enter", data_Enter);
+                console.log("data_Occupy", data_Occupy);
                 break;
             }
         } while(false);
+        console.log("quit");
         conn.quit();
         accountManager.remove(accountKey);
     }, this);
 }
 
 var timingManager = new TimingManager();
-timingManager.setDailyEvent(19, 59, 58, doUnionWarTop);
+timingManager.setDailyEvent(19, 59, 53, doUnionWarTop);
 //doUnionWarTop();
 

@@ -69,7 +69,7 @@
     }
     ,"targeting":{
         "selfUnion":"b275705814a85d98"
-        ,"time":{"day":2,"hour":23,"minute":59,"second":53}
+        ,"time":{"day":2,"hour":23,"minute":59,"second":50}
         ,"forceSec":57
     }
     ,"dropping":{
