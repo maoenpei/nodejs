@@ -29,7 +29,7 @@ var doUnionWarTop = function() {
                 var data_Occupy = null;
                 for (var i = 0; i < data_Enter.mineArray.length; ++i) {
                     data_Occupy = yield conn.occupy(1, i+1, next);
-                    if (data_Occupy) {
+                    if (data_Occupy.success) {
                         break;
                     }
                 }
