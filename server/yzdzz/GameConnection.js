@@ -2215,13 +2215,21 @@ Base.extends("GameConnection", {
             }
             // 分享获得钻石
             if (config.shareAchievement && this.validator.checkHourly("autoShareAchievement")) {
-                var data = yield this.sendMsg("ActShare", "getinfo", null, next);
-                if (data && data.list) {
-                    for (var i = 0; i < data.list.length; ++i) {
-                        var item = data.list[i];
-                        var data_reward = yield this.sendMsg("ActShare", "reward", {id:item.id}, next);
-                        if (!data_reward) {
-                            break;
+                var hasShare = true;
+                while (hasShare) {
+                    hasShare = false;
+                    var data = yield this.sendMsg("ActShare", "getinfo", null, next);
+                    if (data && data.list) {
+                        for (var i = 0; i < data.list.length; ++i) {
+                            var item = data.list[i];
+                            if (item.state == 1) {
+                                var data_reward = yield this.sendMsg("ActShare", "reward", {id:item.id}, next);
+                                if (!data_reward) {
+                                    break;
+                                } else {
+                                    hasShare = true;
+                                }
+                            }
                         }
                     }
                 }
