@@ -1309,7 +1309,7 @@ Base.extends("GameController", {
                     yield conn[op].call(conn, config, next);
                 }
             }
-            yield conn.speakWithDiamondShort(next);
+            yield conn.speakForAutomationResult(next);
             safe(done)();
         }, this);
     },

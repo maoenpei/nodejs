@@ -1076,7 +1076,7 @@ Base.extends("GameConnection", {
             safe(done)();
         }, {hasUnicode:true});
     },
-    speakWithDiamondShort:function(done) {
+    speakForAutomationResult:function(done) {
         var next = coroutine(function*() {
             var shortTypes = [];
             if (this.shortTypes) {
