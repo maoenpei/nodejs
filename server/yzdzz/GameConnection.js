@@ -1071,6 +1071,72 @@ Base.extends("GameConnection", {
         }, this);
     },
 
+    speakTo:function(channel, message, done) {
+        this.sendMsg("Chat", "send", {type:channel, msg:message, uid:this.gameInfo.playerId}, () => {
+            safe(done)();
+        }, {hasUnicode:true});
+    },
+    speakWithDiamondShort:function(done) {
+        var next = coroutine(function*() {
+            var shortTypes = [];
+            if (this.shortTypes) {
+                for (var typeName in this.shortTypes) {
+                    shortTypes.push(typeName);
+                }
+            }
+            if (shortTypes && shortTypes.length > 0) {
+                var l = shortTypes.length;
+                l = (l > 5 ? 5 : l);
+                var hasTail = shortTypes.length > l;
+                shortTypes.splice(l, shortTypes.length - l);
+                var content = shortTypes.join("，");
+                if (this.justSpeak) {
+                    yield setTimeout(next, 3100);
+                }
+                yield this.speakTo(3, "钻石太少无法完成{0}{1}".format(content, (hasTail ? "..." : "")), next);
+            }
+            safe(done)();
+        }, this);
+    },
+    checkDiamondEnough:function(typeName) {
+        if (!safe(this.checkConsumeDiamond)()) {
+            this.shortTypes = (this.shortTypes ? this.shortTypes : {});
+            this.shortTypes[typeName] = true;
+            return false;
+        }
+        return true;
+    },
+
+    autoSpecial:function(config, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("RoleExplore", "update", {type:'', login:1}, next);
+            var compare = 100;
+            if (config.limitOfShort == 0) {
+                compare = 0;
+            } else if (config.limitOfShort == 1) {
+                compare = 100;
+            } else if (config.limitOfShort == 2) {
+                compare = 200;
+            } else if (config.limitOfShort == 3) {
+                compare = 500;
+            } else if (config.limitOfShort == 4) {
+                compare = 1000;
+            } else if (config.limitOfShort == 5) {
+                compare = 2000;
+            } else if (config.limitOfShort == 6) {
+                compare = 5000;
+            }
+            this.checkConsumeDiamond = () => {
+                if (!config.stopInShort || this.gameInfo.whiteDiamond > compare) {
+                    return true;
+                }
+                return false;
+            }
+            safe(done)({
+                success: true,
+            });
+        }, this);
+    },
     autoBenefit:function(config, done) {
         var next = coroutine(function*() {
             // auto sign
@@ -1211,8 +1277,9 @@ Base.extends("GameConnection", {
             // auto speak
             if (config.speak && this.validator.checkDaily("autoSpeak")) {
                 var data = yield this.sendMsg("Chat", "send", {type:3,msg:"这游戏不错",uid:this.gameInfo.playerId}, next, {hasUnicode:true});
+                this.justSpeak = true;
             }
-            // auto like
+            // auto like hero
             if (config.herolike && this.validator.checkDaily("autoHeroLike")) {
                 var liked = false;
                 for (var i = 0; i < 15; ++i) {
@@ -1325,6 +1392,9 @@ Base.extends("GameConnection", {
                 // Check timed refresh
                 var buyIds = GetBuyIds(data);
                 for (var i = 0; i < buyIds.length; ++i) {
+                    if (!this.checkDiamondEnough("商店")) {
+                        return safe(done)({});
+                    }
                     var data_buy = yield this.sendMsg("ActGoblin", "buy", {id:buyIds[i]}, next);
                     if (!data_buy) {
                         break;
@@ -1334,12 +1404,18 @@ Base.extends("GameConnection", {
                 var alreadyBuy = (3 - data.num) + data.buy;
                 var buyNum = (config.buyNum > 13 ? 13 : config.buyNum);
                 while(alreadyBuy < buyNum && !hasUnrecognized) {
+                    if (!this.checkDiamondEnough("商店")) {
+                        return safe(done)({});
+                    }
                     var data_refresh = yield this.sendMsg("ActGoblin", "refresh", null, next);
                     if (!data_refresh || !data_refresh.list) {
                         break;
                     }
                     var buyIds = GetBuyIds(data_refresh);
                     for (var i = 0; i < buyIds.length; ++i) {
+                        if (!this.checkDiamondEnough("商店")) {
+                            return safe(done)({});
+                        }
                         var data_buy = yield this.sendMsg("ActGoblin", "buy", {id:buyIds[i]}, next);
                         if (!data_buy) {
                             break;
@@ -1398,6 +1474,9 @@ Base.extends("GameConnection", {
                     var searchNum = (hour >= 0 && hour < 12 ? config.searchNumber0 : config.searchNumber);
                     searchNum = (searchNum > 13 ? 13 : searchNum);
                     for (var j = searched[mazeId]; j < searchNum; ++j) {
+                        if (!this.checkDiamondEnough("迷宫")) {
+                            break;
+                        }
                         var data_search = yield this.sendMsg("Maze", "search", null, next);
                         if (!data_search) {
                             break;
@@ -1617,11 +1696,13 @@ Base.extends("GameConnection", {
                         if (data_autoInfo.auto_num > 0) {
                             var data_reward = yield this.sendMsg("League", "getAutoWarReward", null, next);
                         }
-                        var payMax = (config.warPay > 20 ? 20 : config.warPay);
-                        var warPay = (data_autoInfo.paynum ? data_autoInfo.paynum : 0);
-                        if (payMax > 0 && (warPay < payMax)) {
-                            for (var i = warPay; i < payMax; ++i) {
-                                var data_addpay = yield this.sendMsg("League", "addpay", null, next);
+                        if (this.checkDiamondEnough("国家热情")) {
+                            var payMax = (config.warPay > 20 ? 20 : config.warPay);
+                            var warPay = (data_autoInfo.paynum ? data_autoInfo.paynum : 0);
+                            if (payMax > 0 && (warPay < payMax)) {
+                                for (var i = warPay; i < payMax; ++i) {
+                                    var data_addpay = yield this.sendMsg("League", "addpay", null, next);
+                                }
                             }
                         }
                     }
@@ -1743,6 +1824,9 @@ Base.extends("GameConnection", {
             }
             var used = (data.morale - 100) / 20;
             for (var i = used; i < faceUse; ++i) {
+                if (!this.checkDiamondEnough("国战笑脸")) {
+                    break;
+                }
                 var data_inspire = yield this.sendMsg("League", "inspire", null, next);
                 if (!data_inspire) {
                     break;
@@ -2160,6 +2244,9 @@ Base.extends("GameConnection", {
                         if (item.res.indexOf("x_coin") >= 0) {
                             var buy_max = (config.xcoin > item.max ? item.max : config.xcoin);
                             for (var j = item.num; j < buy_max; ++j) {
+                                if (!this.checkDiamondEnough("暗金币")) {
+                                    break;
+                                }
                                 var data_exchange = yield this.sendMsg("ActGoldSign", "exchange", {id:item.id}, next);
                                 if (!data_exchange) {
                                     this.log("ActGoldSign", "exchange", "failed", j);
@@ -2212,7 +2299,13 @@ Base.extends("GameConnection", {
                 if (data && typeof(data.num) == "number") {
                     var nekoNum = (config.nekoMax > 10 ? 10 : config.nekoMax);
                     for (var i = data.num; i < nekoNum; ++i) {
+                        if (!this.checkDiamondEnough("招财猫")) {
+                            break;
+                        }
                         var data_neko = yield this.sendMsg("ActNeko", "knock", null, next);
+                        if (!data_neko) {
+                            break;
+                        }
                     }
                 }
             }
@@ -2378,6 +2471,7 @@ Base.extends("GameConnection", {
 
             //var data = yield this.sendMsg("Comment", "getTops", {heroid:70019}, next);
             //var data = yield this.sendMsg("RoleMerge", "decompose", {type:0,value:"1,2,3,4",op:1}, next);
+            //var data = yield this.sendMsg("RoleExplore", "update", {type:'', login:1}, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);

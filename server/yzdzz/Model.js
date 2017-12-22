@@ -6,6 +6,8 @@ require("../StateManager");
 require("./Database");
 require("./GameController");
 
+var assert = require("assert");
+
 GAME_ACCOUNTS_CONFIG = "GameAcounts.d";
 GAME_DEFAULTS_CONFIG = "GameDefaults.d";
 GAME_SETTING_CONFIG = "GameSetting.d";
@@ -214,6 +216,16 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 this.startRefreshUnionwar(playerKey, unionwarConfig);
             }
             var defaultsStates = $StateManager.getState(GAME_DEFAULTS_CONFIG);
+            var configOps = {};
+            for (var i = 0; i < defaultsStates.automationOrder.length; ++i) {
+                var op = defaultsStates.automationOrder[i];
+                configOps[op] = true;
+                assert(defaultsStates.automation[op], " ===== '{0}' doesn't exist".format(op));
+            }
+            for (var op in defaultsStates.automation) {
+                assert(configOps[op], " ===== must define order for '{0}'".format(op));
+            }
+            this.controller.setAutomationOrder(defaultsStates.automationOrder);
             this.controller.startDailyTask(defaultsStates.dailyTask);
             this.controller.setRepeatRange(defaultsStates.repeatRange.start, defaultsStates.repeatRange.end);
             this.controller.setTargetingEvent(defaultsStates.targeting);

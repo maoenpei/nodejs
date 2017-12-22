@@ -403,6 +403,10 @@ var displayAutomationModel = {
     servers: ["s96", "s95", "s94", "s93", ],
     levels: ["账号"],
     configProps: [
+        {name: "autoSpecial", desc: "全局设置", props: [
+            {name: "stopInShort", desc: "白钻低于临界值停止消耗", type: "check"},
+            {name: "limitOfShort", desc: "白钻临界值", type: "number", limit: [0, 6], alias:["0", "100", "200", "500", "1000", "2000", "5000"]},
+        ]},
         {name: "autoBenefit", desc: "有益无害", props: [
             {name: "sign", desc: "打卡", type: "check"},
             {name: "vip", desc: "三卡", type: "check"},

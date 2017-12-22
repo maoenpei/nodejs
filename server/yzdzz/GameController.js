@@ -80,6 +80,9 @@ Base.extends("GameController", {
         this.lastPlayerInfo[accountGameKey] = brief;
     },
 
+    setAutomationOrder:function(order) {
+        this.automationOrder = order;
+    },
     setPlayerAutomation:function(playerData, autoConfigs) {
         return this.appendRefresh(playerData, "automation", 2, (conn, done) => {
             this.refreshAutomation(conn, autoConfigs, done);
@@ -1298,16 +1301,15 @@ Base.extends("GameController", {
     refreshAutomation:function(conn, autoConfigs, done) {
         var next = coroutine(function*() {
             console.log("refreshAutomation..", conn.getGameInfo().name);
-            for (var op in autoConfigs) {
-                if (op == "disabled") {
-                    continue;
-                }
+            for (var i = 0; i < this.automationOrder.length; ++i) {
+                var op = this.automationOrder[i];
                 var config = autoConfigs[op];
-                if (!config.disabled) {
+                if (config && !config.disabled) {
                     //console.log("auto", op, config);
                     yield conn[op].call(conn, config, next);
                 }
             }
+            yield conn.speakWithDiamondShort(next);
             safe(done)();
         }, this);
     },

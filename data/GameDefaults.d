@@ -1,6 +1,10 @@
 {
     "automation":{
-        "autoBenefit":{
+        "autoSpecial":{
+            "stopInShort":true
+            ,"limitOfShort":1
+        }
+        ,"autoBenefit":{
             "sign":true
             ,"vip":true
             ,"friend":true
@@ -50,6 +54,23 @@
             ,"meal":true
         }
     }
+    ,"automationOrder":[
+        "autoSpecial"
+        ,"autoBenefit"
+        ,"autoForward"
+        ,"autoGoblin"
+        ,"autoMaze"
+        ,"autoFriendWar"
+        ,"autoLadder"
+        ,"autoLeague"
+        ,"autoLeaguewar"
+        ,"autoUnion"
+        ,"autoArena"
+        ,"autoRich"
+        ,"autoConsume"
+        ,"autoXReward"
+        ,"autoReward"
+    ]
     ,"periodic":{
         "interval":360
     }
