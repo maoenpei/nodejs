@@ -1374,7 +1374,7 @@ Base.extends("GameConnection", {
                 };
                 var hasUnrecognized = false;
                 var GetBuyIds = (data) => {
-                    var buyIds = [];
+                    var buyItems = [];
                     for (var id in data.list) {
                         if (data.list[id] == 1) {
                             var info = Database.goblinInfo(id);
@@ -1383,19 +1383,23 @@ Base.extends("GameConnection", {
                                 hasUnrecognized = true;
                                 break;
                             } else if (ShouldBuy(info)) {
-                                buyIds.push(id);
+                                buyItems.push({
+                                    id: id,
+                                    price: (info.useDiamond ? info.price : 0),
+                                });
                             }
                         }
                     }
-                    return buyIds;
+                    return buyItems;
                 };
                 // Check timed refresh
-                var buyIds = GetBuyIds(data);
-                for (var i = 0; i < buyIds.length; ++i) {
+                var buyItems = GetBuyIds(data);
+                for (var i = 0; i < buyItems.length; ++i) {
+                    var buyItem = buyItems[i];
                     if (!this.checkDiamondEnough("商店")) {
                         return safe(done)({});
                     }
-                    var data_buy = yield this.sendMsg("ActGoblin", "buy", {id:buyIds[i]}, next);
+                    var data_buy = yield this.sendMsg("ActGoblin", "buy", {id:buyItem.id}, next);
                     if (!data_buy) {
                         break;
                     }
@@ -1411,12 +1415,13 @@ Base.extends("GameConnection", {
                     if (!data_refresh || !data_refresh.list) {
                         break;
                     }
-                    var buyIds = GetBuyIds(data_refresh);
-                    for (var i = 0; i < buyIds.length; ++i) {
+                    var buyItems = GetBuyIds(data_refresh);
+                    for (var i = 0; i < buyItems.length; ++i) {
+                        var buyItem = buyItems[i];
                         if (!this.checkDiamondEnough("商店")) {
                             return safe(done)({});
                         }
-                        var data_buy = yield this.sendMsg("ActGoblin", "buy", {id:buyIds[i]}, next);
+                        var data_buy = yield this.sendMsg("ActGoblin", "buy", {id:buyItem.id}, next);
                         if (!data_buy) {
                             break;
                         }

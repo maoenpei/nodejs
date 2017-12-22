@@ -23,11 +23,17 @@ Database.goblinInfo = function(id) {
     if (!reduceInfo || !goblin_info) {
         return null;
     }
+    var priceInfo = this.goblin_price[goblin_info.item_id];
+    if (typeof(priceInfo) == "object") {
+        priceInfo = priceInfo[goblin_info.buy];
+    }
+    var price = (priceInfo == 10000 ? 0 : priceInfo * goblin_info.count) / goblin_info.buy;
     return {
         reduce: reduceInfo,
         itemName: goblin_info.item_id,
         buyCount: goblin_info.count,
         useDiamond: goblin_info.buy == 2,
+        price: price,
     };
 }
 
@@ -360,6 +366,23 @@ Database.goblin_reduce = {
     "10": 5,
     "11": 5,
     "12": 3,
+};
+
+Database.goblin_price = {
+    "coin": 1,
+    "summon_book": {"1":480, "2":180},
+    "stone_piece_random_3": 10000,
+    "stone_piece_random_4": 10000,
+    "stone_piece_random_5": 10000,
+    "stone_piece_random_6": 24,
+    "stone_piece_random_7": 30,
+    "food_2": 4,
+    "food_3": 10,
+    "food_4": 20,
+    "food_5": 10000,
+    "food_6": 10000,
+    "dungeon_dice": 20,
+    "hero_upgrade_card_piece": 200,
 };
 
 Database.heros = {
