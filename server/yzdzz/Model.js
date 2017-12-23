@@ -99,6 +99,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
 
             var allPowerMax = $StateManager.getState(GAME_POWER_MAX_CONFIG);
             this.playersMd5 = this.getTag(allPowerMax);
+            this.updatePlayerIdKeys();
             this.controller.restorePlayers(allPowerMax);
             var allUnions = $StateManager.getState(GAME_UNIONS_CONFIG);
             this.unionMd5 = this.getTag(allUnions);
@@ -236,6 +237,17 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             safe(done)();
         }, this);
     },
+    updatePlayerIdKeys:function() {
+        var allPowerMax = $StateManager.getState(GAME_POWER_MAX_CONFIG);
+        for (var playerId in allPowerMax) {
+            if (!this.playerId2RandKey[playerId]) {
+                var randKey = rkey();
+                while(this.randKey2PlayerId[randKey]) { randKey = rkey(); }
+                this.playerId2RandKey[playerId] = randKey;
+                this.randKey2PlayerId[randKey] = playerId;
+            }
+        }
+    },
     doRefresh:function(refreshType) {
         var invokeNoConflictions = () => {
             if (this.onRefreshEnd.length > 0) {
@@ -255,14 +267,9 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                     this.playersMd5 = md5;
                     var allPowerMax = $StateManager.getState(GAME_POWER_MAX_CONFIG);
                     for (var playerId in players) {
-                        if (!this.playerId2RandKey[playerId]) {
-                            var randKey = rkey();
-                            while(this.randKey2PlayerId[randKey]) { randKey = rkey(); }
-                            this.playerId2RandKey[playerId] = randKey;
-                            this.randKey2PlayerId[randKey] = playerId;
-                        }
                         allPowerMax[playerId] = players[playerId];
                     }
+                    this.updatePlayerIdKeys();
                     yield $StateManager.commitState(GAME_POWER_MAX_CONFIG, next);
                 }
                 // Save all unions
@@ -706,7 +713,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             reachPLID: this.randKey2PlayerId[targeting.reachPLID] || "",
             disableEmperor: this.getSettingBool(targeting.disableEmperor),
             allowAssign: this.getSettingBool(targeting.allowAssign),
-            minStar: this.getSettingNumber(targeting.minStar, 1, 10, 0),
+            minStar: this.getSettingNumber(targeting.minStar, 1, 10, 1),
             forceEmperor: this.getSettingBool(targeting.forceEmperor),
         };
         if (targetingConfig.reachPLID == "" && !targetingConfig.allowAssign) {
