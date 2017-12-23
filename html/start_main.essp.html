@@ -47,124 +47,6 @@
         </div>
     </div>
 </script>
-<script type="text/x-handlebars-template" class="hd_automation_settings">
-    <div class="div_auto_setting_content">
-        {{#if targeting}}
-        <div class="div_auto_setting_targeting common_block">
-            <div class="div_auto_setting_detail">
-                <div class="div_auto_setting_name">帝国战目标</div>
-            </div>
-            <div class="div_auto_setting_props">
-                <div class="div_auto_setting_detail">
-                    <div class="div_auto_setting_prop_name">追踪玩家</div>
-                    <select class="select_auto_setting_players">
-                        {{#each players}}
-                        <option value="{{key}}">{{display}}</option>
-                        {{/each}}
-                    </select>
-                </div>
-                <div class="div_auto_setting_detail">
-                    <div class="div_auto_setting_prop_name">不追进皇帝战</div>
-                    <input type="checkbox" class="ctrl_setting_config_prop_no_emperor">
-                </div>
-                <div class="div_auto_setting_detail">
-                    <div class="div_auto_setting_prop_name">允许系统分配</div>
-                    <input type="checkbox" class="ctrl_setting_config_prop_assign">
-                </div>
-                <div class="div_auto_setting_detail">
-                    <div class="div_auto_setting_prop_name">最低可接受帝侯</div>
-                    <select class="select_auto_setting_minstar">
-                        {{#each stars}}
-                        <option value="{{value}}">{{desc}}</option>
-                        {{/each}}
-                    </select>
-                </div>
-                <div class="div_auto_setting_detail">
-                    <div class="div_auto_setting_prop_name">只加入皇帝战</div>
-                    <input type="checkbox" class="ctrl_setting_config_prop_only_emperor">
-                </div>
-            </div>
-        </div>
-        {{/if}}
-        {{#if dropping}}
-        <div class="div_auto_setting_dropping common_block">
-            <div class="div_auto_setting_detail">
-                <div class="div_auto_setting_name">帝国战丢卡</div>
-            </div>
-            <div class="div_auto_setting_props">
-                <div class="div_auto_setting_detail">
-                    <div class="div_auto_setting_prop_name">允许自动丢卡</div>
-                    <input type="checkbox" class="ctrl_setting_config_prop_drop">
-                </div>
-            </div>
-        </div>
-        {{/if}}
-        {{#if heroshop}}
-        <div class="div_auto_setting_heroshop common_block">
-            <div class="div_auto_setting_detail">
-                <div class="div_auto_setting_name">共享勇者商店数据</div>
-            </div>
-            <div class="div_auto_setting_props">
-                <div class="div_auto_setting_detail">
-                    <div class="div_auto_setting_prop_name">启用共享</div>
-                    <input type="checkbox" class="ctrl_setting_config_prop_heroshop_enable">
-                </div>
-                <div class="div_auto_setting_detail">
-                    <div class="div_auto_setting_prop_name">该折扣率以下自动预留</div>
-                    <select class="ctrl_setting_config_prop_heroshop_reduce">
-                        <option val="50">50</option>
-                        <option val="51">51</option>
-                        <option val="52">52</option>
-                        <option val="53">53</option>
-                        <option val="54">54</option>
-                        <option val="55">55</option>
-                        <option val="56">56</option>
-                        <option val="57">57</option>
-                        <option val="58">58</option>
-                        <option val="59">59</option>
-                        <option val="60">60</option>
-                    </select>
-                </div>
-                <div class="div_auto_setting_detail">
-                    <div class="div_auto_setting_prop_name">刷新次数</div>
-                    <select class="ctrl_setting_config_prop_heroshop_refresh">
-                        <option val="0">0</option>
-                        <option val="1">1</option>
-                        <option val="2">2</option>
-                        <option val="3">3</option>
-                        <option val="4">4</option>
-                        <option val="5">5</option>
-                        <option val="6">6</option>
-                        <option val="7">7</option>
-                        <option val="8">8</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-        {{/if}}
-        {{#if unionwar}}
-        <div class="div_auto_setting_unionwar common_block">
-            <div class="div_auto_setting_detail">
-                <div class="div_auto_setting_name">领地战(周日除外)</div>
-            </div>
-            <div class="div_auto_setting_props">
-                <div class="div_auto_setting_detail">
-                    <div class="div_auto_setting_prop_name">启用领地战</div>
-                    <input type="checkbox" class="ctrl_setting_config_prop_unionwar_enable">
-                </div>
-                <div class="div_auto_setting_detail">
-                    <div class="div_auto_setting_prop_name">只进入有占领需要的领地</div>
-                    <input type="checkbox" class="ctrl_setting_config_prop_unionwar_limited">
-                </div>
-                <div class="div_auto_setting_detail">
-                    <div class="div_auto_setting_prop_name">从低到高占领(给小号用)</div>
-                    <input type="checkbox" class="ctrl_setting_config_prop_unionwar_reverse">
-                </div>
-            </div>
-        </div>
-        {{/if}}
-    </div>
-</script>
 <script type="text/x-handlebars-template" class="hd_automation_player_servers">
         <select class="select_player_servers">
             {{#each servers}}
@@ -205,11 +87,13 @@
         <div class="div_auto_config_block common_block">
             <div class="div_auto_config_detail">
                 <div class="div_auto_config_name">{{name}}</div>
+                {{#if hasCheck}}
                 <input type="checkbox" class="input_check_auto_config"
                     {{#if enabled}}
                     checked
                     {{/if}}
                 >
+                {{/if}}
             </div>
             <div class="div_auto_config_props">
                 {{#each properties}}

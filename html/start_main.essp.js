@@ -500,6 +500,28 @@ var displayAutomationModel = {
             {name: "meal", desc: "勇者餐馆", type: "check"},
         ]},
     ],
+    settingProps: [
+        {name: "targeting", desc: "帝国战目标", props:[
+            {name: "reachPLID", desc: "追踪玩家", type: "players", isStr: true},
+            {name: "disableEmperor", desc: "不追进皇帝战", type: "check"},
+            {name: "allowAssign", desc: "允许系统分配", type: "check"},
+            {name: "minStar", desc: "最低可接受帝侯", type: "stars", default:1},
+            {name: "forceEmperor", desc: "只加入皇帝战", type: "check"},
+        ]},
+        {name: "dropping", desc: "帝国战丢卡", props:[
+            {name: "allowDrop", desc: "允许自动丢卡", type: "check"},
+        ]},
+        {name: "heroshop", desc: "共享勇者商店数据", props:[
+            {name: "enabled", desc: "启用共享", type: "check"},
+            {name: "maxReduce", desc: "该折扣率以下自动预留", type: "number", limit: [50, 60], default:55},
+            {name: "refresh", desc: "刷新次数", type: "number", limit: [0, 8]},
+        ]},
+        {name: "unionwar", desc: "领地战(周日除外)", props:[
+            {name: "enabled", desc: "启用领地战", type: "check"},
+            {name: "onlyOccupy", desc: "只进入有占领需要的领地", type: "check"},
+            {name: "reverseOrder", desc: "从低到高占领(给小号用)", type: "check"},
+        ]},
+    ],
 };
 
 displayAutomationModel.get = function(callback) {
@@ -514,13 +536,13 @@ displayAutomationModel.getPlayerSelections = function() {
     if (!this.selectablePlayers)
     {
         this.selectablePlayers = [
-            {key: "", display: "无目标"}
+            {value: "", desc: "无目标"}
         ];
         for (var i = 0; i < this.players.length; ++i) {
             var player = this.players[i];
             this.selectablePlayers.push({
-                key: player.key,
-                display: player.server + "." + player.uShort + " " + player.name + " " + Math.floor(player.power / 10000) + "万",
+                value: player.key,
+                desc: player.server + "." + player.uShort + " " + player.name + " " + Math.floor(player.power / 10000) + "万",
             });
         }
     }
@@ -570,6 +592,9 @@ displayAutomationModel.getMaxPlayer = function(account) {
 }
 displayAutomationModel.getConfigProps = function() {
     return this.configProps;
+}
+displayAutomationModel.getSettingProps = function() {
+    return this.settingProps;
 }
 displayAutomationModel.getLevels = function() {
     return this.levels;
@@ -796,7 +821,6 @@ function displayAutomation() {
         var autoItemTemplate = templates.read(".hd_automation_item");
         var autoConfigPropTemplate = templates.read(".hd_automation_config_item");
         var autoPlayerServersTemplate = templates.read(".hd_automation_player_servers");
-        var autoSettingsTemplate = templates.read(".hd_automation_settings");
 
         var allCommands = [displayAccounts, displayPlayers, displayCatalog, displayDetail];
         var displayCommands = function(rightCommand, leftCommand) {
@@ -988,131 +1012,104 @@ function displayAutomation() {
                 displayDetail();
             });
         }
+        var displayProperties = function(divContent, propertyInfo, propertyExtraInfo, propertyValues, commitValue) {
+            var properties = [];
+            for (var j = 0; j < propertyInfo.props.length; ++j) {
+                var prop = propertyInfo.props[j];
+                var value = propertyValues[prop.name];
+                value = (typeof(value) == "undefined" ? prop.default : value);
+                var property = {
+                    name: prop.desc,
+                    value: value,
+                };
+                var fixedProperties = propertyExtraInfo[prop.type];
+                if (prop.type == "check") {
+                    property.type_check = true;
+                } else if (prop.type == "number") {
+                    property.type_options = true;
+                    property.options = [];
+                    var aliasIndex = 0;
+                    for (var k = prop.limit[0]; k <= prop.limit[1]; ++k) {
+                        property.options.push({
+                            val: k,
+                            desc: (prop.alias ? prop.alias[aliasIndex++] : k),
+                            selected: value == k,
+                        });
+                    }
+                } else if (fixedProperties) {
+                    property.type_options = true;
+                    property.options = [];
+                    for (var i = 0; i < fixedProperties.length; ++i) {
+                        property.options.push({
+                            val: fixedProperties[i].value,
+                            desc: fixedProperties[i].desc,
+                            selected: value == fixedProperties[i].value,
+                        });
+                    }
+                }
+                properties.push(property);
+            }
+            var divConfigPropBlock = $(autoConfigPropTemplate({
+                name: propertyInfo.desc,
+                hasCheck: !!propertyExtraInfo.hasCheck,
+                enabled: !propertyValues.disabled,
+                properties: properties,
+            }));
+            divConfigPropBlock.appendTo(divContent);
+
+            if (propertyExtraInfo.hasCheck) {
+                var inputEnableConfig = divConfigPropBlock.find(".input_check_auto_config");
+                inputEnableConfig.change(function() {
+                    propertyValues.disabled = (inputEnableConfig.is(":checked") ? undefined : true);
+                    commitValue();
+                });
+            }
+            var controls = divConfigPropBlock.find(".ctrl_auto_config_prop");
+            for (var j = 0; j < propertyInfo.props.length; ++j) {
+                (function() {
+                    var prop = propertyInfo.props[j];
+                    var property = properties[j];
+                    var inputPropertyBlock = $(controls[j]);
+                    if (property.type_check) {
+                        inputPropertyBlock.change(function() {
+                            propertyValues[prop.name] = inputPropertyBlock.is(":checked");
+                            commitValue();
+                        });
+                    } else if (property.type_options) {
+                        inputPropertyBlock.change(function() {
+                            var changedVal = inputPropertyBlock.val();
+                            propertyValues[prop.name] = (prop.isStr ? changedVal : Number(changedVal));
+                            commitValue();
+                        });
+                    }
+                })();
+            }
+        }
         function displaySetting() {
             displayCommands();
 
             var lastPlayer = displayAutomationModel.getLastPlayer();
-            divAutomationContent.html("");
-            var templateData = {
-                players: displayAutomationModel.getPlayerSelections(),
-                stars: displayAutomationModel.getKingwarStars(),
-            };
-            var targeting = lastPlayer.copy_settings.targeting;
-            templateData.targeting = !!targeting;
-            var dropping = lastPlayer.copy_settings.dropping;
-            templateData.dropping = !!dropping;
-            var heroshop = lastPlayer.copy_settings.heroshop;
-            templateData.heroshop = !!heroshop;
-            var unionwar = lastPlayer.copy_settings.unionwar;
-            templateData.unionwar = !!unionwar;
-            var divAutoSettingContent = $(autoSettingsTemplate(templateData));
-            divAutoSettingContent.appendTo(divAutomationContent);
-
             var configChanged = function() {
                 displayAutomationModel.saveSetting(lastPlayer, function(success) {
                     displaySetting();
                 });
             };
 
-            if (unionwar) {
-                var divHeroshopBlock = divAutoSettingContent.find(".div_auto_setting_unionwar");
-                var inputSettingUnionwarEnabled = divHeroshopBlock.find(".ctrl_setting_config_prop_unionwar_enable");
-                if (unionwar.enabled) {
-                    inputSettingUnionwarEnabled.attr("checked", "checked");
-                }
-                inputSettingUnionwarEnabled.change(function() {
-                    unionwar.enabled = inputSettingUnionwarEnabled.is(":checked");
-                    configChanged();
-                });
-                var inputSettingLimited = divHeroshopBlock.find(".ctrl_setting_config_prop_unionwar_limited");
-                if (unionwar.onlyOccupy) {
-                    inputSettingLimited.attr("checked", "checked");
-                }
-                inputSettingLimited.change(function() {
-                    unionwar.onlyOccupy = inputSettingLimited.is(":checked");
-                    configChanged();
-                });
-                var inputSettingReverse = divHeroshopBlock.find(".ctrl_setting_config_prop_unionwar_reverse");
-                if (unionwar.reverseOrder) {
-                    inputSettingReverse.attr("checked", "checked");
-                }
-                inputSettingReverse.change(function() {
-                    unionwar.reverseOrder = inputSettingReverse.is(":checked");
-                    configChanged();
-                });
-            }
-            if (heroshop) {
-                var divHeroshopBlock = divAutoSettingContent.find(".div_auto_setting_heroshop");
-                var inputSettingEnabled = divHeroshopBlock.find(".ctrl_setting_config_prop_heroshop_enable");
-                if (heroshop.enabled) {
-                    inputSettingEnabled.attr("checked", "checked");
-                }
-                inputSettingEnabled.change(function() {
-                    heroshop.enabled = inputSettingEnabled.is(":checked");
-                    configChanged();
-                });
-                var selectSettingReduce = divHeroshopBlock.find(".ctrl_setting_config_prop_heroshop_reduce");
-                selectSettingReduce.val(heroshop.maxReduce ? heroshop.maxReduce : 55);
-                selectSettingReduce.change(function() {
-                    heroshop.maxReduce = Number(selectSettingReduce.val());
-                    configChanged();
-                });
-                var selectSettingRefresh = divHeroshopBlock.find(".ctrl_setting_config_prop_heroshop_refresh");
-                selectSettingRefresh.val(heroshop.refresh);
-                selectSettingRefresh.change(function() {
-                    heroshop.refresh = Number(selectSettingRefresh.val());
-                    configChanged();
-                });
-            }
-            if (dropping) {
-                var divDroppingBlock = divAutoSettingContent.find(".div_auto_setting_dropping");
-                var inputSettingDrop = divDroppingBlock.find(".ctrl_setting_config_prop_drop");
-                if (dropping.allowDrop) {
-                    inputSettingDrop.attr("checked", "checked");
-                }
-                inputSettingDrop.change(function() {
-                    dropping.allowDrop = inputSettingDrop.is(":checked");
-                    configChanged();
-                });
-            }
-            if (targeting) {
-                var divTargetingBlock = divAutoSettingContent.find(".div_auto_setting_targeting");
-                var selectSettingPlayer = divTargetingBlock.find(".select_auto_setting_players");
-                selectSettingPlayer.val(targeting.reachPLID);
-                selectSettingPlayer.change(function() {
-                    targeting.reachPLID = selectSettingPlayer.val();
-                    configChanged();
-                });
-                var inputNoEmperor = divTargetingBlock.find(".ctrl_setting_config_prop_no_emperor");
-                if (targeting.disableEmperor) {
-                    inputNoEmperor.attr("checked", "checked");
-                }
-                inputNoEmperor.change(function() {
-                    targeting.disableEmperor = inputNoEmperor.is(":checked");
-                    configChanged();
-                });
-                var inputSettingAssign = divTargetingBlock.find(".ctrl_setting_config_prop_assign");
-                if (targeting.allowAssign) {
-                    inputSettingAssign.attr("checked", "checked");
-                }
-                inputSettingAssign.change(function() {
-                    targeting.allowAssign = inputSettingAssign.is(":checked");
-                    configChanged();
-                });
-                var selectSettingMinstar = divTargetingBlock.find(".select_auto_setting_minstar");
-                selectSettingMinstar.val((targeting.minStar ? targeting.minStar : 1));
-                selectSettingMinstar.change(function() {
-                    targeting.minStar = selectSettingMinstar.val();
-                    configChanged();
-                });
-                var inputOnlyEmperor = divTargetingBlock.find(".ctrl_setting_config_prop_only_emperor");
-                if (targeting.forceEmperor) {
-                    inputOnlyEmperor.attr("checked", "checked");
-                }
-                inputOnlyEmperor.change(function() {
-                    targeting.forceEmperor = inputOnlyEmperor.is(":checked");
-                    configChanged();
-                });
+            var propertyExtra ={
+                players: displayAutomationModel.getPlayerSelections(),
+                stars: displayAutomationModel.getKingwarStars(),
+            };
+            divAutomationContent.html("");
+            var settingProps = displayAutomationModel.getSettingProps();
+            for (var i = 0; i < settingProps.length; ++i) {
+                (function() {
+                    var settingInfo = settingProps[i];
+                    var settingValues = lastPlayer.copy_settings[settingInfo.name];
+                    if (!settingValues) {
+                        return;
+                    }
+                    displayProperties(divAutomationContent, settingInfo, propertyExtra, settingValues, configChanged);
+                })();
             }
         }
         function displayConfig() {
@@ -1134,60 +1131,7 @@ function displayAutomation() {
                     if (!configValues) {
                         return;
                     }
-                    var properties = [];
-                    for (var j = 0; j < configInfo.props.length; ++j) {
-                        var prop = configInfo.props[j];
-                        var value = configValues[prop.name];
-                        var property = {
-                            name: prop.desc,
-                            value: value,
-                        };
-                        if (prop.type == "check") {
-                            property.type_check = true;
-                        } else if (prop.type == "number") {
-                            property.type_options = true;
-                            property.options = [];
-                            var aliasIndex = 0;
-                            for (var k = prop.limit[0]; k <= prop.limit[1]; ++k) {
-                                property.options.push({
-                                    val: k,
-                                    desc: (prop.alias ? prop.alias[aliasIndex++] : k),
-                                    selected: k == value,
-                                });
-                            }
-                        }
-                        properties.push(property);
-                    }
-                    var divConfigPropBlock = $(autoConfigPropTemplate({
-                        name: configInfo.desc,
-                        enabled: !configValues.disabled,
-                        properties: properties,
-                    }));
-                    divConfigPropBlock.appendTo(divAutomationContent);
-
-                    var inputEnableConfig = divConfigPropBlock.find(".input_check_auto_config");
-                    inputEnableConfig.change(function() {
-                        configValues.disabled = (inputEnableConfig.is(":checked") ? undefined : true);
-                        configChanged();
-                    });
-                    var controls = divConfigPropBlock.find(".ctrl_auto_config_prop");
-                    for (var j = 0; j < configInfo.props.length; ++j) {
-                        (function() {
-                            var prop = configInfo.props[j];
-                            var inputPropertyBlock = $(controls[j]);
-                            if (prop.type == "number") {
-                                inputPropertyBlock.change(function() {
-                                    configValues[prop.name] = Number(inputPropertyBlock.val());
-                                    configChanged();
-                                });
-                            } else if (prop.type == "check") {
-                                inputPropertyBlock.change(function() {
-                                    configValues[prop.name] = inputPropertyBlock.is(":checked");
-                                    configChanged();
-                                });
-                            }
-                        })();
-                    }
+                    displayProperties(divAutomationContent, configInfo, {hasCheck:true}, configValues, configChanged);
                 })();
             }
         }

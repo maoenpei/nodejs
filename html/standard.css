@@ -162,7 +162,7 @@ input[type='checkbox']{
     margin: 0.2rem;
     padding: 0.2rem;
 }
-.div_auto_config_name, .div_auto_setting_name{
+.div_auto_config_name{
     display: inline-block;
     color: #ff0;
     font-size: 0.8rem;
@@ -171,11 +171,15 @@ input[type='checkbox']{
 }
 .input_check_auto_config{
 }
-.div_auto_config_prop_name, .div_auto_setting_prop_name{
+.div_auto_config_prop_name{
     display: inline-block;
     font-size: 0.5rem;
     color: #070;
     margin-right: 0.2rem;
+}
+.div_auto_config_props{
+}
+.ctrl_auto_config_prop{
 }
 
 .div_kingwar_sub_title_bar{
