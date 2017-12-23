@@ -29,14 +29,21 @@ Base.extends("GameValidator", {
         }
     },
     checkDaily:function(name) {
+        var currDay = this.peekDaily(name);
+        if (!currDay) {
+            return false;
+        }
+        this.commitDaily(name, currDay);
+        return true;
+    },
+    peekDaily:function(name) {
         var currDay = new Date().getDay();
         var lastDay = this.setDay[name];
         lastDay = (typeof(lastDay) != "undefined" ? lastDay : -1);
-        if (lastDay == currDay) {
-            return false;
-        }
-        this.setDay[name] = currDay;
-        return true;
+        return (lastDay == currDay ? null : currDay);
+    },
+    commitDaily:function(name, day) {
+        this.setDay[name] = day;
     },
     resetDaily:function() {
         this.setDay = {};
@@ -1487,7 +1494,8 @@ Base.extends("GameConnection", {
                     if (!data_change) {
                         return safe(done)({});
                     }
-                    if (config.randwalk) {
+                    var currDay = this.validator.peekDaily("autoMazeWalk");
+                    if (config.randwalk && currDay) {
                         var mazeInfo = this.getMazeInfo(data_change);
                         var available = this.getMazeAvailable(mazeInfo);
                         this.log("Maze walk", mazeId, mazeInfo.pos, mazeInfo.steps, available);
@@ -1500,7 +1508,7 @@ Base.extends("GameConnection", {
                                     break;
                                 }
                             }
-                            if (twoPos.length == 2 && this.validator.checkDaily("autoMazeWalk")) {
+                            if (twoPos.length == 2) {
                                 for (var i = 0; i < 20; ++i) {
                                     var posNext = twoPos[i % 2];
                                     var data_run = yield this.sendMsg("Maze", "run", posNext, next);
@@ -1509,6 +1517,7 @@ Base.extends("GameConnection", {
                                         break;
                                     }
                                 }
+                                this.validator.commitDaily("autoMazeWalk", currDay);
                             }
                         }
                     }
