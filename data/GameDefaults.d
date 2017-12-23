@@ -3,6 +3,7 @@
         "autoSpecial":{
             "stopInShort":true
             ,"limitOfShort":1
+            ,"tipsInPrivate":true
         }
         ,"autoBenefit":{
             "sign":true

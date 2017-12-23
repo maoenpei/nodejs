@@ -1085,6 +1085,9 @@ Base.extends("GameConnection", {
     },
     speakForAutomationResult:function(done) {
         var next = coroutine(function*() {
+            if (!this.tipsInPrivate) {
+                return safe(done)();
+            }
             var shortTypes = [];
             if (this.shortTypes) {
                 for (var typeName in this.shortTypes) {
@@ -1155,6 +1158,7 @@ Base.extends("GameConnection", {
                 }
                 return false;
             }
+            this.tipsInPrivate = config.tipsInPrivate;
             safe(done)({
                 success: true,
             });
@@ -1418,14 +1422,14 @@ Base.extends("GameConnection", {
                 var buyItems = GetBuyIds(data);
                 for (var i = 0; i < buyItems.length; ++i) {
                     var buyItem = buyItems[i];
-                    if (!this.checkDiamondEnough("商店")) {
+                    if (!this.checkDiamondEnough("商店购买")) {
                         return safe(done)({});
                     }
                     var data_buy = yield this.sendMsg("ActGoblin", "buy", {id:buyItem.id}, next);
                     if (!data_buy) {
                         return safe(done)({});
                     }
-                    if (!this.checkDiamondCost("商店", buyItem.price)) {
+                    if (!this.checkDiamondCost("商店购买", buyItem.price)) {
                         return safe(done)({});
                     }
                 }
@@ -1433,7 +1437,7 @@ Base.extends("GameConnection", {
                 var alreadyBuy = (3 - data.num) + data.buy;
                 var buyNum = (config.buyNum > 13 ? 13 : config.buyNum);
                 while(alreadyBuy < buyNum && !hasUnrecognized) {
-                    if (!this.checkDiamondEnough("商店")) {
+                    if (!this.checkDiamondEnough("商店刷新")) {
                         return safe(done)({});
                     }
                     var refreshCost = (alreadyBuy < 3 ? 0 : (alreadyBuy < 8 ? 20 : 50));
@@ -1441,20 +1445,20 @@ Base.extends("GameConnection", {
                     if (!data_refresh || !data_refresh.list) {
                         return safe(done)({});
                     }
-                    if (!this.checkDiamondCost("商店", refreshCost)) {
+                    if (!this.checkDiamondCost("商店刷新", refreshCost)) {
                         return safe(done)({});
                     }
                     var buyItems = GetBuyIds(data_refresh);
                     for (var i = 0; i < buyItems.length; ++i) {
                         var buyItem = buyItems[i];
-                        if (!this.checkDiamondEnough("商店")) {
+                        if (!this.checkDiamondEnough("商店购买")) {
                             return safe(done)({});
                         }
                         var data_buy = yield this.sendMsg("ActGoblin", "buy", {id:buyItem.id}, next);
                         if (!data_buy) {
                             return safe(done)({});
                         }
-                        if (!this.checkDiamondCost("商店", buyItem.price)) {
+                        if (!this.checkDiamondCost("商店购买", buyItem.price)) {
                             return safe(done)({});
                         }
                     }
@@ -1512,7 +1516,7 @@ Base.extends("GameConnection", {
                     var searchNum = (hour >= 0 && hour < 12 ? config.searchNumber0 : config.searchNumber);
                     searchNum = (searchNum > 13 ? 13 : searchNum);
                     for (var j = searchedNum; j < searchNum; ++j) {
-                        if (!this.checkDiamondEnough("迷宫")) {
+                        if (!this.checkDiamondEnough("迷宫刷新")) {
                             break;
                         }
                         var refreshCost = (j < 3 ? 0 : (j < 8 ? 20 : 50));
@@ -1520,7 +1524,7 @@ Base.extends("GameConnection", {
                         if (!data_search) {
                             break;
                         }
-                        if (!this.checkDiamondCost("迷宫", refreshCost)) {
+                        if (!this.checkDiamondCost("迷宫刷新", refreshCost)) {
                             break;
                         }
                     }
