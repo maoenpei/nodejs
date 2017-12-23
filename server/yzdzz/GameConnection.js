@@ -71,6 +71,7 @@ Base.extends("GameConnection", {
         this.itemsInfo = null;
         this.itemsQuick = null;
         this.itemsLock = new Mutex();
+        this.diamondCost = 0;
 
         this.sock = null;
 
@@ -199,6 +200,7 @@ Base.extends("GameConnection", {
             this.sock = sock;
             this.serverInfo = server;
             GameSock.receive(sock, (c, m, data, change) => {
+                this.updateDiamondCost(change);
                 if (change) {
                     //console.log("change happen -", c, m, change);
                     this.updateGameInfo(change);
@@ -1072,9 +1074,14 @@ Base.extends("GameConnection", {
     },
 
     speakTo:function(channel, message, done) {
-        this.sendMsg("Chat", "send", {type:channel, msg:message, uid:this.gameInfo.playerId}, () => {
-            safe(done)();
-        }, {hasUnicode:true});
+        var next = coroutine(function*() {
+            if (this.justSpeak) {
+                yield setTimeout(next, 3100);
+            }
+            var data = yield this.sendMsg("Chat", "send", {type:channel, msg:message, uid:this.gameInfo.playerId}, next, {hasUnicode:true});
+            this.justSpeak = true;
+            safe(done)(data);
+        }, this);
     },
     speakForAutomationResult:function(done) {
         var next = coroutine(function*() {
@@ -1090,18 +1097,34 @@ Base.extends("GameConnection", {
                 var hasTail = shortTypes.length > l;
                 shortTypes.splice(l, shortTypes.length - l);
                 var content = shortTypes.join("，");
-                if (this.justSpeak) {
-                    yield setTimeout(next, 3100);
-                }
-                yield this.speakTo(3, "钻石太少无法完成{0}{1}".format(content, (hasTail ? "..." : "")), next);
+                yield this.speakTo(3, "无法完成{0}{1}".format(content, (hasTail ? "..." : "")), next);
             }
             safe(done)();
         }, this);
     },
+    addShortTypes:function(typeName) {
+        this.shortTypes = (this.shortTypes ? this.shortTypes : {});
+        this.shortTypes[typeName] = true;
+    },
     checkDiamondEnough:function(typeName) {
         if (!safe(this.checkConsumeDiamond)()) {
-            this.shortTypes = (this.shortTypes ? this.shortTypes : {});
-            this.shortTypes[typeName] = true;
+            this.addShortTypes(typeName);
+            this.log("== Diamond Not Enough ==", typeName);
+            return false;
+        }
+        return true;
+    },
+    updateDiamondCost:function(change) {
+        if (change && typeof(change.ticket) == "number" && change.ticket < this.gameInfo.whiteDiamond) {
+            this.diamondCost = this.gameInfo.whiteDiamond - change.ticket;
+        } else {
+            this.diamondCost = 0;
+        }
+    },
+    checkDiamondCost:function(typeName, price) {
+        if (this.diamondCost != price) {
+            this.addShortTypes(typeName);
+            this.log("== Diamond Cost Mismatch == cost:{0}, expected:{1}".format(this.diamondCost, price), typeName);
             return false;
         }
         return true;
@@ -1276,8 +1299,7 @@ Base.extends("GameConnection", {
             }
             // auto speak
             if (config.speak && this.validator.checkDaily("autoSpeak")) {
-                var data = yield this.sendMsg("Chat", "send", {type:3,msg:"这游戏不错",uid:this.gameInfo.playerId}, next, {hasUnicode:true});
-                this.justSpeak = true;
+                var data_speak = yield this.speakTo(3, "这游戏不错", next);
             }
             // auto like hero
             if (config.herolike && this.validator.checkDaily("autoHeroLike")) {
@@ -1385,7 +1407,7 @@ Base.extends("GameConnection", {
                             } else if (ShouldBuy(info)) {
                                 buyItems.push({
                                     id: id,
-                                    price: (info.useDiamond ? info.price : 0),
+                                    price: (info.useDiamond ? info.price : 0) * info.reduce / 10,
                                 });
                             }
                         }
@@ -1401,7 +1423,10 @@ Base.extends("GameConnection", {
                     }
                     var data_buy = yield this.sendMsg("ActGoblin", "buy", {id:buyItem.id}, next);
                     if (!data_buy) {
-                        break;
+                        return safe(done)({});
+                    }
+                    if (!this.checkDiamondCost("商店", buyItem.price)) {
+                        return safe(done)({});
                     }
                 }
                 // Check manual refresh
@@ -1411,9 +1436,13 @@ Base.extends("GameConnection", {
                     if (!this.checkDiamondEnough("商店")) {
                         return safe(done)({});
                     }
+                    var refreshCost = (alreadyBuy < 3 ? 0 : (alreadyBuy < 8 ? 20 : 50));
                     var data_refresh = yield this.sendMsg("ActGoblin", "refresh", null, next);
                     if (!data_refresh || !data_refresh.list) {
-                        break;
+                        return safe(done)({});
+                    }
+                    if (!this.checkDiamondCost("商店", refreshCost)) {
+                        return safe(done)({});
                     }
                     var buyItems = GetBuyIds(data_refresh);
                     for (var i = 0; i < buyItems.length; ++i) {
@@ -1423,7 +1452,10 @@ Base.extends("GameConnection", {
                         }
                         var data_buy = yield this.sendMsg("ActGoblin", "buy", {id:buyItem.id}, next);
                         if (!data_buy) {
-                            break;
+                            return safe(done)({});
+                        }
+                        if (!this.checkDiamondCost("商店", buyItem.price)) {
+                            return safe(done)({});
                         }
                     }
                     alreadyBuy = (3 - data_refresh.num) + data_refresh.buy;
@@ -1475,15 +1507,20 @@ Base.extends("GameConnection", {
                             }
                         }
                     }
+                    var searchedNum = searched[mazeId];
                     var hour = new Date().getHours();
                     var searchNum = (hour >= 0 && hour < 12 ? config.searchNumber0 : config.searchNumber);
                     searchNum = (searchNum > 13 ? 13 : searchNum);
-                    for (var j = searched[mazeId]; j < searchNum; ++j) {
+                    for (var j = searchedNum; j < searchNum; ++j) {
                         if (!this.checkDiamondEnough("迷宫")) {
                             break;
                         }
+                        var refreshCost = (j < 3 ? 0 : (j < 8 ? 20 : 50));
                         var data_search = yield this.sendMsg("Maze", "search", null, next);
                         if (!data_search) {
+                            break;
+                        }
+                        if (!this.checkDiamondCost("迷宫", refreshCost)) {
                             break;
                         }
                     }
@@ -1706,7 +1743,14 @@ Base.extends("GameConnection", {
                             var warPay = (data_autoInfo.paynum ? data_autoInfo.paynum : 0);
                             if (payMax > 0 && (warPay < payMax)) {
                                 for (var i = warPay; i < payMax; ++i) {
+                                    var payCost = (i < 5 ? 20 : (i < 10 ? 30 : (i < 15 ? 40 : 50)));
                                     var data_addpay = yield this.sendMsg("League", "addpay", null, next);
+                                    if (!data_addpay) {
+                                        break;
+                                    }
+                                    if (!this.checkDiamondCost("国家热情", payCost)) {
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -1821,19 +1865,24 @@ Base.extends("GameConnection", {
                 return safe(done)({});
             }
 
+            yield this.readAllItems(next);
+            var faceCount = this.getItemCount("league_war_horn");
             var faceUse = (config.face > 200 ? 200 : config.face);
-            if (faceUse > 0 && !config.faceForce) {
-                yield this.readAllItems(next);
-                var faceCount = this.getItemCount("league_war_horn");
-                faceUse = (faceUse > faceCount ? faceCount : faceUse);
-            }
             var used = (data.morale - 100) / 20;
-            for (var i = used; i < faceUse; ++i) {
+            var faceToUse = (faceUse - used);
+            if (faceToUse > 0 && !config.faceForce) {
+                faceToUse = (faceToUse > faceCount ? faceCount : faceToUse);
+            }
+            for (var i = 0; i < faceToUse; ++i) {
                 if (!this.checkDiamondEnough("国战笑脸")) {
                     break;
                 }
+                var inspireCost = (i < faceCount ? 0 : 20);
                 var data_inspire = yield this.sendMsg("League", "inspire", null, next);
                 if (!data_inspire) {
+                    break;
+                }
+                if (!this.checkDiamondCost("国战笑脸", inspireCost)) {
                     break;
                 }
             }
@@ -2257,6 +2306,9 @@ Base.extends("GameConnection", {
                                     this.log("ActGoldSign", "exchange", "failed", j);
                                     break;
                                 }
+                                if (!this.checkDiamondCost("暗金币", 200)) {
+                                    break;
+                                }
                             }
                             break;
                         }
@@ -2307,8 +2359,12 @@ Base.extends("GameConnection", {
                         if (!this.checkDiamondEnough("招财猫")) {
                             break;
                         }
+                        var nekoCost = (i < 1 ? 0 : (i < 4 ? 20 : 50));
                         var data_neko = yield this.sendMsg("ActNeko", "knock", null, next);
                         if (!data_neko) {
+                            break;
+                        }
+                        if (!this.checkDiamondCost("招财猫", nekoCost)) {
                             break;
                         }
                     }
