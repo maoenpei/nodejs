@@ -16,7 +16,8 @@ GAME_UNIONS_CONFIG = "GameUnions.d";
 
 // TIMING
 // KINGWAR
-TEST_TYPE = "KINGWAR";
+// NOPE
+TEST_TYPE = "NOPE";
 
 var next = coroutine(function*() {
     var gameController = new GameController();
@@ -96,5 +97,9 @@ var next = coroutine(function*() {
             console.log("now!!", new Date());
             timingManager.unsetEvent(key);
         });
+    } else if (TEST_TYPE == "NOPE") {
+        for (var i = 0; i < 50; ++i) {
+            yield $StateManager.commitState(GAME_UNIONS_CONFIG, next);
+        }
     }
 });

@@ -7,6 +7,7 @@ Base.extends("$StateManager", {
     _constructor:function() {
         this.fileStates = {};
         this.canSave = {};
+        this.savingStates = {};
     },
     openState:function(fileName, done) {
         assert(!this.fileStates[fileName] && !this.canSave[fileName]);
@@ -27,9 +28,30 @@ Base.extends("$StateManager", {
         if (!this.canSave[fileName] || !this.fileStates[fileName]) {
             return later(done);
         }
-        var path = "/data/" + fileName;
-        var state = this.fileStates[fileName];
-        $FileManager.saveFile(path, JSON.stringify(state, null, 2), done);
+        var status = this.savingStates[fileName];
+        status = (status ? status : {});
+        this.savingStates[fileName] = status;
+        later(done);
+
+        if (!status.pending) {
+            status.pending = 1;
+            var doSave = () => {
+                var path = "/data/" + fileName;
+                var state = this.fileStates[fileName];
+                $FileManager.saveFile(path, JSON.stringify(state, null, 2), () => {
+                    if (status.pending > 1) {
+                        status.pending = 1;
+                        doSave();
+                    } else {
+                        status.pending = 0;
+                    }
+                });
+            };
+            doSave();
+        } else {
+            console.log("state saving pending...", fileName);
+            status.pending = 2;
+        }
     },
     stateModified:function(fileName, done) {
         if (!this.canSave[fileName] || !this.fileStates[fileName]) {
