@@ -107,6 +107,7 @@ Base.extends("GameConnection", {
 
     quit:function() {
         if (this.sock) {
+            this.log("quiting");
             this.sock.end();
             this.sock = null;
         }
@@ -118,7 +119,7 @@ Base.extends("GameConnection", {
             if (!obj || obj.code != 'SUCCESS') {
                 return safe(done)({});
             }
-            this.log("Login success!");
+            //this.log("Login success!");
             this.accountInfo = {
                 accessToken : obj.value.accessToken,
                 accountId : obj.value.channelUid,
@@ -196,7 +197,7 @@ Base.extends("GameConnection", {
             if (!sock) {
                 return safe(done)({});
             }
-            this.log("Connected with ip:{0}, port:{1}, server:{2}".format(server.ip, server.port, server.desc));
+            //this.log("Connected with ip:{0}, port:{1}, server:{2}".format(server.ip, server.port, server.desc));
             this.sock = sock;
             this.serverInfo = server;
             GameSock.receive(sock, (c, m, data, change) => {
@@ -259,7 +260,7 @@ Base.extends("GameConnection", {
             if (result != 'done') {
                 this.log("stat failed playerId:{0} error:{1}".format(this.gameInfo.playerId, JSON.stringify(result)));
             }
-            this.log("Player id:{0}, name:{1}, server delta:{2}, delay:{3}".format(this.gameInfo.playerId, this.gameInfo.name, deltaTime, delayTime));
+            this.log("Player id:{0}, server:{1} delta:{2}, delay:{3}".format(this.gameInfo.playerId, server.desc, deltaTime, delayTime));
             //var obj = yield GameHTTP.save(this.accountInfo.accountId, this.gameInfo.playerId, server.serverId, this.accountInfo.accessToken, next);
             //if (obj.code != 'SUCCESS') {
             //    this.log("save failed accountId:{0} code:{1} reason:{2}".format(this.accountInfo.playerId, obj.code, obj.desc));

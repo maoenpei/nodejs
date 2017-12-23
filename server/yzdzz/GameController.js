@@ -827,11 +827,13 @@ Base.extends("GameController", {
             forceTime.setSeconds(defaults.forceSec, 0);
             var next = coroutine(function*() {
                 var forceTargeting = false;
+                console.log("-- kingwar assignment -- try find target");
                 while(!this.constantKingwar && !forceTargeting) {
                     yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 3; }, next);
                     yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 5; }, next);
                     forceTargeting = (new Date() > forceTime);
                 }
+                console.log("-- kingwar assignment -- try auto assign");
                 if (!this.constantKingwar)
                 {
                     var targetingTaskManager = new TaskManager((tasks, total) => {
@@ -842,6 +844,7 @@ Base.extends("GameController", {
                     yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 3; }, next, targetingTaskManager);
                     yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 5; }, next);
                 }
+                console.log("-- kingwar assignment -- finished!");
                 this.setRefreshStatesOfType("kingwar", 1);
                 this.setRefreshStatesOfType("targeting", 3);
             }, this);
@@ -1073,7 +1076,7 @@ Base.extends("GameController", {
                 this.errLog("connectAccount", "account:{0}".format(refreshInfo.account));
                 return doEnd(true);
             }
-            console.log("start -- player!", refreshInfo.account, refreshInfo.server);
+            //console.log("start -- player!", refreshInfo.account, refreshInfo.server);
             var data = yield conn.loginAccount(next);
             if (!data.success) {
                 this.errLog("loginAccount", "account({0}), server({1})".format(refreshInfo.account, refreshInfo.server));
@@ -1092,7 +1095,7 @@ Base.extends("GameController", {
             for (var i = 0; i < executables.length; ++i) {
                 yield executables[i](conn, next, taskItem);
             }
-            console.log("quit -- player!", refreshInfo.account, refreshInfo.server, conn.getGameInfo().name);
+            //console.log("quit -- player!", refreshInfo.account, refreshInfo.server, conn.getGameInfo().name);
             conn.quit();
             doEnd();
         }, this);
@@ -1320,7 +1323,7 @@ Base.extends("GameController", {
     },
     refreshPlayerListing:function(conn, refreshData, done) {
         var next = coroutine(function*() {
-            console.log("refreshPlayerListing..", conn.getGameInfo().name);
+            //console.log("refreshPlayerListing..", conn.getGameInfo().name);
             var data = yield conn.getUnion(next); // dummy
             var data = yield conn.getUnionList(next);
             if (!data.unions) {
@@ -1401,7 +1404,7 @@ Base.extends("GameController", {
     },
     refreshKingwar:function(conn, refreshData, done) {
         var next = coroutine(function*() {
-            console.log("refreshKingwar..", conn.getGameInfo().name);
+            //console.log("refreshKingwar..", conn.getGameInfo().name);
             var area = refreshData.area;
             var star = refreshData.star;
             var server = conn.getServerInfo().desc;
