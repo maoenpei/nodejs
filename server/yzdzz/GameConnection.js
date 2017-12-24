@@ -2265,6 +2265,41 @@ Base.extends("GameConnection", {
                 // 勇者合成
                 var maxMergeLevel = (config.roleMerge > 7 ? 7 : config.roleMerge);
                 if (maxMergeLevel >= 1) {
+                    // 上羁绊
+                    var collectCheck = (done) => { later(done); };
+                    if (config.roleCollect) {
+                        collectCheck = (done) => {
+                            var tnext = coroutine(function*() {
+                                var data = yield this.sendMsg("Collect", "getinfo", null, tnext);
+                                if (data && data.list) {
+                                    for (var itemName in this.itemsInfo) {
+                                        var itemData = this.itemsInfo[itemName];
+                                        if (itemData.count == 0) {
+                                            continue;
+                                        }
+                                        var heroInfo = Database.heroCardInfo(itemName);
+                                        if (!heroInfo || heroInfo.level > maxMergeLevel) {
+                                            continue;
+                                        }
+                                        var collectInfo = Database.heroCollectInfo(itemName);
+                                        if (!collectInfo) {
+                                            continue;
+                                        }
+                                        var currCollect = data.list[collectInfo.collect];
+                                        if (!currCollect || !currCollect[collectInfo.pos]) {
+                                            var data_set = yield this.sendMsg("Collect", "set", {type:1, id:collectInfo.collect, pos:collectInfo.pos}, tnext);
+                                            if (!data_set) {
+                                                break;
+                                            }
+                                            this.log("collecting heros", itemName, currCollect, collectInfo);
+                                        }
+                                    }
+                                }
+                                safe(done)();
+                            }, this);
+                        };
+                        yield collectCheck(next);
+                    }
                     for (var level = 1; level <= maxMergeLevel; ++level) {
                         var heros = [];
                         var heroNames = [];
@@ -2277,7 +2312,7 @@ Base.extends("GameConnection", {
                             if (!heroInfo || heroInfo.level != level) {
                                 continue;
                             }
-                            this.log("enumerating heros:", heroInfo, "num:", itemData.details.length);
+                            //this.log("enumerating heros:", heroInfo, "num:", itemData.details.length);
                             for (var i = 0; i < itemData.details.length; ++i) {
                                 var detail = itemData.details[i];
                                 heros.push(detail.id);
@@ -2287,6 +2322,7 @@ Base.extends("GameConnection", {
                                 }
                             }
                         }
+                        var hasMerging = false;
                         var mergeNames = [];
                         var id_arr = [];
                         for (var i = 0; i < heros.length; ++i) {
@@ -2299,9 +2335,15 @@ Base.extends("GameConnection", {
                                 if (!data_merge) {
                                     break;
                                 }
+                                hasMerging = true;
                                 id_arr = [];
                                 mergeNames = [];
                             }
+                        }
+
+                        // check for merged heros
+                        if (hasMerging) {
+                            yield collectCheck(next);
                         }
                     }
                 }
@@ -2596,6 +2638,7 @@ Base.extends("GameConnection", {
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
+            //yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data, null, 2), next);
             return safe(done)();
         }, this);
     },

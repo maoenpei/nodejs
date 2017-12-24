@@ -44,6 +44,7 @@
             ,"dailyMerge":true
             ,"decompose":0
             ,"roleMerge":0
+            ,"roleCollect":true
         }
         ,"autoXReward":{"xwish":1,"xcoin":5}
         ,"autoReward":{

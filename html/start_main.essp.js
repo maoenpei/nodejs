@@ -494,6 +494,7 @@ var displayAutomationModel = {
                 "SS级以下合成SS+级",
                 "SS+级以下合成SSS级",
             ]},
+            {name: "roleCollect", desc: "对可合成的勇者优先放入羁绊", type: "check"},
         ]},
         {name: "autoXReward", desc: "暗金活动", props:[
             {name: "xwish", desc: "许愿次数", type: "number", limit: [0, 10]},
