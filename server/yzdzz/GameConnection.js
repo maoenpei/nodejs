@@ -2288,21 +2288,18 @@ Base.extends("GameConnection", {
                             }
                         }
                         var mergeNames = [];
-                        var id_arr = "";
-                        var arr_num = 0;
+                        var id_arr = [];
                         for (var i = 0; i < heros.length; ++i) {
                             mergeNames.push(heroNames[i]);
-                            var id = String(heros[i]);
-                            id_arr += (arr_num == 0 ? id : "," + id);
-                            arr_num ++;
-                            if (arr_num == 5) {
+                            id_arr.push(String(heros[i]));
+                            if (id_arr.length == 5) {
                                 this.log("merging heros", level, mergeNames);
-                                var data_merge = yield this.sendMsg("RoleMerge", "hero", {data:id_arr}, next);
+                                var id_str = id_arr.join(",");
+                                var data_merge = yield this.sendMsg("RoleMerge", "hero", {data:id_str}, next);
                                 if (!data_merge) {
                                     break;
                                 }
-                                arr_num = 0;
-                                id_arr = "";
+                                id_arr = [];
                                 mergeNames = [];
                             }
                         }
