@@ -4,7 +4,7 @@ require("../server/yzdzz/GameController");
 
 $FileManager.RootDirectory = __dirname + "/..";
 
-var account = {u:"13905903138", p:"mingming", s:"s96"};
+var account = {u:"13905903138", p:"mingiming", s:"s96"};
 //var account = {u:"18030367128", p:"1234567", s:"s96"};
 
 var doUnionWarTop = function(endFunc) {

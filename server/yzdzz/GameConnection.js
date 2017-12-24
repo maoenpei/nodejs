@@ -2592,6 +2592,7 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("RoleHero", "sethero", {pos:1,pid:95328}, next); // 换位置
             //var data = yield this.sendMsg("RoleHero", "getHeros", null, next); // 勇者阵容
             //var data = yield this.sendMsg("RoleWake", "getinfo", null, next);
+            //var data = yield this.sendMsg("Collect", "getinfo", null, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
