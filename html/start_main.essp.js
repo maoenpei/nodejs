@@ -403,6 +403,12 @@ var displayAutomationModel = {
     servers: ["s96", "s95", "s94", "s93", ],
     levels: ["账号"],
     configProps: [
+        {name: "autoArena", desc: "竞技场", props:[
+            {name: "boxMax", desc: "积分兑换次数", type: "number", limit: [3, 26]},
+            {name: "buyHeroSoul", desc: "是否购买蓝魂", type: "check"},
+            {name: "fightPlayer", desc: "是否攻击战力低的玩家", type: "check"},
+            {name: "fightMax", desc: "攻击次数", type: "number", limit: [0, 20]},
+        ]},
         {name: "autoSpecial", desc: "全局设置", props: [
             {name: "stopInShort", desc: "白钻低于临界值停止消耗", type: "check"},
             {name: "limitOfShort", desc: "白钻临界值", type: "number", limit: [0, 6], alias:["0", "100", "200", "500", "1000", "2000", "5000"]},
@@ -458,12 +464,6 @@ var displayAutomationModel = {
         ]},
         {name: "autoUnion", desc: "骑士团", props: [
             {name: "donateMax", desc: "贡献次数", type: "number", limit: [0, 10]},
-        ]},
-        {name: "autoArena", desc: "竞技场", props:[
-            {name: "boxMax", desc: "积分兑换次数", type: "number", limit: [3, 26]},
-            {name: "buyHeroSoul", desc: "是否购买蓝魂", type: "check"},
-            {name: "fightPlayer", desc: "是否攻击战力低的玩家", type: "check"},
-            {name: "fightMax", desc: "攻击次数", type: "number", limit: [0, 20]},
         ]},
         {name: "autoRich", desc: "秘境", props:[
             {name: "sweep", desc: "扫荡免费骰子", type: "check"},
