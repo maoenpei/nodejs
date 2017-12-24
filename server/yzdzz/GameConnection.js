@@ -30,7 +30,7 @@ Base.extends("GameValidator", {
     },
     checkDaily:function(name) {
         var currDay = this.peekDaily(name);
-        if (!currDay) {
+        if (typeof(currDay) != "number") {
             return false;
         }
         this.commitDaily(name, currDay);
@@ -2535,18 +2535,20 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("Role", "quick", null, next); // 活跃日历日常面板
             //var data = yield this.sendMsg("League", "startAutoWar", null, next); // 开启自动挂机
             //var data = yield this.sendMsg("League", "stopAutoWar", null, next); // 关闭自动挂机
-
+            //var data = yield this.sendMsg("Comment", "getCount", {id:80005}, next); // 勇者评论数目 {count:5}
             //var data = yield this.sendMsg("UnionWar", "cardlog", null, next); // 查看卡牌列表
             //var data = yield this.sendMsg("UnionWar", "ahead", null, next); // 查看名次信息
             //var data = yield this.sendMsg("UnionWar", "refreshCard", null, next); // 刷新可用卡牌
-            //var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next); //皇帝战
             //var data = yield this.sendMsg("Tavern", "getlog", {ids:"50016,60018,70041"}, next); // 可兑换勇者的状态
-            //var data = yield this.sendMsg("Comment", "getCount", {id:80005}, next); // 勇者评论数目 {count:5}
-            //var data = yield this.sendMsg("RoleTeam", "getWeaponTypes", null, next); // 获取专精等级
 
-            //var data = yield this.sendMsg("Comment", "getTops", {heroid:70019}, next);
-            //var data = yield this.sendMsg("RoleMerge", "decompose", {type:0,value:"1,2,3,4",op:1}, next);
-            //var data = yield this.sendMsg("RoleExplore", "update", {type:'', login:1}, next);
+            //var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next); //皇帝战
+            //var data = yield this.sendMsg("RoleTeam", "getWeaponTypes", null, next); // 获取专精等级
+            //var data = yield this.sendMsg("RoleMerge", "composeInfo", null, next); // 装备合成
+            //var data = yield this.sendMsg("RoleMerge", "decompose", {type:0,value:"1,2,3,4",op:1}, next); // 分解
+
+            //var data = yield this.sendMsg("RoleHero", "addexp", {pid:95503,sysid:"food_4", num:10}, next);
+            //var data = yield this.sendMsg("RoleHero", "getHeros", null, next); // 勇者阵容
+            //var data = yield this.sendMsg("RoleWake", "getinfo", null, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
