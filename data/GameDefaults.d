@@ -42,6 +42,7 @@
             ,"updateWeapon":false
             ,"dailyFeed":true
             ,"dailyMerge":true
+            ,"decompose":0
             ,"roleMerge":0
         }
         ,"autoXReward":{"xwish":1,"xcoin":5}

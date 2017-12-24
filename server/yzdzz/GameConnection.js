@@ -2252,6 +2252,16 @@ Base.extends("GameConnection", {
                         }
                     }
                 }
+                // 分解
+                if (config.decompose > 0) {
+                    var maxDecompose = (config.decompose > 6 ? 6 : config.decompose);
+                    var types = [];
+                    for (var i = 1; i <= maxDecompose; ++i) {
+                        types.push(String(i));
+                    }
+                    var typeStr = types.join(",");
+                    var data_decompose = yield this.sendMsg("RoleMerge", "decompose", {type:0,value:typeStr,op:1}, next);
+                }
                 // 勇者合成
                 var maxMergeLevel = (config.roleMerge > 7 ? 7 : config.roleMerge);
                 if (maxMergeLevel >= 1) {
