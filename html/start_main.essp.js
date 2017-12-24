@@ -473,6 +473,7 @@ var displayAutomationModel = {
             {name: "mergeItem", desc: "合成物品", type: "check"},
             {name: "tavern", desc: "使用契约书", type: "check"},
             {name: "updateWeapon", desc: "升级专精", type: "check"},
+            {name: "dailyFeed", desc: "每天吃100食物(只对已使用的勇者)", type: "check"},
             {name: "roleMerge", desc: "合成勇者", type: "number", limit:[0, 7], alias: [
                 "不合成",
                 "C级以下合成B级",

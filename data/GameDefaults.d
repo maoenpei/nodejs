@@ -40,6 +40,8 @@
             ,"mergeItem":false
             ,"tavern":false
             ,"updateWeapon":false
+            ,"dailyFeed":true
+            ,"dailyMerge":true
             ,"roleMerge":0
         }
         ,"autoXReward":{"xwish":1,"xcoin":5}

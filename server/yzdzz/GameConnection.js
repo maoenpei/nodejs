@@ -2218,6 +2218,32 @@ Base.extends("GameConnection", {
                         }
                     }
                 }
+                // 每日100食物
+                var toEat = null;
+                var foodNames = ["food_2", "food_3", "food_4", "food_5", "food_6"];
+                for (var i = 0; i < foodNames.length; ++i) {
+                    var foodName = foodNames[i];
+                    if (this.getItemCount(foodName) >= 100) {
+                        toEat = foodName;
+                        break;
+                    }
+                }
+                if (config.dailyFeed && toEat && this.validator.checkDaily("autoDailyFeed")) {
+                    var data = yield this.sendMsg("RoleHero", "getHeros", null, next);
+                    if (data && data.list) {
+                        for (var pid in data.list) {
+                            var heroData = data.list[pid];
+                            var data_set = yield this.sendMsg("RoleHero", "addexp", {pid:pid, sysid:toEat, num:100}, next);
+                            if (data_set) {
+                                this.log("eat food '{0}' for {1}".format(toEat, heroData.name));
+                                break;
+                            }
+                        }
+                    }
+                }
+                // 每日打造3次装备
+                if (config.dailyMerge && this.validator.checkDaily("autoDailyMerge")) {
+                }
                 // 勇者合成
                 var maxMergeLevel = (config.roleMerge > 7 ? 7 : config.roleMerge);
                 if (maxMergeLevel >= 1) {
@@ -2546,8 +2572,9 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("RoleMerge", "composeInfo", null, next); // 装备合成
             //var data = yield this.sendMsg("RoleMerge", "decompose", {type:0,value:"1,2,3,4",op:1}, next); // 分解
 
-            //var data = yield this.sendMsg("RoleHero", "addexp", {pid:95503,sysid:"food_4", num:10}, next);
-            //var data = yield this.sendMsg("RoleHero", "getHeros", null, next); // 勇者阵容
+            //var data = yield this.sendMsg("RoleHero", "addexp", {pid:95328,sysid:"food_2", num:100}, next); // 吃屎
+            //var data = yield this.sendMsg("RoleHero", "sethero", {pos:1,pid:95328}, next); // 换位置
+            var data = yield this.sendMsg("RoleHero", "getHeros", null, next); // 勇者阵容
             //var data = yield this.sendMsg("RoleWake", "getinfo", null, next);
 
             console.log(data);
