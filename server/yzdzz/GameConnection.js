@@ -2243,6 +2243,14 @@ Base.extends("GameConnection", {
                 }
                 // 每日打造3次装备
                 if (config.dailyMerge && this.validator.checkDaily("autoDailyMerge")) {
+                    for (var type = 1; type <= 3; ++type) {
+                        for (var level = 4; level >= 1; --level) {
+                            var data_compose = yield this.sendMsg("RoleMerge", "compose", {type:type, level:level, luckly:0}, next);
+                            if (data_compose) {
+                                break;
+                            }
+                        }
+                    }
                 }
                 // 勇者合成
                 var maxMergeLevel = (config.roleMerge > 7 ? 7 : config.roleMerge);
@@ -2566,15 +2574,16 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("UnionWar", "ahead", null, next); // 查看名次信息
             //var data = yield this.sendMsg("UnionWar", "refreshCard", null, next); // 刷新可用卡牌
             //var data = yield this.sendMsg("Tavern", "getlog", {ids:"50016,60018,70041"}, next); // 可兑换勇者的状态
+            //var data = yield this.sendMsg("RoleMerge", "composeInfo", null, next); // 打造幸运条
+            //var data = yield this.sendMsg("RoleMerge", "info", null, next); // 勇者刷新状态
 
             //var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next); //皇帝战
             //var data = yield this.sendMsg("RoleTeam", "getWeaponTypes", null, next); // 获取专精等级
-            //var data = yield this.sendMsg("RoleMerge", "composeInfo", null, next); // 装备合成
             //var data = yield this.sendMsg("RoleMerge", "decompose", {type:0,value:"1,2,3,4",op:1}, next); // 分解
 
             //var data = yield this.sendMsg("RoleHero", "addexp", {pid:95328,sysid:"food_2", num:100}, next); // 吃屎
             //var data = yield this.sendMsg("RoleHero", "sethero", {pos:1,pid:95328}, next); // 换位置
-            var data = yield this.sendMsg("RoleHero", "getHeros", null, next); // 勇者阵容
+            //var data = yield this.sendMsg("RoleHero", "getHeros", null, next); // 勇者阵容
             //var data = yield this.sendMsg("RoleWake", "getinfo", null, next);
 
             console.log(data);
