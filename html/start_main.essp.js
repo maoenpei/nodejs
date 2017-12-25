@@ -508,6 +508,7 @@ var displayAutomationModel = {
             {name: "shareWeekly", desc: "7天分享", type: "check"},
             {name: "actDaily", desc: "活跃日历", type: "check"},
             {name: "quest", desc: "任务", type: "check"},
+            {name: "heroGift", desc: "新勇者礼物", type: "check"},
             {name: "splendid", desc: "福利活动", type: "check"},
             {name: "meal", desc: "勇者餐馆", type: "check"},
         ]},

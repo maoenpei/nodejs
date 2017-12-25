@@ -55,6 +55,7 @@
             ,"shareWeekly":true
             ,"actDaily":true
             ,"quest":true
+            ,"heroGift":true
             ,"splendid":true
             ,"meal":true
         }

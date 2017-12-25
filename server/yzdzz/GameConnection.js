@@ -2430,6 +2430,9 @@ Base.extends("GameConnection", {
                         var card = data.luckcard[i];
                         if (card.state == 1) {
                             var data_luckCard = yield this.sendMsg("KingWar", "luckCardGift", {id: card.id}, next);
+                            if (!data_luckCard) {
+                                break;
+                            }
                         }
                     }
                 }
@@ -2440,6 +2443,9 @@ Base.extends("GameConnection", {
                     var data_rank = yield this.sendMsg("KingWar", "areaRank", {areaid:i}, next);
                     if (data_rank && data_rank.state == 1) {
                         var data_fetch = yield this.sendMsg("KingWar", "fetchAreaRes", {areaid:i}, next);
+                        if (!data_fetch) {
+                            break;
+                        }
                     }
                 }
                 var data_emperor = yield this.sendMsg("KingWar", "emperorRank", null, next);
@@ -2480,9 +2486,8 @@ Base.extends("GameConnection", {
                                 var data_reward = yield this.sendMsg("ActShare", "reward", {id:item.id}, next);
                                 if (!data_reward) {
                                     break;
-                                } else {
-                                    hasShare = true;
                                 }
+                                hasShare = true;
                             }
                         }
                     }
@@ -2502,6 +2507,9 @@ Base.extends("GameConnection", {
                         var item = data.list[i];
                         if (item.num >= item.max) {
                             var data_reward = yield this.sendMsg("ActActive", "reward", { id:item.id }, next);
+                            if (!data_reward) {
+                                break;
+                            }
                         }
                     }
                 }
@@ -2520,6 +2528,9 @@ Base.extends("GameConnection", {
                     }
                     for (var boxid in rewarded) {
                         var data_box = yield this.sendMsg("ActActive", "box", {id:boxid}, next);
+                        if (!data_box) {
+                            break;
+                        }
                     }
                 }
             }
@@ -2533,9 +2544,25 @@ Base.extends("GameConnection", {
                         for (var id in data.list) {
                             var item = data.list[id];
                             if (item.state == 1) {
-                                hasQuest = true;
                                 var data_quest = yield this.sendMsg("Quest", "done", {id:id}, next);
+                                if (!data_quest) {
+                                    break;
+                                }
+                                hasQuest = true;
                             }
+                        }
+                    }
+                }
+            }
+            // 勇者传记(新勇者礼物)
+            if (config.heroGift && this.validator.checkHourly("autoHeroGift")) {
+                var data = yield this.sendMsg("RoleScout", "getHeroNews", null, next);
+                if (data && data.list) {
+                    for (var i = 0; i < data.list.length; ++i) {
+                        var heroId = data.list[i];
+                        var data_reward = yield this.sendMsg("RoleScout", "getHeroReward", {id:heroId}, next);
+                        if (!data_reward) {
+                            break;
                         }
                     }
                 }
@@ -2550,6 +2577,9 @@ Base.extends("GameConnection", {
                             var boxItem = splendidItem.box[j];
                             if (boxItem.num >= boxItem.max && boxItem.done == 0) {
                                 var data_reward = yield this.sendMsg("ActSplendid", "reward", { actid: splendidItem.id, boxid: boxItem.id }, next);
+                                if (!data_reward) {
+                                    break;
+                                }
                             }
                         }
                     }
@@ -2588,6 +2618,9 @@ Base.extends("GameConnection", {
                     for (var id in rewards) {
                         if (data.list[id] != 1) {
                             var data_reward = yield this.sendMsg("ActMeal", "reward", { id:id }, next);
+                            if (!data_reward) {
+                                break;
+                            }
                         }
                     }
                 }
