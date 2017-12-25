@@ -10,6 +10,7 @@
             ,"vip":true
             ,"friend":true
             ,"email":true
+            ,"timeGift":true
             ,"tavern":true
             ,"specCard":true
             ,"redpacket":true

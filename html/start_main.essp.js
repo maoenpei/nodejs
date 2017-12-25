@@ -419,6 +419,7 @@ var displayAutomationModel = {
             {name: "vip", desc: "三卡", type: "check"},
             {name: "friend", desc: "好友送钻石", type: "check"},
             {name: "email", desc: "邮件", type: "check"},
+            {name: "timeGift", desc: "9万福利", type: "check"},
             {name: "tavern", desc: "契约之门", type: "check"},
             {name: "specCard", desc: "特典头像", type: "check"},
             {name: "redpacket", desc: "红包", type: "check"},

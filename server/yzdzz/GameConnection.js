@@ -258,6 +258,7 @@ Base.extends("GameConnection", {
                 name: data.role_name, // 名字
                 power: data.cpi, // 战力
 
+                hasTimeGift: !!(data.act_manygold), // 1
                 hasHeroReward: !!(data.act_goldenhero), // 2
                 hasXReward: !!(data.act_goldsign), // 2
                 hasRedPacket: !!(data.act_redpacket), // 2
@@ -1172,6 +1173,7 @@ Base.extends("GameConnection", {
             });
         }, this);
     },
+    timeGiftList:[1,2,3,5,7,9,12,15,20,25,30,40,50,60,80,100,120,140,160,180,200,220,240,260,280],
     autoBenefit:function(config, done) {
         var next = coroutine(function*() {
             // auto sign
@@ -1192,6 +1194,9 @@ Base.extends("GameConnection", {
                         var card = data.cards[i];
                         if (card.expire > 0 && card.daily == 1) {
                             var data_gift = yield this.sendMsg("Vip", "dailyGift", {id:card.id}, next);
+                            if (!data_gift) {
+                                break;
+                            }
                         }
                     }
                 }
@@ -1211,10 +1216,16 @@ Base.extends("GameConnection", {
                     }
                     for (var playerId in friends) {
                         var data_bless = yield this.sendMsg("Friend", "bless", {uid:playerId, type:1}, next);
+                        if (!data_bless) {
+                            break;
+                        }
                     }
                     for (var i = 0; i < data.bless_in.length; ++i) {
                         var playerData = data.bless_in[i];
                         var data_bless = yield this.sendMsg("Friend", "bless", {uid:playerData.uid, type:2}, next);
+                        if (!data_bless) {
+                            break;
+                        }
                     }
                 }
             }
@@ -1226,9 +1237,39 @@ Base.extends("GameConnection", {
                         var email = data.list[i];
                         if (email.state == 0) {
                             var data_read = yield this.sendMsg("RoleEmail", "read", {id: email.id}, next);
+                            if (!data_read) {
+                                break;
+                            }
                         }
                         if (email.attachment && email.state != 2) {
                             var data_fetch = yield this.sendMsg("RoleEmail", "fetch", {id: email.id}, next);
+                            if (!data_fetch) {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            // 9万福利
+            if (config.timeGift && this.gameInfo.hasTimeGift && this.validator.checkHourly("autoTimeGift")) {
+                var data = yield this.sendMsg("ActManyGold", "getinfo", null, next);
+                if (data && data.list) {
+                    for (var i = 0; i < this.timeGiftList.length; ++i) {
+                        var day = this.timeGiftList[i];
+                        if (day > data.days) {
+                            break;
+                        }
+                        if (!data.list[day] || data.list[day] == 2) {
+                            var data_reward = yield this.sendMsg("ActManyGold", "reward", {day:day, type:1}, next);
+                            if (!data_reward) {
+                                break;
+                            }
+                        }
+                        if (data.vip >= 2 && (!data.list[day] || data.list[day] == 1)) {
+                            var data_reward = yield this.sendMsg("ActManyGold", "reward", {day:day, type:2}, next);
+                            if (!data_reward) {
+                                break;
+                            }
                         }
                     }
                 }
@@ -1293,6 +1334,9 @@ Base.extends("GameConnection", {
                         var item = data.list[i];
                         if (item.req == "" && item.done == 0) {
                             var data_reward = yield this.sendMsg("ActRedpacket", "reward", { index:item.index }, next);
+                            if (!data_reward) {
+                                break;
+                            }
                         }
                     }
                 }
@@ -1305,6 +1349,9 @@ Base.extends("GameConnection", {
                         var item = data.list[i];
                         if (item.state == 1) {
                             var data_reward = yield this.sendMsg("ActGoldenHero", "reward", { index:item.index }, next);
+                            if (!data_reward) {
+                                break;
+                            }
                         }
                     }
                 }
