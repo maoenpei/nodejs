@@ -683,7 +683,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         if (this.compareSetting(kingwarConfig, settingStates.kingwar[playerKey])) {
             return false;
         }
-        console.log("set kingwar for player", playerKey);
+        console.log("set kingwar for player", playerKey, kingwarConfig);
         settingStates.kingwar[playerKey] = kingwarConfig;
         this.startRefreshKingwar(playerKey, kingwarConfig);
         return true;
@@ -702,7 +702,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         if (this.compareSetting(listingConfig, settingStates.listing[playerKey])) {
             return false;
         }
-        console.log("set listing for player", playerKey);
+        console.log("set listing for player", playerKey, listingConfig);
         settingStates.listing[playerKey] = listingConfig;
         this.startRefreshListing(playerKey, listingConfig);
         return true;
@@ -722,7 +722,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         if (this.compareSetting(targetingConfig, settingStates.targeting[playerKey])) {
             return false;
         }
-        console.log("set targeting for player", playerKey);
+        console.log("set targeting for player", playerKey, targetingConfig);
         settingStates.targeting[playerKey] = targetingConfig;
         this.startRefreshTargeting(playerKey, targetingConfig);
         return true;
@@ -738,7 +738,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         if (this.compareSetting(droppingConfig, settingStates.dropping[playerKey])) {
             return false;
         }
-        console.log("set dropping for player", playerKey);
+        console.log("set dropping for player", playerKey, droppingConfig);
         settingStates.dropping[playerKey] = droppingConfig;
         this.startRefreshDropping(playerKey, droppingConfig);
         return true;
@@ -756,7 +756,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         if (this.compareSetting(heroshopConfig, settingStates.heroshop[playerKey])) {
             return false;
         }
-        console.log("set heroshop for player", playerKey);
+        console.log("set heroshop for player", playerKey, heroshopConfig);
         settingStates.heroshop[playerKey] = heroshopConfig;
         this.startRefreshHeroshop(playerKey, heroshopConfig);
         return true;
@@ -774,7 +774,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         if (this.compareSetting(unionwarConfig, settingStates.unionwar[playerKey])) {
             return false;
         }
-        console.log("set unionwar for player", playerKey);
+        console.log("set unionwar for player", playerKey, unionwarConfig);
         settingStates.unionwar[playerKey] = unionwarConfig;
         this.startRefreshUnionwar(playerKey, unionwarConfig);
         return true;

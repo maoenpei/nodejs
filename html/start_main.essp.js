@@ -519,7 +519,7 @@ var displayAutomationModel = {
             {name: "reachPLID", desc: "追踪玩家", type: "players", isStr: true},
             {name: "disableEmperor", desc: "不追进皇帝战", type: "check"},
             {name: "allowAssign", desc: "允许系统分配", type: "check"},
-            {name: "minStar", desc: "最低可接受帝侯", type: "stars", default:1},
+            {name: "minStar", desc: "最低可接受星级", type: "stars", default:1},
             {name: "forceEmperor", desc: "只加入皇帝战", type: "check"},
         ]},
         {name: "dropping", desc: "帝国战丢卡", props:[
@@ -534,6 +534,10 @@ var displayAutomationModel = {
             {name: "enabled", desc: "启用领地战", type: "check"},
             {name: "onlyOccupy", desc: "只进入有占领需要的领地", type: "check"},
             {name: "reverseOrder", desc: "从低到高占领(给小号用)", type: "check"},
+        ]},
+        {name: "kingwar", desc: "帝国战当眼", props:[
+            {name: "area", desc: "赛区", type: "number", limit: [0, 3], alias: ["黄鹿", "玫瑰", "咸鱼"]},
+            {name: "star", desc: "星级", type: "number", type: "stars", default:1},
         ]},
     ],
 };
@@ -565,7 +569,7 @@ displayAutomationModel.getPlayerSelections = function() {
 displayAutomationModel.getKingwarStars = function() {
     if (!this.allStars) {
         this.allStars = [];
-        for (var i = 10; i >= 1; --i) {
+        for (var i = 1; i <= 10; ++i) {
             this.allStars.push({
                 value: i,
                 desc: String(i) + "星",
