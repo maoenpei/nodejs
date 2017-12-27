@@ -271,8 +271,7 @@
 <script type="text/x-handlebars-template" class="hd_user_item">
         <div class="div_user_item common_item_divider">
             <div class="div_user_name">{{name}}</div>
-            {{#if superAdmin}}
-            {{else}}
+            {{#if canDelete}}
             <div class="div_user_delete visit_label">删除</div>
             {{/if}}
             <input class="input_user_name" value="{{name}}" type="text">
@@ -280,6 +279,9 @@
                 {{#if superAdmin}}
                 <div class="display_label">超级用户</div>
                 {{else if authorized}}
+                {{#if canBreak}}
+                <div class="div_user_delete_target visit_label">解除关联</div>
+                {{/if}}
                 <select class="div_user_select_auth_level">
                     {{#each auths}}
                     <option value="{{val}}">{{name}}</option>

@@ -120,6 +120,7 @@ $HttpModel.addClass("USER_CLASS", {
                         }
                         allUsers.splice(insertIndex + 1, 0, {
                             name:keyData.name,
+                            dead:!!keyData.dead,
                             serial:serial,
                             auth:userData.auth,
                         });
@@ -228,6 +229,12 @@ $HttpModel.addClass("USER_CLASS", {
             }
 
             var targetSerial = json.target;
+            var keepUser = json.keep;
+            if (targetSerial == obj.getSerial()) {
+                responder.addError("Cannot disable self.");
+                return responder.respondJson({}, done);
+            }
+
             var targetKeyData = userStates.keys[targetSerial];
             if (!targetKeyData || !targetKeyData.name) {
                 responder.addError("Not an valid user.");
@@ -244,9 +251,24 @@ $HttpModel.addClass("USER_CLASS", {
                     responder.addError("Cannot disable super administrator.");
                     return responder.respondJson({}, done);
                 }
-                this.invokeUserListener("deleting", targetUserData);
-                delete userStates.users[targetKeyData.userKey];
+                if (keepUser) {
+                    if (targetKeyData.dead) {
+                        responder.addError("User already broken.");
+                        return responder.respondJson({}, done);
+                    }
+                    var newSerial = rkey();
+                    while (userStates.keys[newSerial]) { newSerial = rkey(); }
+                    userStates.keys[newSerial] = {
+                        dead: true,
+                        name: targetKeyData.name,
+                        userKey: targetKeyData.userKey,
+                    };
+                } else {
+                    this.invokeUserListener("deleting", targetUserData);
+                    delete userStates.users[targetKeyData.userKey];
+                }
                 delete targetKeyData.userKey;
+                delete targetKeyData.dead; // possible field
             }
             delete targetKeyData.name;
             yield $StateManager.commitState(USER_CONFIG, next);
@@ -364,6 +386,7 @@ $HttpModel.addClass("USER_CLASS", {
                 nextUserKey = lastData.userKey;
                 currentData.name = lastData.name;
                 delete lastData.userKey;
+                delete lastData.dead; // possible field
                 delete lastData.name;
             }
 

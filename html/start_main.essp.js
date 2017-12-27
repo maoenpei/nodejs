@@ -1629,6 +1629,13 @@ displayUsersModel.deluser = function(serial, callback) {
         }
     });
 }
+displayUsersModel.breakuser = function(serial, callback) {
+    requestPost("disable", {target:serial, keep:true}, function(json) {
+        if (json.success) {
+            callback();
+        }
+    });
+}
 displayUsersModel.auths = function() {
     return this.authLevels;
 }
@@ -1650,12 +1657,15 @@ function displayUsers() {
                 var userInfo = usersData[i];
                 var superAdmin = userInfo.auth > 3;
                 var authorized = userInfo.auth > 0;
+                var isSelf = userInfo.serial == StorageItem().serial;
                 var userBlockInfo = {
                     name:userInfo.name,
                     superAdmin:superAdmin,
+                    canDelete:!superAdmin && !isSelf,
                     authorized:authorized,
-                    auths: displayUsersModel.auths(),
-                    associate: displayUsersModel.canAssociate(),
+                    auths:displayUsersModel.auths(),
+                    associate:displayUsersModel.canAssociate(),
+                    canBreak:displayUsersModel.canAssociate() && !userInfo.dead && !isSelf,
                 };
                 var divUserItemBlock = $(userItemTemplate(userBlockInfo));
                 divUserItemBlock.appendTo(divUserContainer);
@@ -1664,13 +1674,13 @@ function displayUsers() {
                 userBlockInfo.serial = userInfo.serial;
                 userItemBlocks.push(userBlockInfo);
 
-                if (userInfo.serial == StorageItem().serial) {
+                if (isSelf) {
                     divUserItemBlock.addClass("user_myself");
                 }
 
                 var divUserDelete = divUserItemBlock.find(".div_user_delete");
                 divUserDelete.click(function() {
-                    if (confirm("确认删除'" + userInfo.name + "'？")) {
+                    if (confirm("确认删除'" + userInfo.name + "'？删除之后不可恢复！")) {
                         displayUsersModel.deluser(userInfo.serial, displayUsers);
                     }
                 });
@@ -1679,6 +1689,9 @@ function displayUsers() {
                 var inputUserName = divUserItemBlock.find(".input_user_name");
                 inputUserName.hide();
                 divUserName.click(function() {
+                    if (associateBlockInfo) {
+                        return;
+                    }
                     divUserName.hide();
                     inputUserName.show();
                     inputUserName.focus();
@@ -1704,6 +1717,12 @@ function displayUsers() {
                 });
 
                 if (authorized && !superAdmin) {
+                    var divBreakUser = divUserItemBlock.find(".div_user_delete_target");
+                    divBreakUser.click(function() {
+                        if (confirm("确认解除用户'" + userInfo.name + "'？")) {
+                            displayUsersModel.breakuser(userInfo.serial, displayUsers);
+                        }
+                    });
                     var selectAuthLevel = divUserItemBlock.find(".div_user_select_auth_level");
                     selectAuthLevel.val(userInfo.auth);
                     selectAuthLevel.change(function() {

@@ -430,7 +430,8 @@ input[type='checkbox']{
 .user_clickable > .div_user_name{
     border:2px dashed #0c0;
 }
-.user_unclickable > .div_user_operations, .user_clickable > .div_user_operations{
+.user_unclickable > .div_user_operations, .user_clickable > .div_user_operations
+, .user_unclickable > .div_user_delete, .user_clickable > .div_user_delete{
     display:none;
 }
 .user_myself {
