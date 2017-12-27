@@ -1324,7 +1324,6 @@ Base.extends("GameController", {
     refreshPlayerListing:function(conn, refreshData, done) {
         var next = coroutine(function*() {
             //console.log("refreshPlayerListing..", conn.getGameInfo().name);
-            var data = yield conn.getUnion(next); // dummy
             var data = yield conn.getUnionList(next);
             if (!data.unions) {
                 this.errLog("getUnionList", "none");

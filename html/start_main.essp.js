@@ -537,7 +537,11 @@ var displayAutomationModel = {
         ]},
         {name: "kingwar", desc: "帝国战当眼", props:[
             {name: "area", desc: "赛区", type: "number", limit: [0, 3], alias: ["无", "黄鹿", "玫瑰", "咸鱼"]},
-            {name: "star", desc: "星级", type: "number", type: "stars", default:1},
+            {name: "star", desc: "星级", type: "stars", default:1},
+        ]},
+        {name: "listing", desc: "列出玩家信息", props:[
+            {name: "unionCount", desc: "查看骑士团个数", type: "number", limit: [0, 20]},
+            {name: "limitDay", desc: "忽略几天以上不登录的玩家", type: "number", limit: [10, 20]},
         ]},
     ],
 };

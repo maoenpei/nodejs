@@ -446,7 +446,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     startRefreshKingwar:function(playerKey, kingwarConfig) {
         var playerData = this.players[playerKey];
-        if (!kingwarConfig || kingwarConfig.area == 0 || kingwarConfig.star == 0) {
+        if (!kingwarConfig || kingwarConfig.area == 0) {
             return this.stopRefreshKingwar(playerKey);
         }
         console.log("startRefreshKingwar", playerKey);
@@ -471,10 +471,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     startRefreshListing:function(playerKey, listingConfig) {
         var playerData = this.players[playerKey];
-        if (!listingConfig || listingConfig.minPower == 0 || listingConfig.limitPower == 0) {
+        if (!listingConfig || listingConfig.unionCount == 0) {
             return this.stopRefreshListing(playerKey);
         }
-        console.log("startRefreshListing", playerKey);
+        console.log("startRefreshListing", playerKey, listingConfig);
         if (playerData.refreshPlayerKey) {
             this.controller.modifyPlayerListing(playerData.refreshPlayerKey, listingConfig);
         } else {
@@ -691,12 +691,12 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     setSettingListing:function(playerKey, listing) {
         var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
         var listingConfig = {
-            unionCount: 10,
-            minPower: this.getSettingNumber(listing.minPower, 10, 999, 0),
-            limitPower: this.getSettingNumber(listing.limitPower, 50, 9999, 0),
-            limitDay: 20,
+            unionCount: this.getSettingNumber(listing.unionCount, 0, 20, 0),
+            minPower: 300,
+            limitPower: 800,
+            limitDay: this.getSettingNumber(listing.limitDay, 10, 20, 20),
         };
-        if (listingConfig.minPower == 0 && listingConfig.limitPower == 0) {
+        if (listingConfig.unionCount == 0) {
             listingConfig = undefined;
         }
         if (this.compareSetting(listingConfig, settingStates.listing[playerKey])) {
