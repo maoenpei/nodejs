@@ -674,10 +674,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     setSettingKingwar:function(playerKey, kingwar) {
         var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
         var kingwarConfig = {
-            area: this.getSettingNumber(kingwar.area, 1, 3, 0),
-            star: this.getSettingNumber(kingwar.star, 1, 10, 0),
+            area: this.getSettingNumber(kingwar.area, 0, 3, 0),
+            star: this.getSettingNumber(kingwar.star, 1, 10, 1),
         };
-        if (kingwarConfig.area == 0 && kingwarConfig.star == 0) {
+        if (kingwarConfig.area == 0) {
             kingwarConfig = undefined;
         }
         if (this.compareSetting(kingwarConfig, settingStates.kingwar[playerKey])) {
