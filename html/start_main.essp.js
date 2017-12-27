@@ -536,7 +536,7 @@ var displayAutomationModel = {
             {name: "reverseOrder", desc: "从低到高占领(给小号用)", type: "check"},
         ]},
         {name: "kingwar", desc: "帝国战当眼", props:[
-            {name: "area", desc: "赛区", type: "number", limit: [0, 3], alias: ["黄鹿", "玫瑰", "咸鱼"]},
+            {name: "area", desc: "赛区", type: "number", limit: [0, 3], alias: ["无", "黄鹿", "玫瑰", "咸鱼"]},
             {name: "star", desc: "星级", type: "number", type: "stars", default:1},
         ]},
     ],
@@ -1736,7 +1736,6 @@ function displayUsers() {
                 }
 
                 divUserItemBlock.click(function() {
-                    console.log("ttclicked", associateBlockInfo);
                     if (associateBlockInfo) {
                         var baseSerial = associateBlockInfo.serial;
                         var name = associateBlockInfo.name;
