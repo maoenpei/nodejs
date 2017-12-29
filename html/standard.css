@@ -107,6 +107,9 @@ input[type='checkbox']{
 .div_automation_sub_title_bar{
     padding-right: 2.5rem;
 }
+.div_automation_sub_title_line{
+    margin: 0.1rem;
+}
 .div_auto_add_field{
     margin: 0.2rem
 }

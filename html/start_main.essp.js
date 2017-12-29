@@ -403,12 +403,6 @@ var displayAutomationModel = {
     servers: ["s96", "s95", "s94", "s93", ],
     levels: ["账号"],
     configProps: [
-        {name: "autoArena", desc: "竞技场", props:[
-            {name: "boxMax", desc: "积分兑换次数", type: "number", limit: [3, 26]},
-            {name: "buyHeroSoul", desc: "是否购买蓝魂", type: "check"},
-            {name: "fightPlayer", desc: "是否攻击战力低的玩家", type: "check"},
-            {name: "fightMax", desc: "攻击次数", type: "number", limit: [0, 20]},
-        ]},
         {name: "autoSpecial", desc: "全局设置", props: [
             {name: "stopInShort", desc: "白钻低于临界值停止消耗", type: "check"},
             {name: "limitOfShort", desc: "白钻临界值", type: "number", limit: [0, 6], alias:["0", "100", "200", "500", "1000", "2000", "5000"]},
@@ -465,6 +459,12 @@ var displayAutomationModel = {
         ]},
         {name: "autoUnion", desc: "骑士团", props: [
             {name: "donateMax", desc: "贡献次数", type: "number", limit: [0, 10]},
+        ]},
+        {name: "autoArena", desc: "竞技场", props:[
+            {name: "boxMax", desc: "积分兑换次数", type: "number", limit: [3, 26]},
+            {name: "buyHeroSoul", desc: "是否购买蓝魂", type: "check"},
+            {name: "fightPlayer", desc: "是否攻击战力低的玩家", type: "check"},
+            {name: "fightMax", desc: "攻击次数", type: "number", limit: [0, 20]},
         ]},
         {name: "autoRich", desc: "秘境", props:[
             {name: "sweep", desc: "扫荡免费骰子", type: "check"},
@@ -541,7 +541,7 @@ var displayAutomationModel = {
         ]},
         {name: "listing", desc: "列出玩家信息", props:[
             {name: "unionCount", desc: "查看骑士团个数", type: "number", limit: [0, 20]},
-            {name: "limitDay", desc: "忽略几天以上不登录的玩家", type: "number", limit: [10, 20]},
+            {name: "limitDay", desc: "忽略几天以上不登录的玩家", type: "number", limit: [10, 20], default:20},
         ]},
     ],
 };
@@ -553,6 +553,16 @@ displayAutomationModel.get = function(callback) {
         $this.players = json.players;
         callback(json);
     });
+}
+displayAutomationModel.getAllPlayers = function() {
+    var players = [];
+    for (var i = 0; i < this.accounts.length; ++i) {
+        var account = this.accounts[i];
+        for (var j = 0; j < account.players.length; ++j) {
+            players.push(account.players[j]);
+        }
+    }
+    return players;
 }
 displayAutomationModel.getPlayerSelections = function() {
     if (!this.selectablePlayers)
@@ -612,8 +622,27 @@ displayAutomationModel.getMaxPlayer = function(account) {
     }
     return maxPlayer;
 }
-displayAutomationModel.getConfigProps = function() {
-    return this.configProps;
+displayAutomationModel.getConfigProps = function(diffConfig) {
+    if (!diffConfig) {
+        return this.configProps;
+    } else {
+        var diffProps = [];
+        for (var i = 0; i < this.configProps.length; ++i) {
+            var configProp = this.configProps[i];
+            var configValues = diffConfig[configProp.name];
+            if (typeof(configValues) != "undefined") {
+                var diffProp = {name:configProp.name, desc:configProp.desc, props:[]};
+                for (var j = 0; j < configProp.props.length; ++j) {
+                    var property = configProp.props[j];
+                    if (typeof(configValues[property.name]) != "undefined") {
+                        diffProp.props.push(property);
+                    }
+                }
+                diffProps.push(diffProp);
+            }
+        }
+        return diffProps;
+    }
 }
 displayAutomationModel.getSettingProps = function() {
     return this.settingProps;
@@ -750,6 +779,29 @@ displayAutomationModel.backupPlayer = function(player) {
     player.copy_configs = deep_clone(player.configs);
     player.copy_settings = deep_clone(player.settings);
 }
+displayAutomationModel.compareConfig = function(player, playerBase) {
+    console.log("diffing", player.copy_configs, playerBase.copy_configs);
+    var diffConfig = {};
+    for (var configType in player.copy_configs) {
+        var configValues = player.copy_configs[configType];
+        var baseConfigValues = playerBase.copy_configs[configType];
+        if (configType == "disabled") {
+            diffConfig[configType] = configValues;
+            continue;
+        }
+        if (configValues.disabled != baseConfigValues.disabled) {
+            diffConfig[configType] = diffConfig[configType] || {};
+            diffConfig[configType].disabled = configValues.disabled;
+        }
+        for (var name in configValues) {
+            if (configValues[name] != baseConfigValues[name]) {
+                diffConfig[configType] = diffConfig[configType] || {};
+                diffConfig[configType][name] = configValues[name];
+            }
+        }
+    }
+    return diffConfig;
+}
 displayAutomationModel.saveConfig = function(player, callback) {
     $this = this;
     requestPost("playerautomation", { key: player.key, configs: player.copy_configs }, function(json) {
@@ -758,6 +810,19 @@ displayAutomationModel.saveConfig = function(player, callback) {
             callback(true);
         } else {
             player.copy_configs = deep_clone(player.configs);
+            callback(false);
+        }
+    });
+}
+displayAutomationModel.copyConfig = function(playerFrom, playerTo, callback) {
+    $this = this;
+    playerTo.copy_configs = deep_clone(playerFrom.copy_configs);
+    requestPost("playerautomation", { key: playerTo.key, configs: playerTo.copy_configs }, function(json) {
+        if (json.success) {
+            playerTo.configs = deep_clone(playerTo.copy_configs);
+            callback(true);
+        } else {
+            playerTo.copy_configs = deep_clone(playerTo.configs);
             callback(false);
         }
     });
@@ -838,6 +903,7 @@ function displayAutomation() {
 
         // display contents
         var divSubtitleBar = divContentPanel.find(".div_automation_sub_title_bar");
+        var subTitleBarLineText = "<div class=\"div_automation_sub_title_line\"></div>";
         var divAutomationContent = divContentPanel.find(".div_automation_content");
         var autoNavigateTemplate = templates.read(".hd_automation_navigate_item");
         var autoItemTemplate = templates.read(".hd_automation_item");
@@ -848,13 +914,16 @@ function displayAutomation() {
         var displayCommands = function(rightCommand, leftCommand) {
             var levels = displayAutomationModel.getLevels();
             divSubtitleBar.html("");
+            var currentLine = $(subTitleBarLineText);
+            currentLine.appendTo(divSubtitleBar);
             for (var i = 0; i < levels.length; ++i) {
                 (function() {
+                    var lineEnd = i % 3 == 2;
                     var divAutoNavigateBlock = $(autoNavigateTemplate({
                         name: levels[i],
-                        hasNext: i < levels.length - 1,
+                        hasNext: (!lineEnd && i < levels.length - 1),
                     }));
-                    divAutoNavigateBlock.appendTo(divSubtitleBar);
+                    divAutoNavigateBlock.appendTo(currentLine);
 
                     var commandFunc = allCommands[i];
                     if (commandFunc) {
@@ -862,19 +931,29 @@ function displayAutomation() {
                             commandFunc();
                         });
                     }
+                    if (lineEnd) {
+                        currentLine = $(subTitleBarLineText);
+                        currentLine.appendTo(divSubtitleBar);
+                    }
                 })();
             }
             if (rightCommand) {
                 var divAutoNavigateExtraBlock = $(autoNavigateTemplate({name: rightCommand.name}));
-                divAutoNavigateExtraBlock.appendTo(divSubtitleBar);
+                divAutoNavigateExtraBlock.appendTo(currentLine);
                 divAutoNavigateExtraBlock.addClass("div_auto_navigate_right");
-                divAutoNavigateExtraBlock.find(".clickable").click(rightCommand.func);
+                var clickItemRight = divAutoNavigateExtraBlock.find(".clickable");
+                clickItemRight.click(function() {
+                    safe(rightCommand.func)(clickItemRight);
+                });
             }
             if (leftCommand) {
                 var divAutoNavigateExtraBlock = $(autoNavigateTemplate({name: leftCommand.name}));
-                divAutoNavigateExtraBlock.appendTo(divSubtitleBar);
+                divAutoNavigateExtraBlock.appendTo(currentLine);
                 divAutoNavigateExtraBlock.addClass("div_auto_navigate_left");
-                divAutoNavigateExtraBlock.find(".clickable").click(leftCommand.func);
+                var clickItemLeft = divAutoNavigateExtraBlock.find(".clickable");
+                clickItemLeft.click(function() {
+                    safe(leftCommand.func)(clickItemLeft);
+                });
             }
             adjustPageLayout();
         }
@@ -1134,10 +1213,38 @@ function displayAutomation() {
                 })();
             }
         }
+        var modelPlayer = null;
         function displayConfig() {
-            displayCommands();
-
             var lastPlayer = displayAutomationModel.getLastPlayer();
+            var GetState = function() {
+                return (modelPlayer ? (modelPlayer === lastPlayer ? 1 : 2) : 0);
+            };
+            var stateNames = ["设为范本", "取消范本", "直接覆盖"];
+            var allPlayers = displayAutomationModel.getAllPlayers();
+            var modelOptions = {
+                name: stateNames[GetState()],
+                func: function(clickItem) {
+                    switch (GetState()) {
+                    case 0:
+                        modelPlayer = lastPlayer;
+                        break;
+                    case 1:
+                        modelPlayer = null;
+                        break;
+                    case 2:
+                        if (!confirm("确认覆盖本配置？")) {
+                            return;
+                        }
+                        displayAutomationModel.copyConfig(modelPlayer, lastPlayer, function() {
+                            displayConfig();
+                        });
+                        break;
+                    }
+                    clickItem.html(stateNames[GetState()]);
+                },
+            };
+            displayCommands(allPlayers.length > 1 ? modelOptions : null);
+
             var configChanged = function() {
                 displayAutomationModel.saveConfig(lastPlayer, function(success) {
                     displayConfig();
@@ -1145,16 +1252,21 @@ function displayAutomation() {
             };
 
             divAutomationContent.html("");
-            var configProps = displayAutomationModel.getConfigProps();
-            for (var i = 0; i < configProps.length; ++i) {
-                (function() {
-                    var configInfo = configProps[i];
-                    var configValues = lastPlayer.copy_configs[configInfo.name];
-                    if (!configValues) {
-                        return;
-                    }
-                    displayProperties(divAutomationContent, configInfo, {hasCheck:true}, configValues, configChanged);
-                })();
+            var compareConfig = (GetState() == 2 ? displayAutomationModel.compareConfig(lastPlayer, modelPlayer) : null);
+            var configProps = displayAutomationModel.getConfigProps(compareConfig);
+            if (configProps.length > 0) {
+                for (var i = 0; i < configProps.length; ++i) {
+                    (function() {
+                        var configInfo = configProps[i];
+                        var configValues = lastPlayer.copy_configs[configInfo.name];
+                        if (!configValues) {
+                            return;
+                        }
+                        displayProperties(divAutomationContent, configInfo, {hasCheck:true}, configValues, configChanged);
+                    })();
+                }
+            } else {
+                divAutomationContent.html("配置与范本完全相同");
             }
         }
         function displayDetail() {
