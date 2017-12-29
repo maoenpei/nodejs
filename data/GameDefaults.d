@@ -102,6 +102,7 @@
     }
     ,"dropping":{
         "selfUnion":"b275705814a85d98"
+        ,"whitelist":["b26c110ddaa85c83"]
         ,"times":[
             {"day":3,"hour":11,"minute":59,"second":50}
             ,{"day":3,"hour":17,"minute":59,"second":50}

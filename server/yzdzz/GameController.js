@@ -861,6 +861,9 @@ Base.extends("GameController", {
         var playerCount = (refData.players.length > 16 ? 16 : refData.players.length);
         for (var i = 0; i < playerCount; ++i) {
             var player = refData.players[i];
+            if (this.whiteList[player.playerId]) {
+                continue;
+            }
             var playerItem = this.allPlayers[player.playerId];
             var power = (playerItem ? playerItem.maxPower : player.power);
             if (playerItem && playerItem.unionId == defaults.selfUnion) {
@@ -911,6 +914,12 @@ Base.extends("GameController", {
     setDroppingEvent:function(defaults) {
         this.unsetEventKeys(this.droppingTimes);
         this.droppingTimes = [];
+        this.whiteList = {};
+        for (var i = 0; i < defaults.whitelist.length; ++i) {
+            var playerId = defaults.whitelist[i];
+            this.whiteList[playerId] = true;
+        }
+        console.log("white list -", this.whiteList);
         var doDropping = () => {
             var next = coroutine(function*() {
                 console.log("dropping started!");
@@ -1196,7 +1205,19 @@ Base.extends("GameController", {
         var players = [];
         for (var i = 0; i < raceInfo.players.length; ++i) {
             var playerData = raceInfo.players[i];
-            if (playerData.playerId && playerData.playerId != kingwarInfo.helpId && playerData.playerId != kingwarInfo.damageId && playerData.playerId != conn.getGameInfo().playerId) {
+            if (playerData.playerId) {
+                if (this.whiteList[playerData.playerId]) {
+                    continue;
+                }
+                if (playerData.playerId == kingwarInfo.helpId) {
+                    continue;
+                }
+                if (playerData.playerId == kingwarInfo.damageId) {
+                    continue;
+                }
+                if (playerData.playerId != conn.getGameInfo().playerId) {
+                    continue;
+                }
                 players.push(playerData);
             }
         }
