@@ -239,3 +239,11 @@ String.prototype.format = function(args) {
     }
     return result;
 }
+
+Array.prototype.random = function() {
+	if (this.length == 0) {
+		return; //undefined
+	}
+	var index = rand(this.length);
+	return this[index];
+}
