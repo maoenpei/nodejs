@@ -1542,7 +1542,7 @@ Base.extends("GameConnection", {
                         return safe(done)({});
                     }
                     var currDay = this.validator.peekDaily("autoMazeWalk");
-                    if (config.randwalk && currDay) {
+                    if (config.randwalk && typeof(currDay) == "number") {
                         var mazeInfo = this.getMazeInfo(data_change);
                         var available = this.getMazeAvailable(mazeInfo);
                         this.log("Maze walk", mazeId, mazeInfo.pos, mazeInfo.steps, available);
