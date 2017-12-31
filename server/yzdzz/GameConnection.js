@@ -2244,23 +2244,26 @@ Base.extends("GameConnection", {
                     }
                 }
                 // 专精
-                var weaponUpdateCounts = [
-                    this.getItemCount("master_scroll_1"),
-                    this.getItemCount("master_scroll_2"),
-                    this.getItemCount("master_scroll_3"),
-                    this.getItemCount("master_scroll_4"),
-                    this.getItemCount("master_scroll_5"),
-                ];
+                var weaponUpdateCounts = {
+                    "1":this.getItemCount("master_scroll_1"),
+                    "2":this.getItemCount("master_scroll_2"),
+                    "3":this.getItemCount("master_scroll_3"),
+                    "4":this.getItemCount("master_scroll_4"),
+                    "5":this.getItemCount("master_scroll_5"),
+                };
                 if (config.updateWeapon) {
-                    for (var i = 0; i < weaponUpdateCounts.length; ++i) {
-                        var total = Math.floor(weaponUpdateCounts[i] / 200);
-                        if (total > 0) {
-                            this.log("updating weapon, type:", i+1, " number:", total);
-                        }
-                        for (var j = 0; j < total; ++j) {
-                            var data_up = yield this.sendMsg("RoleTeam", "upWeaponType", {type:i+1}, next);
-                            if (!data_up) {
-                                break;
+                    var data = yield this.sendMsg("RoleTeam", "getWeaponTypes", null, next);
+                    if (data && data.list) {
+                        for (var i = 0; i < data.list.length; ++i) {
+                            var item = data.list[i];
+                            var weaponNumber = weaponUpdateCounts[item.type];
+                            var total = Database.weaponUpdateCount(item.level, weaponNumber);
+                            this.log("weapon upgrade", item.type, item.level, weaponNumber, total);
+                            for (var j = 0; j < total; ++j) {
+                                var data_up = yield this.sendMsg("RoleTeam", "upWeaponType", {type:item.type}, next);
+                                if (!data_up) {
+                                    break;
+                                }
                             }
                         }
                     }
@@ -2707,7 +2710,6 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("RoleMerge", "info", null, next); // 勇者刷新状态
 
             //var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next); //皇帝战
-            //var data = yield this.sendMsg("RoleTeam", "getWeaponTypes", null, next); // 获取专精等级
             //var data = yield this.sendMsg("RoleMerge", "decompose", {type:0,value:"1,2,3,4",op:1}, next); // 分解
 
             //var data = yield this.sendMsg("RoleHero", "addexp", {pid:95328,sysid:"food_2", num:100}, next); // 吃屎

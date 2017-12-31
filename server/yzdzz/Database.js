@@ -117,6 +117,25 @@ Database.heroCollectInfo = function(heroName) {
     return this.collects_managed[heroName];
 },
 
+Database.weaponUpdateCount = function(level, weaponNumber) {
+    var last = this.weapon_costs.last;
+    if (level >= last.level) {
+        return Math.floor(weaponNumber / last.cost);
+    }
+    var currTotal = this.weapon_costs[level] + weaponNumber;
+    var diffTotal = currTotal - last.total;
+    if (diffTotal >= 0) {
+        return last.level - level + Math.floor(diffTotal / last.cost);
+    }
+    for (var i = last.level - 1; i > level; --i) {
+        if (currTotal >= this.weapon_costs[i]) {
+            return i - level;
+        }
+    }
+    // cannot reach!
+    return 0;
+}
+
 Database.items = {
     "hero_card_piece_2":{name:"绿色特定勇者卡碎片", piece:10, },
     "hero_card_piece_3":{name:"蓝色特定勇者卡碎片", piece:10, },
@@ -1046,3 +1065,39 @@ Database.collects_managed = ((collects) => {
     }
     return managed;
 })(Database.collects);
+
+Database.weapons = [
+    { "level":1, "cost":1 },
+    { "level":2, "cost":2 },
+    { "level":4, "cost":3 },
+    { "level":6, "cost":4 },
+    { "level":8, "cost":5 },
+    { "level":10, "cost":10 },
+    { "level":20, "cost":20 },
+    { "level":30, "cost":30 },
+    { "level":40, "cost":40 },
+    { "level":50, "cost":60 },
+    { "level":60, "cost":80 },
+    { "level":70, "cost":100 },
+    { "level":80, "cost":120 },
+    { "level":90, "cost":200 },
+];
+
+Database.weapon_costs = ((weapons) => {
+    var last = weapons[weapons.length - 1];
+    var costs = { last:last };
+    var totalCost = 0;
+    var weaponNow = 0;
+    var costNow = 0;
+    for (var i = 1; i < last.level; ++i) {
+        costs[i] = totalCost;
+        if (i == weapons[weaponNow].level) {
+            costNow = weapons[weaponNow].cost;
+            last.total = totalCost;
+            weaponNow++;
+        }
+        totalCost += costNow;
+    }
+    return costs;
+})(Database.weapons);
+
