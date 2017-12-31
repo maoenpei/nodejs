@@ -2293,8 +2293,10 @@ Base.extends("GameConnection", {
                 }
                 // 每日打造3次装备
                 if (config.dailyMerge && this.validator.checkDaily("autoDailyMerge")) {
+                    var roleLevel = this.gameInfo.level;
+                    var baseLevel = (roleLevel <= 120 ? 1 : (roleLevel <= 200 ? 2 : (roleLevel <= 260 ? 3 : 4)));
                     for (var type = 1; type <= 3; ++type) {
-                        for (var level = 4; level >= 1; --level) {
+                        for (var level = baseLevel; level >= 1; --level) {
                             var data_compose = yield this.sendMsg("RoleMerge", "compose", {type:type, level:level, luckly:0}, next);
                             if (data_compose) {
                                 break;
