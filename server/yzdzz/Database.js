@@ -158,6 +158,7 @@ Database.items = {
     "miaoli_2":{name:"喵丽神社6元券", },
     "miaoli_3":{name:"喵丽神社12元券", },
     "summon_book":{name:"勇者契约书", },
+    "charge_gift_week_5":{name:"魔法宝箱III", use:true},
     "league_war_horn":{name:"国战笑脸", },
     "league_war_life":{name:"国战旗帜", },
     "magical_girl_book_2":{name:"资深魔女书", },
