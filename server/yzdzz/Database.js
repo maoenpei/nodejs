@@ -68,7 +68,7 @@ Database.randHero = function() {
             this.heroIds.push(id);
         }
     }
-    var randId = this.heroIds[rand(this.heroIds.length)];
+    var randId = this.heroIds.random();
     var heroData = this.heros[randId];
     return {
         id: randId,

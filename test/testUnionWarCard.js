@@ -28,6 +28,8 @@ var friendUnion = (isWeekend ? ["b275705814a85d98"] : ["b275705814a85d98"]);
 //var enemyUnion = (isWeekend ? ["b26d0533bba85c43"] : []);
 var enemyUnion = (isWeekend ? [] : []);
 
+var dropDelay = new Date();
+
 var doUnionWarCard = () => {
     var next = coroutine(function*() {
 
@@ -69,11 +71,19 @@ var doUnionWarCard = () => {
                                 if (card.isgood) {
                                     for (var k = 0; k < friendUnion.length; ++k) {
                                         var data_usecard = yield conn.useCard(friendUnion[k], next);
+                                        if (data_usecard.success) {
+                                            break;
+                                        }
                                     }
-                                } else {
+                                } else if (new Date() > dropDelay) {
                                     for (var k = 0; k < enemyUnion.length; ++k) {
                                         var data_usecard = yield conn.useCard(enemyUnion[k], next);
+                                        if (data_usecard.success) {
+                                            break;
+                                        }
                                     }
+                                    var nowTick = new Date().getTime();
+                                    dropDelay = new Date(nowTick + rand(2000));
                                 }
                                 break;
                             }

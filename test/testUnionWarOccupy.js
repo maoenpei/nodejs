@@ -44,6 +44,7 @@ var gameController = new GameController();
 var accountManager = gameController.getAccountManager();
 var allPowerMax = null;
 var occupyEnd = null;
+var dropDelay = new Date();
 
 var doUnionWarOccupy = () => {
     var next = coroutine(function*() {
@@ -56,7 +57,7 @@ var doUnionWarOccupy = () => {
         //var landTargets = (isWeekend ? [7, 1, 2, 3] : [4, 3, 1, 2]);
 
         //var friendUnion = (isWeekend ? ["b26d0533bba85c43"] : []);
-        var friendUnion = (isWeekend ? ["b2726df76e285c3b"] : []);
+        var friendUnion = (isWeekend ? ["b2726df76e285c3b","b2683ff563285b91","b263d8a30f285a73"] : []);
         //var enemyUnion = (isWeekend ? ["b26d0533bba85c43"] : []);
         var enemyUnion = (isWeekend ? [] : []);
 
@@ -99,20 +100,20 @@ var doUnionWarOccupy = () => {
                     if (data.mineArray) {
                         // use card
                         var card = data.card;
-                        if (isWeekend && card.ready) {
+                        if (isWeekend && card.ready && new Date() > dropDelay) {
                             if (card.isgood) {
-                                if (friendUnion.length > 0) {
-                                    var friendUnionId = friendUnion[rand(friendUnion.length)];
+                                var friendUnionId = friendUnion.random();
+                                if (friendUnionId) {
                                     var data_usecard = yield conn.useCard(friendUnionId, next);
                                 }
                             } else {
-                                for (var k = 0; k < enemyUnion.length; ++k) {
+                                var enemyUnionId = enemyUnion.random();
+                                if (enemyUnionId) {
                                     var data_usecard = yield conn.useCard(enemyUnion[k], next);
-                                    if (data_usecard.success) {
-                                        break;
-                                    }
                                 }
                             }
+                            var nowTick = new Date().getTime();
+                            dropDelay = new Date(nowTick + rand(3000));
                         }
                         // get mine targets
                         var mineCount = data.mineArray.length;
@@ -160,7 +161,7 @@ var doUnionWarOccupy = () => {
                             }
                         }
                         var justOccupy = false;
-                        bestFight = (bestFight == 100 ? worstFights[rand(worstFights.length)] : bestFight);
+                        bestFight = (bestFight == 100 ? worstFights.random() : bestFight);
                         if (bestFight != 100 && (selfOccupy == 100 || bestFight < selfOccupy)) {
                             var data_fire = yield conn.fire(landId, bestFight, next);
                             // fire will lose current pos
