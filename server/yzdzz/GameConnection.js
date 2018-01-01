@@ -377,6 +377,7 @@ Base.extends("GameConnection", {
         }
     },
 
+    // Role Info
     getRole:function(done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("Role", "getInfo", null, next);
@@ -410,6 +411,7 @@ Base.extends("GameConnection", {
         }, this);
     },
 
+    // Union
     getUnion:function(done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("Union", "getinfo", null, next);
@@ -467,6 +469,7 @@ Base.extends("GameConnection", {
         }, this);
     },
 
+    // Union War
     getUnionWar:function(done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("UnionWar", "getinfo", null, next);
@@ -664,6 +667,7 @@ Base.extends("GameConnection", {
         }, this);
     },
 
+    // King War
     getKingWarState:function(done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("KingWar", "getinfo", null, next);
@@ -817,6 +821,7 @@ Base.extends("GameConnection", {
         }, this);
     },
 
+    // Maze
     getMazeInfo:function(data_maze) {
         var eventInfo = {};
         for (var i = 0; i < data_maze.events.length; ++i) {
@@ -903,6 +908,7 @@ Base.extends("GameConnection", {
         }, this);
     },
 
+    // Ladder (竞技场)
     getLadder:function(done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("Ladder", "getinfo", null, next);
@@ -956,6 +962,7 @@ Base.extends("GameConnection", {
         }, this);
     },
 
+    // Hero Shop
     listHeroPrice:function(data, result) {
         for (var id in data.players) {
             var player = data.players[id];
@@ -1086,6 +1093,7 @@ Base.extends("GameConnection", {
         }, this);
     },
 
+    // Diamond safety check
     speakTo:function(channel, message, done) {
         var next = coroutine(function*() {
             if (this.justSpeak) {
@@ -1146,6 +1154,7 @@ Base.extends("GameConnection", {
         return true;
     },
 
+    // Automation
     autoSpecial:function(config, done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("RoleExplore", "update", {type:'', login:1}, next);
