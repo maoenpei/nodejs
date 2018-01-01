@@ -30,7 +30,7 @@ Base.extends("GameValidator", {
     },
     checkDaily:function(name) {
         var currDay = this.peekDaily(name);
-        if (typeof(currDay) != "number") {
+        if (!currDay) {
             return false;
         }
         this.commitDaily(name, currDay);
@@ -40,10 +40,14 @@ Base.extends("GameValidator", {
         var currDay = new Date().getDay();
         var lastDay = this.setDay[name];
         lastDay = (typeof(lastDay) != "undefined" ? lastDay : -1);
-        return (lastDay == currDay ? null : currDay);
+        return (lastDay == currDay ? null : {
+            day: currDay,
+        });
     },
     commitDaily:function(name, day) {
-        this.setDay[name] = day;
+        if (day) {
+            this.setDay[name] = day.day;
+        }
     },
     resetDaily:function() {
         this.setDay = {};
@@ -1542,7 +1546,7 @@ Base.extends("GameConnection", {
                         return safe(done)({});
                     }
                     var currDay = this.validator.peekDaily("autoMazeWalk");
-                    if (config.randwalk && typeof(currDay) == "number") {
+                    if (config.randwalk && currDay) {
                         var mazeInfo = this.getMazeInfo(data_change);
                         var available = this.getMazeAvailable(mazeInfo);
                         this.log("Maze walk", mazeId, mazeInfo.pos, mazeInfo.steps, available);
