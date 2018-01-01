@@ -1181,7 +1181,7 @@ Database.level_coefs = ((level_exp) => {
         var level_item = level_exp[i];
         var sqr = level_item.mul / 2;
         var mul = level_item.base - level_item.level * level_item.mul - level_item.mul / 2;
-        var levelEnd = (level_exp[i+1] ? level_exp[i+1].level : level_item.level + 60);
+        var levelEnd = (level_exp[i+1] ? level_exp[i+1].level : 600);
         var coef = {
             level_start: level_item.level,
             level_end: levelEnd,
