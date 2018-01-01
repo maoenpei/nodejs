@@ -136,6 +136,45 @@ Database.weaponUpdateCount = function(level, weaponNumber) {
     return 0;
 }
 
+Database.foodExp = function(sysid, count) {
+    var food_exp = this.foods[sysid];
+    return count * (food_exp ? food_exp : 0);
+}
+
+Database.expLevel = function(currLevel, totalExp) {
+    var exp = (currLevel < 5 ? totalExp - this.level_coefs.base_diff[currLevel] : totalExp);
+    for (var i = 0; i < this.level_coefs.length; ++i) {
+        var level_coef = this.level_coefs[i];
+        if (level_coef.level_end < currLevel) {
+            continue;
+        }
+        var start = (level_coef.level_start < currLevel ? currLevel : level_coef.level_start);
+        var endExp = level_coef.level_diff_to_exp(start, level_coef.level_end);
+        if (exp < endExp) {
+            return level_coef.exp_to_level_target(start, exp);
+        }
+        exp -= endExp;
+    }
+    return 600;
+}
+
+Database.levelExp = function(currLevel, targetLevel) {
+    var exp = (currLevel < 5 ? this.level_coefs.base_diff[currLevel] : 0);
+    for (var i = 0; i < this.level_coefs.length; ++i) {
+        var level_coef = this.level_coefs[i];
+        if (level_coef.level_end < currLevel) {
+            continue;
+        }
+        if (level_coef.level_start >= targetLevel) {
+            break;
+        }
+        var start = (level_coef.level_start < currLevel ? currLevel : level_coef.level_start);
+        var end = (level_coef.level_end > targetLevel ? targetLevel : level_coef.level_end);
+        exp += level_coef.level_diff_to_exp(start, end);
+    }
+    return exp;
+}
+
 Database.items = {
     "hero_card_piece_2":{name:"绿色特定勇者卡碎片", piece:10, },
     "hero_card_piece_3":{name:"蓝色特定勇者卡碎片", piece:10, },
@@ -1101,4 +1140,64 @@ Database.weapon_costs = ((weapons) => {
     }
     return costs;
 })(Database.weapons);
+
+Database.foods = {
+    "food_2":20000,
+    "food_3":50000,
+    "food_4":100000,
+    "food_5":200000,
+    "food_6":500000,
+};
+
+Database.level_exp = [
+    { "level":0, "mul":10000, "base":40000 },
+    { "level":120, "mul":15000, "base":1860000 },
+    { "level":180, "mul":20000, "base":3680000 },
+    { "level":240, "mul":25000, "base":6100000 },
+    { "level":300, "mul":30000, "base":9120000 },
+    { "level":360, "mul":40000, "base":14560000 },
+    { "level":420, "mul":50000, "base":21200000 },
+    { "level":480, "mul":60000, "base":29040000 },
+    { "level":540, "mul":60000, "base":32640000 },
+];
+
+Database.level_coefs = ((level_exp) => {
+    var coefs = [];
+    var derive = function(level) {
+        return this.sqr * level * level + this.mul * level;
+    };
+    var level_diff_to_exp = function (levelStart, levelEnd) {
+        return this.derive(levelEnd) - this.derive(levelStart);
+    };
+    var exp_to_level_target = function (levelStart, exp) {
+        var a = this.sqr;
+        var b = this.mul;
+        var c = -exp - this.derive(levelStart);
+        var delta = b * b - 4 * a * c;
+        var rt = (-b + Math.sqrt(delta)) / (2 * a);
+        return Math.floor(rt);
+    };
+    for (var i = 0; i < level_exp.length; ++i) {
+        var level_item = level_exp[i];
+        var sqr = level_item.mul / 2;
+        var mul = level_item.base - level_item.level * level_item.mul - level_item.mul / 2;
+        var levelEnd = (level_exp[i+1] ? level_exp[i+1].level : level_item.level + 60);
+        var coef = {
+            level_start: level_item.level,
+            level_end: levelEnd,
+            sqr: sqr,
+            mul: mul,
+            derive: derive,
+            level_diff_to_exp: level_diff_to_exp,
+            exp_to_level_target: exp_to_level_target,
+        };
+        coefs.push(coef);
+    }
+    var first_coef = coefs[0];
+    coefs.base_diff = {};
+    for (var i = 1; i < 5; ++i) {
+        coefs.base_diff[i] = 5000 - first_coef.level_diff_to_exp(i, 5);
+    }
+    return coefs;
+})(Database.level_exp);
 

@@ -2258,7 +2258,7 @@ Base.extends("GameConnection", {
                             var item = data.list[i];
                             var weaponNumber = weaponUpdateCounts[item.type];
                             var total = Database.weaponUpdateCount(item.level, weaponNumber);
-                            this.log("weapon upgrade", item.type, item.level, weaponNumber, total);
+                            this.log("weapon update", item.type, item.level, weaponNumber, total);
                             for (var j = 0; j < total; ++j) {
                                 var data_up = yield this.sendMsg("RoleTeam", "upWeaponType", {type:item.type}, next);
                                 if (!data_up) {
@@ -2283,6 +2283,10 @@ Base.extends("GameConnection", {
                     if (data && data.list) {
                         for (var pid in data.list) {
                             var heroData = data.list[pid];
+                            var upgrade_level = heroData.upgrade_level || 0;
+                            if (heroData.level >= (upgrade_level + 1) * 60) {
+                                continue;
+                            }
                             var data_set = yield this.sendMsg("RoleHero", "addexp", {pid:pid, sysid:toEat, num:100}, next);
                             if (data_set) {
                                 this.log("eat food '{0}' for {1}".format(toEat, heroData.name));
@@ -2714,12 +2718,42 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next); //皇帝战
             //var data = yield this.sendMsg("RoleMerge", "decompose", {type:0,value:"1,2,3,4",op:1}, next); // 分解
 
-            //var data = yield this.sendMsg("RoleHero", "addexp", {pid:95328,sysid:"food_2", num:100}, next); // 吃屎
             //var data = yield this.sendMsg("RoleHero", "sethero", {pos:1,pid:95328}, next); // 换位置
-            //var data = yield this.sendMsg("RoleHero", "getHeros", null, next); // 勇者阵容
             //var data = yield this.sendMsg("RoleWake", "getinfo", null, next);
             //var data = yield this.sendMsg("Collect", "getinfo", null, next);
 
+            /*
+            var data = yield this.sendMsg("RoleHero", "getHeros", null, next); // 勇者阵容
+            var targetPid = 0;
+            for (var pid in data.list) {
+                if (73004 == data.list[pid].sysid) {
+                    targetPid = pid;
+                    break;
+                }
+            }
+            var targetLevel = data.list[targetPid].level;
+            var targetExp = data.list[targetPid].exp;
+            var eatCount = 0;
+            if (true) {
+                do {
+                    var data = yield this.sendMsg("RoleHero", "addexp", {pid:targetPid,sysid:"food_6", num:600}, next); // 吃屎
+                    eatCount += 10;
+                    var data = yield this.sendMsg("RoleHero", "getHeros", null, next); // 勇者阵容
+                } while(data.list[targetPid].level <= targetLevel);
+                targetExp += eatCount * 20000;
+                targetExp -= data.list[targetPid].exp;
+            }
+
+            console.log(data);
+            console.log("eatCount", eatCount);
+            console.log("targetLevel", targetLevel);
+            console.log("targetExp", targetExp);
+            var base = 1;
+            var exp = Database.foodExp("food_6", 600) + 0;
+            var level = Database.expLevel(base, exp);
+            var restExp = exp - Database.levelExp(base, level);
+            console.log("computeLevel", level, restExp);
+            */
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
             //yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data, null, 2), next);
