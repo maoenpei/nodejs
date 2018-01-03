@@ -93,6 +93,12 @@ GameSock.receive = function(sock, callback) {
             var package = stream.slice(4, packageSize + 4);
             stream = stream.slice(packageSize + 4);
             zlib.gunzip(package, (err, decoded) => {
+                if (!decoded) {
+                    console.log("Error in package unzip...", err);
+                    console.log("packageSize", packageSize);
+                    console.log("package", package);
+                    return;
+                }
                 var obj = JSON.parse(decoded.toString());
                 if (!obj.data) {
                     console.log(">> - Protocol error on c({0}) m({1}):".format(obj.c, obj.m), obj.error);
@@ -184,7 +190,15 @@ GameHTTP.servers = function(uid, done) {
     SendHTTP(getServersOptions, postData, (buf) => {
         if (!buf){ return safe(done)(null); }
         zlib.gunzip(buf, (err, decoded) => {
+            if (!decoded) {
+                console.log("Error in GameHTTP.servers unzip...", err);
+                return safe(done)(null);
+            }
             zlib.gunzip(decoded, (err, decoded2) => {
+                if (!decoded2) {
+                    console.log("Error in GameHTTP.servers unzip2...", err);
+                    return safe(done)(null);
+                }
                 var obj = JSON.parse(decoded2.toString());
                 return safe(done)(obj);
             });
@@ -210,6 +224,10 @@ GameHTTP.stat = function(uid, type, done) {
     SendHTTP(statOptions, null, (buf) => {
         if (!buf){ return safe(done)(null); }
         zlib.gunzip(buf, (err, decoded)=> {
+            if (!decoded) {
+                console.log("Error in GameHTTP.stat unzip...", err);
+                return safe(done)(null);
+            }
             var result = decoded.toString();
             return safe(done)(result);
         });
@@ -292,6 +310,10 @@ GameHTTP.loginServer = function(uid, serverId, done) {
     SendHTTP(loginServerOptions, null, (buf) => {
         if (!buf){ return safe(done)(null); }
         zlib.gunzip(buf, (err, decoded)=> {
+            if (!decoded) {
+                console.log("Error in GameHTTP.stat unzip...", err);
+                return safe(done)(null);
+            }
             var result = decoded.toString();
             return safe(done)(result);
         });
