@@ -1215,7 +1215,7 @@ Base.extends("GameController", {
                 if (playerData.playerId == kingwarInfo.damageId) {
                     continue;
                 }
-                if (playerData.playerId != conn.getGameInfo().playerId) {
+                if (playerData.playerId == conn.getGameInfo().playerId) {
                     continue;
                 }
                 players.push(playerData);
