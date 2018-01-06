@@ -45,8 +45,9 @@ Database.heroCap = function(id) {
     var heroData = this.heros[id];
     var heroLevelData = this.heroLevelInfo[heroData.level];
     return {
+        heroColor: heroLevelData.color,
         maxUpgrade: heroLevelData.upgrade,
-        maxStone: heroLevelData.stone * 5,
+        maxStone: heroLevelData.color * 5,
     };
 }
 
@@ -466,16 +467,16 @@ Database.goblin_price = {
 };
 
 Database.heroLevelInfo = {
-    "10": {upgrade:9, stone:7, },
-    "9": {upgrade:9, stone:6, },
-    "8": {upgrade:9, stone:6, },
-    "7": {upgrade:9, stone:5, },
-    "6": {upgrade:9, stone:5, },
-    "5": {upgrade:6, stone:4, },
-    "4": {upgrade:6, stone:4, },
-    "3": {upgrade:6, stone:3, },
-    "2": {upgrade:6, stone:2, },
-    "1": {upgrade:6, stone:1, },
+    "10": {upgrade:9, color:7, },
+    "9": {upgrade:9, color:6, },
+    "8": {upgrade:9, color:6, },
+    "7": {upgrade:9, color:5, },
+    "6": {upgrade:9, color:5, },
+    "5": {upgrade:6, color:4, },
+    "4": {upgrade:6, color:4, },
+    "3": {upgrade:6, color:3, },
+    "2": {upgrade:6, color:2, },
+    "1": {upgrade:6, color:1, },
 };
 
 Database.heros = {
