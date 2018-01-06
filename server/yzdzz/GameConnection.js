@@ -109,6 +109,13 @@ Base.extends("HeroInfo", {
     getStone:function() {
         return this.heroData && (this.heroData.stoneLevel + this.heroData.stoneSkill);
     },
+    getStoneBase:function() {
+        if (!this.heroData) {
+            return 0;
+        }
+        var cap = Database.heroCap(this.heroData.heroId);
+        return (cap ? cap.maxStone : 0);
+    },
     getGemWake:function() {
         return this.heroData && this.heroData.gemWake;
     },
@@ -254,7 +261,11 @@ Base.extends("HeroInfo", {
             if (!this.heroData) {
                 return safe(done)({});
             }
-            if (this.heroData.upgrade == 9) {
+            var cap = Database.heroCap(this.heroData.heroId);
+            if (!cap) {
+                return safe(done)({});
+            }
+            if (this.heroData.upgrade == cap.maxUpgrade) {
                 return safe(done)({});
             }
 
@@ -270,7 +281,7 @@ Base.extends("HeroInfo", {
                 }
                 cardTotal += cardNeeded;
                 targetUpgrade ++;
-            } while(targetUpgrade < 9);
+            } while(targetUpgrade < cap.maxUpgrade);
             if (targetUpgrade == this.heroData.upgrade) {
                 return safe(done)({});
             }

@@ -38,6 +38,18 @@ Database.goblinInfo = function(id) {
     };
 }
 
+Database.heroCap = function(id) {
+    if (!this.heros[id]) {
+        return null;
+    }
+    var heroData = this.heros[id];
+    var heroLevelData = this.heroLevelInfo[heroData.level];
+    return {
+        maxUpgrade: heroLevelData.upgrade,
+        maxStone: heroLevelData.stone * 5,
+    };
+}
+
 Database.heroInfo = function(id) {
     if (!this.heros[id]) {
         return null;
@@ -451,6 +463,19 @@ Database.goblin_price = {
     "food_6": 10000,
     "dungeon_dice": 20,
     "hero_upgrade_card_piece": 200,
+};
+
+Database.heroLevelInfo = {
+    "10": {upgrade:9, stone:7, }
+    "9": {upgrade:9, stone:6, }
+    "8": {upgrade:9, stone:6, }
+    "7": {upgrade:9, stone:5, }
+    "6": {upgrade:9, stone:5, }
+    "5": {upgrade:6, stone:4, }
+    "4": {upgrade:6, stone:4, }
+    "3": {upgrade:6, stone:3, }
+    "2": {upgrade:6, stone:2, }
+    "1": {upgrade:6, stone:1, }
 };
 
 Database.heros = {
