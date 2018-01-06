@@ -71,6 +71,35 @@ Base.extends("GameController", {
         return this.accountManager;
     },
 
+    getHeroData:function(playerData, done) {
+        var next = coroutine(function*() {
+            var heroData = [];
+            yield this.manualOnePlayer(playerData, (conn, tdone) => {
+                var tnext = coroutine(function*() {
+                    var heroIds = yield conn.getOnlineHeroIds(tnext);
+                    for (var i = 0; i < heroIds.length; ++i) {
+                        var heroId = heroIds[i];
+                        var heroObj = yield conn.getOnlineHero(heroId, tnext);
+                        heroData.push({
+                            heroId: heroId,
+                            color: heroObj.getColor(),
+                            name: heroObj.getName(),
+                            pos: heroObj.getPos(),
+                            upgrade: heroObj.getUpgrade(),
+                            food: heroObj.getFood(),
+                            stone: heroObj.getStone(),
+                            stoneBase: heroObj.getStoneBase(),
+                            gemWake: heroObj.getGemWake(),
+                            gemLevel: heroObj.getGemLevel(),
+                        });
+                    }
+                    safe(tdone)();
+                }, this);
+            }, next);
+            safe(done)(heroData);
+        }, this);
+    },
+
     getPlayerBrief:function(playerData) {
         var accountGameKey = playerData.account + "$" + playerData.server;
         return this.lastPlayerInfo[accountGameKey];
@@ -94,32 +123,9 @@ Base.extends("GameController", {
         });
     },
     manualPlayerAutomation:function(playerData, autoConfigs, done) {
-        var next = coroutine(function*() {
-            yield playerData.mutex.lock(next);
-            var conn = this.accountManager.connectAccount(playerData.account, playerData.validator);
-            if (!conn) {
-                return safe(done)({});
-            }
-            var data = yield conn.loginAccount(next);
-            if (!data.success) {
-                return safe(done)({});
-            }
-            var data = yield conn.loginGame(playerData.server, next);
-            if (!data.success) {
-                return safe(done)({});
-            }
-            var accountGameKey = playerData.account + "$" + playerData.server;
-            this.lastPlayerInfo[accountGameKey] = {
-                name: conn.getGameInfo().name,
-                power: conn.getGameInfo().power,
-            };
-            yield this.refreshAutomation(conn, autoConfigs, next);
-            conn.quit();
-            playerData.mutex.unlock();
-            safe(done)({
-                success: true,
-            });
-        }, this);
+        this.manualOnePlayer(playerData, (conn, tdone) => {
+            this.refreshAutomation(conn, autoConfigs, tdone);
+        }, done);
     },
 
     setPlayerTargeting:function(playerData, targetingConfig) {
@@ -1107,6 +1113,34 @@ Base.extends("GameController", {
             //console.log("quit -- player!", refreshInfo.account, refreshInfo.server, conn.getGameInfo().name);
             conn.quit();
             doEnd();
+        }, this);
+    },
+    manualOnePlayer:function(playerData, func, done) {
+        var next = coroutine(function*() {
+            yield playerData.mutex.lock(next);
+            var conn = this.accountManager.connectAccount(playerData.account, playerData.validator);
+            if (!conn) {
+                return safe(done)({});
+            }
+            var data = yield conn.loginAccount(next);
+            if (!data.success) {
+                return safe(done)({});
+            }
+            var data = yield conn.loginGame(playerData.server, next);
+            if (!data.success) {
+                return safe(done)({});
+            }
+            var accountGameKey = playerData.account + "$" + playerData.server;
+            this.lastPlayerInfo[accountGameKey] = {
+                name: conn.getGameInfo().name,
+                power: conn.getGameInfo().power,
+            };
+            yield func(conn, next);
+            conn.quit();
+            playerData.mutex.unlock();
+            safe(done)({
+                success: true,
+            });
         }, this);
     },
 

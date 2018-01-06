@@ -74,6 +74,10 @@ Base.extends("HeroInfo", {
     },
     updateData:function(heroData) {
         if (heroData) {
+            if (this.heroData) {
+                heroData.stoneLevel = this.heroData.stoneLevel;
+                heroData.stoneSkill = this.heroData.stoneSkill;
+            }
             this.heroData = heroData;
         } else {
             this.heroData = null;
@@ -94,6 +98,9 @@ Base.extends("HeroInfo", {
     getHeroId:function() {
         return this.heroData && this.heroData.heroId;
     },
+    getColor:function() {
+        return this.heroData && this.heroData.color;
+    },
     getName:function() {
         return this.heroData && this.heroData.name;
     },
@@ -110,11 +117,7 @@ Base.extends("HeroInfo", {
         return this.heroData && (this.heroData.stoneLevel + this.heroData.stoneSkill);
     },
     getStoneBase:function() {
-        if (!this.heroData) {
-            return 0;
-        }
-        var cap = Database.heroCap(this.heroData.heroId);
-        return (cap ? cap.maxStone : 0);
+        return this.heroData && this.heroData.color * 5;
     },
     getGemWake:function() {
         return this.heroData && this.heroData.gemWake;
@@ -715,6 +718,7 @@ Base.extends("GameConnection", {
     heroItemFromData:function(heroData) {
         return {
             pid: Number(heroData.pid),
+            color: heroData.quality - 1,
             heroId: heroData.sysid,
             name: heroData.name,
             pos: heroData.pos || 0,
@@ -889,6 +893,8 @@ Base.extends("GameConnection", {
                     heroInfo.updateData(heroItem);
                     if (wakeItem) {
                         heroInfo.updateWake(wakeItem.level, wakeItem.skill);
+                    } else {
+                        heroInfo.updateWake(0, 0);
                     }
                     this.herosInfo[heroItem.heroId] = heroInfo;
                 }
@@ -3303,17 +3309,17 @@ Base.extends("GameConnection", {
                     //var data = yield this.sendMsg("RoleWake", "upSkill", { pid:95865 }, next);
                     //var data = yield this.sendMsg("RoleWake", "getinfo", null, next);
                     //var data = yield this.sendMsg("RoleHero", "getHeros", null, next);
-                    var heroIds = yield this.getOnlineHeroIds(next);
+                    //var heroIds = yield this.getOnlineHeroIds(next);
                     var heroObj = yield this.getOnlineHero(73004, next);
                     if (heroObj) {
                         //var data = yield heroObj.setPos(0, next);
-                        var data = yield heroObj.renew(next);
+                        //var data = yield heroObj.renew(next);
                         //var data = heroObj.getUpgrade();
                         //var data = yield heroObj.setUpgrade(3, next);
                         //var data = heroObj.getFood();
                         //var data = yield heroObj.setFood(240, next);
-                        var data = yield heroObj.fullUpgrade(next);
-                        var data = yield heroObj.fullFood(next);
+                        //var data = yield heroObj.fullUpgrade(next);
+                        //var data = yield heroObj.fullFood(next);
                     }
                     console.log(data, !!heroObj);
                 }

@@ -49,6 +49,8 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         this.randKey2PlayerId = {};
         this.playerId2RandKey = {};
 
+        httpServer.registerCommand("listheros", this);
+        httpServer.registerCommand("operatehero", this);
         httpServer.registerCommand("addaccount", this);
         httpServer.registerCommand("delaccount", this);
         httpServer.registerCommand("addplayer", this);
@@ -840,6 +842,56 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         userData.accounts.splice(accountBelong, 1);
     },
 
+    listheros:function(requestor, responder, done) {
+        var next = coroutine(function*() {
+            var obj = yield this.httpServer.tokenValid(requestor, next);
+            if (!obj) {
+                responder.addError("Not valid token for logout.");
+                return responder.respondJson({}, done);
+            }
+
+            var userStates = $StateManager.getState(USER_CONFIG);
+            var keyData = userStates.keys[obj.getSerial()];
+            if (!keyData || !keyData.userKey) {
+                responder.addError("Not an authorized user.");
+                return responder.respondJson({}, done);
+            }
+
+            var userData = userStates.users[keyData.userKey];
+            if (!userData || userData.auth < 2) {
+                responder.addError("Admin level not enough.");
+                return responder.respondJson({}, done);
+            }
+
+            var json = yield requestor.visitBodyJson(next);
+            if (!json || !json.key) {
+                responder.addError("Parameter data not correct.");
+                return responder.respondJson({}, done);
+            }
+
+            var playerKey = json.key;
+            var playerData = this.players[playerKey];
+            if (!playerData) {
+                responder.addError("Invalid player key.");
+                return responder.respondJson({}, done);
+            }
+
+            var playerBelong = this.getPlayerIndex(userData, playerKey);
+            if (playerBelong < 0) {
+                responder.addError("Player doesn't belong to user.");
+                return responder.respondJson({}, done);
+            }
+
+            var heros = yield this.controller.getHeroData(playerData, next);
+            responder.respondJson({
+                heros: heros,
+            }, done);
+        }, this);
+    },
+    operatehero:function(requestor, responder, done) {
+        var next = coroutine(function*() {
+        }, this);
+    },
     addaccount:function(requestor, responder, done) {
         var next = coroutine(function*() {
             var obj = yield this.httpServer.tokenValid(requestor, next);

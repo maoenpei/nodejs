@@ -677,7 +677,7 @@ displayAutomationModel.toAccount = function(account) {
 displayAutomationModel.toPlayer = function(player) {
     this.levels.splice(3, this.levels.length - 3);
     if (player) {
-        this.levels[2] = (player.name ? player.name : player.server);
+        this.levels[2] = (player.name ? player.server + "." + player.name : player.server);
         this.lastPlayer = player;
     }
     this.lastCatalog = null;
@@ -1112,6 +1112,22 @@ function displayAutomation() {
                 displayAutomationModel.toCatalog({ name: "设置", func: displaySetting, });
                 displayDetail();
             });
+
+            // heropanel
+            var divAutoHerosBlock = $(autoItemTemplate({name: "勇者面板"}));
+            divAutoHerosBlock.appendTo(divAutomationContent);
+
+            divAutoHerosBlock.find(".clickable").click(function() {
+                displayAutomationModel.toCatalog({ name: "勇者面板", func: displayHeroPanel, });
+                displayDetail();
+            });
+        }
+        function displayHeroPanel() {
+            displayCommands({name: "刷新", func: function() {
+                displayHeros(divAutomationContent, displayAutomationModel.getLastPlayer());
+            }});
+
+            displayHeros(divAutomationContent, displayAutomationModel.getLastPlayer());
         }
         var displayProperties = function(divContent, propertyInfo, propertyExtraInfo, propertyValues, commitValue) {
             var properties = [];
@@ -1274,6 +1290,92 @@ function displayAutomation() {
             displayAutomationModel.getLastCatalog().func();
         }
         displayAccounts();
+    });
+}
+
+displayHerosModel = {
+    playerKey: null,
+    heroPos:[
+        [10, 4, 1, 7, 13],
+        [11, 5, 2, 8, 14],
+        [12, 6, 3, 9, 15],
+    ],
+    colorCls:[
+        "",
+        "div_game_color_green",
+        "div_game_color_blue",
+        "div_game_color_purple",
+        "div_game_color_orange",
+        "div_game_color_red",
+        "div_game_color_golden",
+        "div_game_color_X",
+    ],
+};
+displayHerosModel.setPlayerKey = function(playerKey) {
+    this.playerKey = playerKey
+}
+displayHerosModel.get = function(callback) {
+    $this = this;
+    requestPost("listheros", { key: this.playerKey }, function(json) {
+        $this.heros = json.heros;
+        $this.initialize();
+        callback(json);
+    });
+}
+displayHerosModel.initialize = function() {
+    var heros = this.heros;
+    var posHeros = {};
+    var leftHeros = [];
+    for (var i = 0; i < heros.length; ++i) {
+        var hero = heros[i];
+        hero.nameCls = this.colorCls[hero.color];
+        var stone = (hero.stone >= hero.stoneBase ? hero.stoneBase : hero.stone);
+        hero.skill = (hero.stone >= hero.stoneBase ? hero.stone - hero.stoneBase + 1 : 0);
+        console.log("stone", hero.name, stone);
+        if (stone > 0) {
+            hero.stoneLevel = (stone - 1) % 5 + 1;
+            hero.stoneCls = this.colorCls[Math.floor((stone - 1) / 5) + 1];
+        }
+        if (hero.pos > 0) {
+            posHeros[hero.pos] = hero;
+        } else {
+            leftHeros.push(hero);
+        }
+    }
+    var heroArray = [];
+    for (var i = 0; i < this.heroPos.length; ++i) {
+        var heroIndex = this.heroPos[i];
+        var heroLine = [];
+        for (var j = 0; j < heroIndex.length; ++j) {
+            var hero = posHeros[heroIndex[j]];
+            heroLine.push(hero || {});
+        }
+        heroArray.push(heroLine);
+    }
+    this.heroArray = heroArray;
+    this.leftHeros = leftHeros;
+}
+displayHerosModel.getHeroArray = function() {
+    return this.heroArray;
+}
+displayHerosModel.getLeftHeros = function() {
+    return this.leftHeros;
+}
+
+function displayHeros(parentPanel, player) {
+    var waitingTemplate = templates.read(".hd_display_loading");
+    parentPanel.html(waitingTemplate({loading_data: true}));
+
+    var heroPanelTemplate = templates.read(".hd_hero_panel");
+
+    displayHerosModel.setPlayerKey(player.key);
+    displayHerosModel.get(function() {
+        var heroArray = displayHerosModel.getHeroArray();
+        var leftHeros = displayHerosModel.getLeftHeros();
+        parentPanel.html(heroPanelTemplate({
+            heroArray: heroArray,
+            leftHeros: leftHeros,
+        }));
     });
 }
 
@@ -1892,4 +1994,7 @@ function displayUsers() {
     });
 }
 
-$(displayLogin);
+$(function() {
+    Handlebars.registerPartial("hd_hero_item", $(".hd_hero_item").html());
+    displayLogin();
+});

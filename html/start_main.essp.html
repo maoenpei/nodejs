@@ -161,8 +161,8 @@
                 {{#each caredhero}}
                 <div class="div_server_info_item_heroshop" heroId="{{id}}">
                     <div class="div_server_info_item_del_hero visit_label">删除</div>
-                    <div class="div_server_info_item_name {{#if isgolden}}div_server_info_item_golden{{/if}} {{#if isX}}div_server_info_item_X{{/if}}">{{name}}</div>
-                    <div class="div_server_info_item_cls {{#if isgolden}}div_server_info_item_golden{{/if}} {{#if isX}}div_server_info_item_X{{/if}}">{{cls}}</div>
+                    <div class="div_server_info_item_name {{#if isgolden}}div_game_color_golden{{/if}} {{#if isX}}div_game_color_X{{/if}}">{{name}}</div>
+                    <div class="div_server_info_item_cls {{#if isgolden}}div_game_color_golden{{/if}} {{#if isX}}div_game_color_X{{/if}}">{{cls}}</div>
                     <div class="div_server_info_item_per">{{per}}</div>
                 </div>
                 {{/each}}
@@ -173,8 +173,8 @@
                 <div class="div_server_info_title_text">所有勇者</div>
                 {{#each heroshop}}
                 <div class="div_server_info_item_heroshop" heroId="{{id}}">
-                    <div class="div_server_info_item_name {{#if isgolden}}div_server_info_item_golden{{/if}} {{#if isX}}div_server_info_item_X{{/if}}">{{name}}</div>
-                    <div class="div_server_info_item_cls {{#if isgolden}}div_server_info_item_golden{{/if}} {{#if isX}}div_server_info_item_X{{/if}}">{{cls}}</div>
+                    <div class="div_server_info_item_name {{#if isgolden}}div_game_color_golden{{/if}} {{#if isX}}div_game_color_X{{/if}}">{{name}}</div>
+                    <div class="div_server_info_item_cls {{#if isgolden}}div_game_color_golden{{/if}} {{#if isX}}div_game_color_X{{/if}}">{{cls}}</div>
                     <div class="div_server_info_item_per">{{per}}</div>
                     <div class="div_server_info_item_add_hero visit_label">关注</div>
                 </div>
@@ -298,6 +298,57 @@
 </script>
 <script type="text/x-handlebars-template" class="hd_title_content">
         <div class="visit_label">{{funcName}}</div>
+</script>
+<script type="text/x-handlebars-template" class="hd_hero_panel">
+        <div class="div_hero_panel_main">
+            <div class="div_hero_panel_battle">
+                {{#each heroArray}}
+                <div class="div_hero_panel_line">
+                    {{#each this}}
+                    {{> hd_hero_item}}
+                    {{/each}}
+                </div>
+                {{/each}}
+            </div>
+            <div class="div_hero_panel_left_line">
+                <div class="div_hero_panel_left_text">缓冲区：</div>
+                <div class="div_hero_panel_left_items">
+                    {{#each leftHeros}}
+                    {{> hd_hero_item}}
+                    {{/each}}
+                </div>
+            </div>
+        </div>
+</script>
+<script type="text/x-handlebars-template" class="hd_hero_item">
+                <div class="div_hero_panel_item">
+                    {{#if name}}
+                    <div class="div_hero_panel_item_name {{nameCls}}">
+                        {{name}}
+                    </div>
+                    {{#if upgrade}}
+                    <div class="div_hero_panel_item_upgrade">
+                        进化 +{{upgrade}}
+                    </div>
+                    {{/if}}
+                    <div class="div_hero_panel_item_food">Lv.{{food}}</div>
+                    {{#if stone}}
+                    <div class="div_hero_panel_item_stone {{stoneCls}}">
+                        ★ {{stoneLevel}}
+                        {{#if skill}}
+                        <div class="div_hero_panel_item_skill">
+                            Lv.{{skill}}
+                        </div>
+                        {{/if}}
+                    </div>
+                    {{/if}}
+                    {{#if gemWake}}
+                    <div class="div_hero_panel_item_gem">
+                        觉醒+{{gemWake}} Lv.{{gemLevel}}
+                    </div>
+                    {{/if}}
+                    {{/if}}
+                </div>
 </script>
 </body>
 </html>

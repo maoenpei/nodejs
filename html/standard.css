@@ -104,6 +104,28 @@ input[type='checkbox']{
     height:0.65rem;
 }
 
+.div_game_color_green{
+    color: rgb(100, 255, 50);
+}
+.div_game_color_blue{
+    color: rgb(50, 199, 255);
+}
+.div_game_color_purple{
+    color: rgb(255, 50, 255);
+}
+.div_game_color_orange{
+    color: rgb(255, 155, 50);
+}
+.div_game_color_red{
+    color: rgb(255, 50, 50);
+}
+.div_game_color_golden{
+    color: rgb(255, 255, 60);
+}
+.div_game_color_X{
+    color: rgb(222, 185, 20);
+}
+
 .div_automation_sub_title_bar{
     padding-right: 2.5rem;
 }
@@ -381,12 +403,6 @@ input[type='checkbox']{
     text-align: left;
     color: rgb(14, 255, 14);
 }
-.div_server_info_item_golden{
-    color: rgb(255, 255, 60);
-}
-.div_server_info_item_X{
-    color: rgb(222, 185, 20);
-}
 .div_server_info_item_del_hero{
     display: inline-block;
     position: absolute;
@@ -441,4 +457,68 @@ input[type='checkbox']{
     border: 1px solid;
     border-color: rgba(150, 255, 255, 0.8);
     background-color: rgba(0, 0, 0, 0.2);
+}
+
+.div_hero_panel_main{
+    position:fixed;
+    width:100%;
+}
+.div_hero_panel_battle{
+    background-color:#999;
+    padding: 0.1rem;
+}
+.div_hero_panel_line{
+}
+.div_hero_panel_left_line{
+    background-color:#999;
+    padding: 0.1rem;
+    padding-left: 0.5rem;
+    margin-top: 0.2rem;
+    text-align: left;
+    overflow-x: scroll;
+    white-space:nowrap;
+}
+.div_hero_panel_left_text{
+    display: inline-block;
+    font-size: 0.6rem;
+    color: rgb(0, 255, 255);
+    vertical-align: middle;
+    width: 0.7rem;
+    white-space:normal;
+}
+.div_hero_panel_left_items{
+    display: inline-block;
+}
+.div_hero_panel_item{
+    display: inline-block;
+    border: 1px dashed #666;
+    margin: 1px;
+    width:18vw;
+    height:22vw;
+    font-size: 0.5rem;
+    vertical-align: middle;
+    overflow: visible;
+}
+.div_hero_panel_item_name{
+    margin-top: 0.1rem;
+    white-space: nowrap;
+    font-size: 0.6rem;
+}
+.div_hero_panel_item_food{
+    color: white;
+}
+.div_hero_panel_item_upgrade{
+    color: white;
+}
+.div_hero_panel_item_stone{
+}
+.div_hero_panel_item_skill{
+    display: inline-block;
+    color: rgb(200, 255, 0);
+    font-size: 0.45rem;
+}
+.div_hero_panel_item_gem{
+    white-space: nowrap;
+    color: rgb(255, 222, 0);
+    font-size: 0.45rem;
 }
