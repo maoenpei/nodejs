@@ -67,6 +67,233 @@ Base.extends("GameValidator", {
     },
 });
 
+Base.extends("HeroInfo", {
+    _constructor:function(conn) {
+        this.conn = conn;
+        this.heroData = null;
+    },
+    updateData:function(heroData) {
+        if (heroData) {
+            this.heroData = heroData;
+        } else {
+            this.heroData = null;
+        }
+    },
+    updateWake:function(level, skill) {
+        if (this.heroData) {
+            this.heroData.stoneLevel = level || this.heroData.stoneLevel || 0;
+            this.heroData.stoneSkill = skill || this.heroData.stoneSkill || 0;
+        }
+    },
+    isOnline:function() {
+        return !!this.heroData;
+    },
+    getPid:function() {
+        return this.heroData && this.heroData.pid;
+    },
+    getHeroId:function() {
+        return this.heroData && this.heroData.heroId;
+    },
+    getName:function() {
+        return this.heroData && this.heroData.name;
+    },
+    getPos:function() {
+        return this.heroData && this.heroData.pos;
+    },
+    getUpgrade:function() {
+        return this.heroData && this.heroData.upgrade;
+    },
+    getFood:function() {
+        return this.heroData && this.heroData.food;
+    },
+    getStone:function() {
+        return this.heroData && (this.heroData.stoneLevel + this.heroData.stoneSkill);
+    },
+    getGemWake:function() {
+        return this.heroData && this.heroData.gemWake;
+    },
+    getGemLevel:function() {
+        return this.heroData && this.heroData.gemLevel;
+    },
+
+    renew:function(done) {
+        var next = coroutine(function*() {
+            if (!this.heroData) {
+                return safe(done)({});
+            }
+            this.log("Recreating");
+            var heroId = this.heroData.heroId;
+            var data = yield this.conn.dismissHero(this.heroData.pid, next);
+            if (!data.success) {
+                return safe(done)({});
+            }
+            var data = yield this.conn.useHeroCard(heroId, next);
+            if (!data.success) {
+                return safe(done)({});
+            }
+            safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    setPos:function(pos, done) {
+        var next = coroutine(function*() {
+            if (!this.heroData) {
+                return safe(done)({});
+            }
+            this.log("Positioning", pos);
+            var targetPos = pos;
+            var targetPid = this.heroData.pid;
+            if (!pos) {
+                targetPos = this.heroData.pos;
+                targetPid = 0;
+            }
+            var data = yield this.conn.setHeroPos(targetPid, targetPos, next);
+            if (!data.success) {
+                return safe(done)({});
+            }
+            safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    setUpgrade:function(level, done) {
+        var next = coroutine(function*() {
+            if (!this.heroData) {
+                return safe(done)({});
+            }
+            var currLevel = this.heroData.upgrade;
+            if (currLevel >= level) {
+                return safe(done)({});
+            }
+            for (var i = currLevel; i < level; ++i) {
+                this.log("Upgrading");
+                var data = yield this.conn.upgradeHero(this.heroData.pid, next);
+                if (!data.success) {
+                    return safe(done)({});
+                }
+            }
+            safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    setFood:function(level, done) {
+        var next = coroutine(function*() {
+            if (!this.heroData) {
+                return safe(done)({});
+            }
+            var currLevel = this.heroData.food;
+            if (currLevel >= level) {
+                return safe(done)({});
+            }
+            var totalExp = Database.levelExp(currLevel, level) - this.heroData.exp;
+
+            yield this.conn.readAllItems(next);
+            var foodNames = Database.allFoods();
+            for (var i = 0; i < foodNames.length; ++i) {
+                var foodName = foodNames[i];
+                var count = this.conn.getItemCount(foodName);
+                var foodExp = Database.foodExp(foodName, count);
+                if (foodExp > 0) {
+                    var eatCount = count;
+                    if (totalExp < foodExp) {
+                        eatCount = Math.ceil(totalExp / Database.foodExp(foodName, 1));
+                    }
+                    this.log("Eating", foodName, eatCount);
+                    var data = yield this.conn.foodHero(this.heroData.pid, foodName, eatCount, next);
+                    if (!data.success) {
+                        return safe(done)({});
+                    }
+                    totalExp -= Database.foodExp(foodName, eatCount);
+                    if (totalExp <= 0) {
+                        break;
+                    }
+                }
+            }
+            if (totalExp > 0) {
+                return safe(done)({});
+            }
+            safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    setStone:function(level, done) {
+        var next = coroutine(function*() {
+            if (!this.heroData) {
+                return safe(done)({});
+            }
+            safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    setGemWake:function(level, done) {
+        var next = coroutine(function*() {
+            if (!this.heroData) {
+                return safe(done)({});
+            }
+            safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    setGemLevel:function(level, done) {
+        var next = coroutine(function*() {
+            if (!this.heroData) {
+                return safe(done)({});
+            }
+            safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    fullUpgrade:function(done) {
+        var next = coroutine(function*() {
+            if (!this.heroData) {
+                return safe(done)({});
+            }
+            if (this.heroData.upgrade == 9) {
+                return safe(done)({});
+            }
+
+            var heroCardId = "hero_" + String(this.heroData.heroId);
+            yield this.conn.readAllItems(next);
+            var count = this.conn.getItemCount(heroCardId);
+            var targetUpgrade = this.heroData.upgrade;
+            var cardTotal = 0;
+            do {
+                var cardNeeded = Math.floor(targetUpgrade / 3) + 1;
+                if (cardTotal + cardNeeded > count) {
+                    break;
+                }
+                cardTotal += cardNeeded;
+                targetUpgrade ++;
+            } while(targetUpgrade < 9);
+            if (targetUpgrade == this.heroData.upgrade) {
+                return safe(done)({});
+            }
+
+            this.setUpgrade(targetUpgrade, done);
+        }, this);
+    },
+    fullFood:function(done) {
+        var next = coroutine(function*() {
+            if (!this.heroData) {
+                return safe(done)({});
+            }
+            var topLevel = (this.heroData.upgrade + 1) * 60;
+            this.setFood(topLevel, done);
+        }, this);
+    },
+
+    log:function() {
+        var appendArgs = (this.heroData ? [">> Hero -", this.heroData.name] : [">> Hero - None"]);
+        this.conn.log.apply(this.conn, appendArgs.concat(Array.prototype.slice.call(arguments)));
+    },
+});
+
 var cachedServers = null;
 Base.extends("GameConnection", {
     testMode: false,
@@ -82,6 +309,9 @@ Base.extends("GameConnection", {
         this.itemsInfo = null;
         this.itemsQuick = null;
         this.itemsLock = new Mutex();
+        this.herosInfo = null;
+        this.herosMap = null;
+        this.herosLock = new Mutex();
         this.diamondCost = 0;
 
         this.sock = null;
@@ -116,6 +346,7 @@ Base.extends("GameConnection", {
         return this.gameInfo;
     },
 
+    // Connection
     quit:function() {
         if (this.sock) {
             this.log("quiting");
@@ -294,6 +525,8 @@ Base.extends("GameConnection", {
         }
         return now;
     },
+
+    // Role Info
     updateGameInfo:function(data, force) {
         if (this.gameInfo && this.gameInfoNumberProps) {
             var keyContainer = (force ? this.gameInfoNumberProps : data);
@@ -310,6 +543,7 @@ Base.extends("GameConnection", {
             }
         }
         if (!force && data.items && this.itemsInfo && this.itemsQuick) {
+            //console.log("item change -", data.items);
             var updateItems = data.items.update;
             if (updateItems) {
                 for (var key in updateItems) {
@@ -323,6 +557,73 @@ Base.extends("GameConnection", {
                 }
             }
         }
+        if (!force && data.heros && this.herosInfo && this.herosMap) {
+            //console.log("hero change -", data.heros);
+            var updateHeros = data.heros.update;
+            if (updateHeros) {
+                for (var pid in updateHeros) {
+                    var heroData = updateHeros[pid];
+                    var heroItem = this.heroItemFromData(heroData);
+                    var heroInfo = this.herosInfo[heroItem.heroId];
+                    if (!heroInfo) {
+                        this.log("================ No hero info! ==================", heroItem);
+                        continue;
+                    }
+                    heroInfo.updateData(heroItem);
+                }
+            }
+            var createHeros = data.heros.create;
+            if (createHeros) {
+                for (var pid in createHeros) {
+                    var heroData = createHeros[pid];
+                    var heroItem = this.heroItemFromData(heroData);
+                    var heroInfo = this.herosInfo[heroItem.heroId] || new HeroInfo(this);
+                    heroInfo.updateData(heroItem);
+                    heroInfo.updateWake(0, 0);
+                    this.herosMap[pid] = heroItem.heroId;
+                    this.herosInfo[heroItem.heroId] = heroInfo;
+                }
+            }
+            var deleteHeros = data.heros.delete;
+            if (deleteHeros) {
+                for (var i = 0; i < deleteHeros.length; ++i) {
+                    var pid = deleteHeros[i];
+                    var heroId = this.herosMap[pid];
+                    var heroInfo = this.herosInfo[heroId];
+                    heroInfo.updateData(null);
+                    delete this.herosMap[pid];
+                }
+            }
+        }
+    },
+    getItems:function(done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("RoleItem", "list", null, next);
+            if (!data || !data.list) {
+                return safe(done)({});
+            }
+
+            var items = {};
+            var quick = {};
+            for (var key in data.list) {
+                this.updateItem(items, quick, data.list[key]);
+            }
+            return safe(done)({
+                items: items,
+                quick: quick,
+            });
+        }, this);
+    },
+    useItem:function(detail, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("RoleItem", "use", detail, next);
+            if (!data) {
+                return safe(done)({});
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
     },
     readAllItems: function(done) {
         var next = coroutine(function*() {
@@ -351,6 +652,14 @@ Base.extends("GameConnection", {
         }
         return count;
     },
+    getItemDetails:function(itemName) {
+        var details = [];
+        if (this.itemsInfo) {
+            var item = this.itemsInfo[itemName];
+            details = item.details;
+        }
+        return details;
+    },
     updateItem:function(items, quick, itemData) {
         var id = Number(itemData.id);
         var num = Number(itemData.num ? itemData.num : 0);
@@ -376,8 +685,6 @@ Base.extends("GameConnection", {
             delete quick[id];
         }
     },
-
-    // Role Info
     getRole:function(done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("Role", "getInfo", null, next);
@@ -392,21 +699,227 @@ Base.extends("GameConnection", {
             return safe(done)();
         }, this);
     },
-    getItems:function(done) {
+
+    // Heros
+    heroItemFromData:function(heroData) {
+        return {
+            pid: Number(heroData.pid),
+            heroId: heroData.sysid,
+            name: heroData.name,
+            pos: heroData.pos || 0,
+            upgrade: heroData.upgrade_level || 0,
+            food: heroData.level,
+            exp: heroData.exp,
+            gemWake: heroData.gem_wake || 0,
+            gemLevel: heroData.gem_level || 0,
+        };
+    },
+    getHeros:function(done) {
         var next = coroutine(function*() {
-            var data = yield this.sendMsg("RoleItem", "list", null, next);
+            var data = yield this.sendMsg("RoleHero", "getHeros", null, next);
             if (!data || !data.list) {
                 return safe(done)({});
             }
-
-            var items = {};
-            var quick = {};
-            for (var key in data.list) {
-                this.updateItem(items, quick, data.list[key]);
+            var heros = {};
+            for (var pid in data.list) {
+                var heroData = data.list[pid];
+                heros[pid] = this.heroItemFromData(heroData);
             }
             return safe(done)({
-                items: items,
-                quick: quick,
+                heros: heros,
+            });
+        }, this);
+    },
+    getHeroWakes:function(done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("RoleWake", "getinfo", null, next);
+            if (!data) {
+                return safe(done)({});
+            }
+            var wakes = {};
+            for (var pid in data) {
+                var wakeData = data[pid];
+                wakes[pid] = {
+                    level: wakeData.level,
+                    skill: wakeData.skill_level,
+                };
+            }
+            return safe(done)({
+                wakes: wakes,
+            });
+        }, this);
+    },
+    setHeroPos:function(pid, pos, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("RoleTeam", "sethero", {pos:pos, pid:pid}, next);
+            if (!data) {
+                return safe(done)({});
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    dismissHero:function(pid, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("RoleHero", "sell", { pid:pid, master:0 }, next);
+            if (!data) {
+                return safe(done)({});
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    upgradeHero:function(pid, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("RoleUpgrade", "start", { pid:pid }, next);
+            if (!data) {
+                return safe(done)({});
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    foodHero:function(pid, foodId, num, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("RoleHero", "addexp", {pid:pid, sysid:foodId, num:num}, next);
+            if (!data) {
+                return safe(done)({});
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    autoWakeHero:function(pid, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("RoleWake", "auto", { pid:pid }, next);
+            if (!data) {
+                return safe(done)({});
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    upWakeHero:function(pid, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("RoleWake", "start", { pid:pid }, next);
+            if (!data) {
+                return safe(done)({});
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    autoSkillHero:function(pid, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("RoleWake", "autoSkill", { pid:pid }, next);
+            if (!data) {
+                return safe(done)({});
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    upSkillHero:function(pid, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("RoleWake", "upSkill", { pid:pid }, next);
+            if (!data) {
+                return safe(done)({});
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    wakeGemHero:function(pid, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("Gem", "wake", { pid:pid }, next);
+            if (!data) {
+                return safe(done)({});
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    upGemHero:function(pid, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("Gem", "up", { pid:pid }, next);
+            if (!data) {
+                return safe(done)({});
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    readAllHeros:function(done) {
+        var next = coroutine(function*() {
+            if (this.herosInfo) {
+                return safe(done)();
+            }
+            yield this.herosLock.lock(next);
+            if (!this.herosInfo) {
+                this.herosInfo = {};
+                this.herosMap = {};
+                var data = yield this.getHeros(next);
+                var data_wakes = yield this.getHeroWakes(next);
+                for (var pid in data.heros) {
+                    var heroItem = data.heros[pid];
+                    var wakeItem = data_wakes.wakes[pid];
+                    this.herosMap[pid] = heroItem.heroId;
+                    var heroInfo = new HeroInfo(this);
+                    heroInfo.updateData(heroItem);
+                    if (wakeItem) {
+                        heroInfo.updateWake(wakeItem.level, wakeItem.skill);
+                    }
+                    this.herosInfo[heroItem.heroId] = heroInfo;
+                }
+            }
+            this.herosLock.unlock();
+            return safe(done)();
+        }, this);
+    },
+    getOnlineHeroIds:function(done) {
+        var next = coroutine(function*() {
+            yield this.readAllHeros(next);
+            var heroIds = [];
+            if (this.herosInfo) {
+                for (var heroId in this.herosInfo) {
+                    heroIds.push(heroId);
+                }
+            }
+            return safe(done)(heroIds);
+        }, this);
+    },
+    getOnlineHero:function(heroId, done) {
+        var next = coroutine(function*() {
+            yield this.readAllHeros(next);
+            var heroObj = this.herosInfo && this.herosInfo[heroId] || null;
+            return safe(done)(heroObj);
+        }, this);
+    },
+    useHeroCard:function(heroId, done) {
+        var next = coroutine(function*() {
+            yield this.readAllItems(next);
+            var heroCardId = "hero_" + String(heroId);
+            var itemData = this.itemsInfo[heroCardId];
+            if (!itemData || itemData.count <= 0) {
+                return safe(done)({});
+            }
+            var detail = itemData.details[0];
+            var data_use = yield this.sendMsg("RoleItem", "use", detail, next);
+            if (!data_use) {
+                return safe(done)({});
+            }
+            return safe(done)({
+                success: true,
             });
         }, this);
     },
@@ -2283,7 +2796,7 @@ Base.extends("GameConnection", {
                 }
                 // 每日100食物
                 var toEat = null;
-                var foodNames = ["food_2", "food_3", "food_4", "food_5", "food_6"];
+                var foodNames = Database.allFoods();
                 for (var i = 0; i < foodNames.length; ++i) {
                     var foodName = foodNames[i];
                     if (this.getItemCount(foodName) >= 100) {
@@ -2731,43 +3244,72 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next); //皇帝战
             //var data = yield this.sendMsg("RoleMerge", "decompose", {type:0,value:"1,2,3,4",op:1}, next); // 分解
 
+            //var data = yield this.sendMsg("RoleHero", "getHeros", null, next); // 勇者阵容
             //var data = yield this.sendMsg("RoleHero", "sethero", {pos:1,pid:95328}, next); // 换位置
             //var data = yield this.sendMsg("RoleWake", "getinfo", null, next);
             //var data = yield this.sendMsg("Collect", "getinfo", null, next);
 
-            /*
-            var data = yield this.sendMsg("RoleHero", "getHeros", null, next); // 勇者阵容
-            var targetPid = 0;
-            for (var pid in data.list) {
-                if (73004 == data.list[pid].sysid) {
-                    targetPid = pid;
-                    break;
-                }
-            }
-            var targetLevel = data.list[targetPid].level;
-            var targetExp = data.list[targetPid].exp;
-            var eatCount = 0;
             if (true) {
-                do {
-                    var data = yield this.sendMsg("RoleHero", "addexp", {pid:targetPid,sysid:"food_6", num:600}, next); // 吃屎
-                    eatCount += 10;
-                    var data = yield this.sendMsg("RoleHero", "getHeros", null, next); // 勇者阵容
-                } while(data.list[targetPid].level <= targetLevel);
-                targetExp += eatCount * 20000;
-                targetExp -= data.list[targetPid].exp;
+                var data = yield this.sendMsg("RoleHero", "getHeros", null, next); // 勇者阵容
+                var targetPid = 0;
+                for (var pid in data.list) {
+                    if (73004 == data.list[pid].sysid) {
+                        targetPid = pid;
+                        break;
+                    }
+                }
+                if (false) {
+                    var targetLevel = data.list[targetPid].level;
+                    var targetExp = data.list[targetPid].exp;
+                    var eatCount = 0;
+                    if (false) {
+                        do {
+                            var data = yield this.sendMsg("RoleHero", "addexp", {pid:targetPid,sysid:"food_6", num:600}, next); // 吃屎
+                            eatCount += 10;
+                            var data = yield this.sendMsg("RoleHero", "getHeros", null, next); // 勇者阵容
+                        } while(data.list[targetPid].level <= targetLevel);
+                        targetExp += eatCount * 20000;
+                        targetExp -= data.list[targetPid].exp;
+                        console.log(data);
+                        console.log("eatCount", eatCount);
+                        console.log("targetLevel", targetLevel);
+                        console.log("targetExp", targetExp);
+                    } else {
+                        var base = 1;
+                        var exp = Database.foodExp("food_6", 600) + 0;
+                        var level = Database.expLevel(base, exp);
+                        var restExp = exp - Database.levelExp(base, level);
+                        console.log(data);
+                        console.log("computeLevel", level, restExp);
+                    }
+                } else {
+                    //var data = yield this.sendMsg("RoleHero", "addexp", {pid:targetPid,sysid:"food_2", num:10}, next);
+                    //var data = yield this.sendMsg("RoleHero", "sell", { pid:95880, master:0 }, next);
+                    //var data = yield this.useHeroCard(73004, next);
+                    //var data = yield this.sendMsg("RoleWake", "auto", { pid:95865 }, next);
+                    //var data = yield this.sendMsg("RoleWake", "start", { pid:95865 }, next);
+                    //var data = yield this.sendMsg("RoleWake", "autoSkill", { pid:95865 }, next);
+                    //var data = yield this.sendMsg("RoleWake", "upSkill", { pid:95865 }, next);
+                    //var data = yield this.sendMsg("RoleWake", "getinfo", null, next);
+                    //var data = yield this.sendMsg("RoleHero", "getHeros", null, next);
+                    var heroIds = yield this.getOnlineHeroIds(next);
+                    var heroObj = yield this.getOnlineHero(73004, next);
+                    if (heroObj) {
+                        //var data = yield heroObj.setPos(0, next);
+                        var data = yield heroObj.renew(next);
+                        //var data = heroObj.getUpgrade();
+                        //var data = yield heroObj.setUpgrade(3, next);
+                        //var data = heroObj.getFood();
+                        //var data = yield heroObj.setFood(240, next);
+                        var data = yield heroObj.fullUpgrade(next);
+                        var data = yield heroObj.fullFood(next);
+                    }
+                    console.log(data, !!heroObj);
+                }
+            } else {
+                console.log(data);
             }
 
-            console.log(data);
-            console.log("eatCount", eatCount);
-            console.log("targetLevel", targetLevel);
-            console.log("targetExp", targetExp);
-            var base = 1;
-            var exp = Database.foodExp("food_6", 600) + 0;
-            var level = Database.expLevel(base, exp);
-            var restExp = exp - Database.levelExp(base, level);
-            console.log("computeLevel", level, restExp);
-            */
-            console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
             //yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data, null, 2), next);
             return safe(done)();

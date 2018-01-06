@@ -136,6 +136,10 @@ Database.weaponUpdateCount = function(level, weaponNumber) {
     return 0;
 }
 
+Database.allFoods = function() {
+    return this.foodNames;
+}
+
 Database.foodExp = function(sysid, count) {
     var food_exp = this.foods[sysid];
     return count * (food_exp ? food_exp : 0);
@@ -1148,6 +1152,14 @@ Database.foods = {
     "food_5":200000,
     "food_6":500000,
 };
+
+Database.foodNames = [
+    "food_2",
+    "food_3",
+    "food_4",
+    "food_5",
+    "food_6",
+];
 
 Database.level_exp = [
     { "level":0, "mul":10000, "base":40000 },
