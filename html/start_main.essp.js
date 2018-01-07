@@ -34,6 +34,12 @@ var prot = function(callback) {
         }
     };
 };
+var brk = function() {
+    if (protToken) {
+        console.log("break some operation!");
+        protToken = null;
+    }
+}
 
 var clone = function(obj) {
     var t = (obj instanceof Array ? [] : {});
@@ -241,6 +247,7 @@ displayFuncsModel.show = function(funcKey) {
     console.log("show", support, funcKey);
     if (support && support.show) {
         templates.cancel();
+        brk();
         support.show();
         adjustPageLayout();
         return true;
@@ -912,6 +919,7 @@ function displayAutomation() {
 
         var allCommands = [displayAccounts, displayPlayers, displayCatalog, displayDetail];
         var displayCommands = function(rightCommand, leftCommand) {
+            brk();
             var levels = displayAutomationModel.getLevels();
             divSubtitleBar.html("");
             var currentLine = $(subTitleBarLineText);
@@ -1293,6 +1301,9 @@ function displayAutomation() {
     });
 }
 
+$(function() {
+    Handlebars.registerPartial("hd_hero_item", $(".hd_hero_item").html());
+});
 displayHerosModel = {
     playerKey: null,
     heroPos:[
@@ -2237,6 +2248,5 @@ function displayUsers() {
 }
 
 $(function() {
-    Handlebars.registerPartial("hd_hero_item", $(".hd_hero_item").html());
     displayLogin();
 });
