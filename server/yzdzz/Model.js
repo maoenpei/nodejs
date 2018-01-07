@@ -882,7 +882,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 return responder.respondJson({}, done);
             }
 
-            var heros = yield this.controller.getHeroData(playerData, next);
+            var heros = yield this.controller.getPlayerHeroData(playerData, next);
             responder.respondJson({
                 heros: heros,
             }, done);
@@ -890,6 +890,93 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     operatehero:function(requestor, responder, done) {
         var next = coroutine(function*() {
+            var obj = yield this.httpServer.tokenValid(requestor, next);
+            if (!obj) {
+                responder.addError("Not valid token for logout.");
+                return responder.respondJson({}, done);
+            }
+
+            var userStates = $StateManager.getState(USER_CONFIG);
+            var keyData = userStates.keys[obj.getSerial()];
+            if (!keyData || !keyData.userKey) {
+                responder.addError("Not an authorized user.");
+                return responder.respondJson({}, done);
+            }
+
+            var userData = userStates.users[keyData.userKey];
+            if (!userData || userData.auth < 2) {
+                responder.addError("Admin level not enough.");
+                return responder.respondJson({}, done);
+            }
+
+            var json = yield requestor.visitBodyJson(next);
+            if (!json || !json.key || !json.heros) {
+                responder.addError("Parameter data not correct.");
+                return responder.respondJson({}, done);
+            }
+
+            var playerKey = json.key;
+            var heroOps = json.heros;
+            var playerData = this.players[playerKey];
+            if (!playerData) {
+                responder.addError("Invalid player key.");
+                return responder.respondJson({}, done);
+            }
+
+            var playerBelong = this.getPlayerIndex(userData, playerKey);
+            if (playerBelong < 0) {
+                responder.addError("Player doesn't belong to user.");
+                return responder.respondJson({}, done);
+            }
+
+            var heroIds = [];
+            for (var heroId in heroOps) {
+                heroIds.push(heroId);
+            }
+            yield this.controller.dealWithPlayerHeros(playerData, heroIds, (heroId, heroObj, tdone) => {
+                var tnext = coroutine(function*() {
+                    var oriPos = heroObj.getPos();
+                    var oriUpgrade = heroObj.getUpgrade();
+                    var oriFood = heroObj.getFood();
+                    var oriStoneLevel = heroObj.getStoneLevel();
+                    var oriSkillLevel = heroObj.getSkillLevel();
+                    var oriGemWake = heroObj.getGemWake();
+                    var oriGemLevel = heroObj.getGemLevel();
+                    var ops = heroOps[heroId];
+                    if (ops.renew) {
+                        if (oriPos != 0) {
+                            return safe(tdone)();
+                        }
+                        yield heroObj.renew(tnext);
+                    }
+                    if (ops.pos) {
+                        var data = yield heroObj.setPos(ops.pos.target, tnext);
+                    }
+                    if (ops.upgrade) {
+                        if (ops.upgrade == 1) {
+                            yield heroObj.setUpgrade(oriUpgrade, tnext);
+                        } else if (ops.upgrade == 2) {
+                            yield heroObj.fullUpgrade(tnext);
+                        }
+                    }
+                    if (ops.food) {
+                        if (ops.food == 1) {
+                            yield heroObj.setFood(oriFood, tnext);
+                        } else if (ops.food == 2) {
+                            yield heroObj.fullFood(tnext);
+                        }
+                    }
+                    if (ops.stone) {
+                    }
+                    if (ops.gem) {
+                    }
+                    safe(tdone)();
+                }, this);
+            }, next);
+
+            responder.respondJson({
+                success: true,
+            }, done);
         }, this);
     },
     addaccount:function(requestor, responder, done) {

@@ -71,7 +71,7 @@ Base.extends("GameController", {
         return this.accountManager;
     },
 
-    getHeroData:function(playerData, done) {
+    getPlayerHeroData:function(playerData, done) {
         var next = coroutine(function*() {
             var heroData = [];
             yield this.manualOnePlayer(playerData, (conn, tdone) => {
@@ -80,6 +80,7 @@ Base.extends("GameController", {
                     for (var i = 0; i < heroIds.length; ++i) {
                         var heroId = heroIds[i];
                         var heroObj = yield conn.getOnlineHero(heroId, tnext);
+                        var stone = heroObj.getStoneLevel();
                         heroData.push({
                             heroId: heroId,
                             color: heroObj.getColor(),
@@ -87,8 +88,10 @@ Base.extends("GameController", {
                             pos: heroObj.getPos(),
                             upgrade: heroObj.getUpgrade(),
                             food: heroObj.getFood(),
-                            stone: heroObj.getStone(),
-                            stoneBase: heroObj.getStoneBase(),
+                            stone: stone,
+                            stoneColor: Math.floor((stone - 1) / 5) + 1,
+                            stoneLevel: (stone - 1) % 5 + 1,
+                            skill: (stone >= heroObj.getStoneBase() ? heroObj.getSkillLevel() + 1 : 0),
                             gemWake: heroObj.getGemWake(),
                             gemLevel: heroObj.getGemLevel(),
                         });
@@ -98,6 +101,18 @@ Base.extends("GameController", {
             }, next);
             safe(done)(heroData);
         }, this);
+    },
+    dealWithPlayerHeros:function(playerData, heroIds, operate, done) {
+        this.manualOnePlayer(playerData, (conn, tdone) => {
+            var tnext = coroutine(function*() {
+                for (var i = 0; i < heroIds.length; ++i) {
+                    var heroId = heroIds[i];
+                    var heroObj = yield conn.getOnlineHero(heroId, tnext);
+                    yield operate(heroId, heroObj, tnext);
+                }
+                safe(tdone)();
+            }, this);
+        }, done);
     },
 
     getPlayerBrief:function(playerData) {

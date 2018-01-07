@@ -17,6 +17,7 @@ var accounts = [
     {u:"eyexiaohao004", p:"123456"},
     {u:"eyexiaohao005", p:"123456"},
     {u:"eyexiaohao006", p:"123456"},
+    {u:"eyexiaohao008", p:"123456"},
     {u:"lv35679183", p:"zhangpeng1989", no96:true},
     {u:"13719987234", p:"xwWZT123", no96:true},
     {u:"13801890722", p:"Q950318my", no96:true},

@@ -113,8 +113,11 @@ Base.extends("HeroInfo", {
     getFood:function() {
         return this.heroData && this.heroData.food;
     },
-    getStone:function() {
-        return this.heroData && (this.heroData.stoneLevel + this.heroData.stoneSkill);
+    getStoneLevel:function() {
+        return this.heroData && this.heroData.stoneLevel;
+    },
+    getSkillLevel:function() {
+        return this.heroData && this.heroData.stoneSkill;
     },
     getStoneBase:function() {
         return this.heroData && this.heroData.color * 5;
@@ -3310,7 +3313,7 @@ Base.extends("GameConnection", {
                     //var data = yield this.sendMsg("RoleWake", "getinfo", null, next);
                     //var data = yield this.sendMsg("RoleHero", "getHeros", null, next);
                     //var heroIds = yield this.getOnlineHeroIds(next);
-                    var heroObj = yield this.getOnlineHero(73004, next);
+                    var heroObj = yield this.getOnlineHero(70018, next);
                     if (heroObj) {
                         //var data = yield heroObj.setPos(0, next);
                         //var data = yield heroObj.renew(next);
@@ -3319,7 +3322,7 @@ Base.extends("GameConnection", {
                         //var data = heroObj.getFood();
                         //var data = yield heroObj.setFood(240, next);
                         //var data = yield heroObj.fullUpgrade(next);
-                        //var data = yield heroObj.fullFood(next);
+                        var data = yield heroObj.fullFood(next);
                     }
                     console.log(data, !!heroObj);
                 }

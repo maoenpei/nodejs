@@ -460,12 +460,10 @@ input[type='checkbox']{
 }
 
 .div_hero_panel_main{
-    position:fixed;
     width:100%;
 }
 .div_hero_panel_battle{
     background-color:#999;
-    padding: 0.1rem;
 }
 .div_hero_panel_line{
 }
@@ -489,6 +487,39 @@ input[type='checkbox']{
 .div_hero_panel_left_items{
     display: inline-block;
 }
+.div_hero_panel_operate{
+    white-space: nowrap;
+    margin-top: 0.2rem;
+    background-color:#999;
+}
+.div_hero_panel_operate_pos{
+    display: inline-block;
+    vertical-align: top;
+    margin: 0.2rem;
+    margin-right: 0.5rem;
+}
+.div_hero_panel_operate_props{
+    display: inline-block;
+    vertical-align: top;
+    margin: 0.2rem;
+    margin-left: 0.5rem;
+}
+.div_hero_panel_operate_title{
+    color:rgb(100, 200, 100);
+}
+.div_hero_panel_operate_cmds{
+}
+.div_hero_panel_operate_item{
+    color:rgb(0, 200, 200);
+    margin-top: 0.2rem;
+}
+.div_hero_panel_operate_type{
+    display: inline-block;
+}
+.div_hero_panel_operate_do{
+    display: inline-block;
+}
+
 .div_hero_panel_item{
     display: inline-block;
     border: 1px dashed #666;
@@ -498,6 +529,11 @@ input[type='checkbox']{
     font-size: 0.5rem;
     vertical-align: middle;
     overflow: visible;
+    text-align: center;
+    cursor: pointer;
+}
+.div_hero_panel_item_selected{
+    border: 1px dashed #ff0;
 }
 .div_hero_panel_item_name{
     margin-top: 0.1rem;

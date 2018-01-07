@@ -318,10 +318,40 @@
                     {{/each}}
                 </div>
             </div>
+            <div class="div_hero_panel_operate">
+                <div class="div_hero_panel_operate_pos">
+                    <div class="div_hero_panel_operate_title">位置操作</div>
+                    <div class="div_hero_panel_operate_cmds">
+                        {{#each posTypes}}
+                        <div class="div_hero_panel_operate_item">
+                            <div class="visit_label">{{desc}}</div>
+                        </div>
+                        {{/each}}
+                    </div>
+                </div>
+                <div class="div_hero_panel_operate_props">
+                    <div class="div_hero_panel_operate_title">属性操作</div>
+                    <div class="div_hero_panel_operate_cmds">
+                        <div class="div_hero_panel_operate_item">
+                            {{#each propOptions}}
+                            <div class="div_hero_panel_operate_type">
+                                {{desc}}
+                                <input type="checkbox" class="input_hero_panel_operate_check" checked>
+                            </div>
+                            {{/each}}
+                        </div>
+                        <div class="div_hero_panel_operate_item">
+                            {{#each propOps}}
+                            <div class="div_hero_panel_operate_do visit_label">{{desc}}</div>
+                            {{/each}}
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 </script>
 <script type="text/x-handlebars-template" class="hd_hero_item">
-                <div class="div_hero_panel_item">
+                <div class="div_hero_panel_item" hero_pos="{{pos}}" hero_id="{{heroId}}">
                     {{#if name}}
                     <div class="div_hero_panel_item_name {{nameCls}}">
                         {{name}}

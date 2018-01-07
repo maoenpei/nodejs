@@ -1311,6 +1311,33 @@ displayHerosModel = {
         "div_game_color_X",
     ],
 };
+displayHerosModel.posTypes = [
+    {
+        desc: "下阵",
+        visible: function() { return displayHerosModel.isSelectPosHeros(); },
+        execute: function(callback) { displayHerosModel.getOffHeroArray(callback); },
+    }, {
+        desc: "交换",
+        visible: function() { return displayHerosModel.isSelectExchange(); },
+        execute: function(callback) { displayHerosModel.exchangeHero(callback); },
+    }
+];
+displayHerosModel.propOptions = [
+    {desc:"进化", name:"upgrade"},
+    {desc:"食物", name:"food"},
+    {desc:"神石", name:"stone"},
+    {desc:"宝具", name:"gem"},
+];
+displayHerosModel.propOps = [
+    {
+        desc:"解雇重吃", val:1,
+        visible: function() { return displayHerosModel.isSelectCacheHeros(); },
+    },
+    {
+        desc:"吃饱", val:2,
+        visible: function() { return displayHerosModel.isSelectHeros(); },
+    },
+];
 displayHerosModel.setPlayerKey = function(playerKey) {
     this.playerKey = playerKey
 }
@@ -1326,40 +1353,179 @@ displayHerosModel.initialize = function() {
     var heros = this.heros;
     var posHeros = {};
     var leftHeros = [];
+    var sortedHeros = {};
     for (var i = 0; i < heros.length; ++i) {
         var hero = heros[i];
         hero.nameCls = this.colorCls[hero.color];
-        var stone = (hero.stone >= hero.stoneBase ? hero.stoneBase : hero.stone);
-        hero.skill = (hero.stone >= hero.stoneBase ? hero.stone - hero.stoneBase + 1 : 0);
-        console.log("stone", hero.name, stone);
-        if (stone > 0) {
-            hero.stoneLevel = (stone - 1) % 5 + 1;
-            hero.stoneCls = this.colorCls[Math.floor((stone - 1) / 5) + 1];
+        if (hero.stone > 0) {
+            hero.stoneCls = this.colorCls[hero.stoneColor];
         }
         if (hero.pos > 0) {
             posHeros[hero.pos] = hero;
         } else {
             leftHeros.push(hero);
         }
+        sortedHeros[hero.heroId] = hero;
     }
     var heroArray = [];
     for (var i = 0; i < this.heroPos.length; ++i) {
         var heroIndex = this.heroPos[i];
         var heroLine = [];
         for (var j = 0; j < heroIndex.length; ++j) {
-            var hero = posHeros[heroIndex[j]];
-            heroLine.push(hero || {});
+            var pos = heroIndex[j];
+            var hero = posHeros[pos];
+            heroLine.push(hero || {pos:pos});
         }
         heroArray.push(heroLine);
     }
     this.heroArray = heroArray;
     this.leftHeros = leftHeros;
+    this.sortedHeros = sortedHeros;
+    this.selection = [];
+    this.operateTypes = {};
+    for (var i = 0; i < this.propOptions.length; ++i) {
+        var propType = this.propOptions[i];
+        this.operateTypes[propType.name] = true;
+    }
 }
 displayHerosModel.getHeroArray = function() {
     return this.heroArray;
 }
 displayHerosModel.getLeftHeros = function() {
     return this.leftHeros;
+}
+displayHerosModel.getSelection = function() {
+    return this.selection;
+}
+displayHerosModel.setSelected = function(selected, pos, heroId) {
+    if (selected) {
+        if (heroId) {
+            this.selection.push(this.sortedHeros[heroId]);
+        } else {
+            this.selection.push({pos:pos});
+        }
+    } else {
+        for (var i = 0; i < this.selection.length; ++i) {
+            var hero = this.selection[i];
+            if (heroId ? hero.heroId == heroId : hero.pos == pos) {
+                this.selection.splice(i, 1);
+                break;
+            }
+        }
+    }
+}
+displayHerosModel.isSelectHeros = function() {
+    if (this.selection.length > 0) {
+        var allHeros = true;
+        for (var i = 0; i < this.selection.length; ++i) {
+            var hero = this.selection[i];
+            if (!hero.heroId) {
+                allHeros = false;
+                break;
+            }
+        }
+        return allHeros;
+    }
+    return false;
+}
+displayHerosModel.isSelectPosHeros = function() {
+    if (this.selection.length > 0) {
+        var allPosHeros = true;
+        for (var i = 0; i < this.selection.length; ++i) {
+            var hero = this.selection[i];
+            if (!hero.heroId || !hero.pos) {
+                allPosHeros = false;
+                break;
+            }
+        }
+        return allPosHeros;
+    }
+    return false;
+}
+displayHerosModel.isSelectCacheHeros = function() {
+    if (this.selection.length > 0) {
+        var allCacheHeros = true;
+        for (var i = 0; i < this.selection.length; ++i) {
+            var hero = this.selection[i];
+            if (!hero.heroId || hero.pos) {
+                allCacheHeros = false;
+                break;
+            }
+        }
+        return allCacheHeros;
+    }
+    return false;
+}
+displayHerosModel.isSelectExchange = function() {
+    if (this.selection.length == 2) {
+        var hero1 = this.selection[0];
+        var hero2 = this.selection[1];
+        if (hero1.pos == 0 && hero2.pos == 0) {
+            return false;
+        }
+        if (!hero1.heroId && !hero2.heroId) {
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
+displayHerosModel.getOffHeroArray = function(callback) {
+    var heroOps = {};
+    for (var i = 0; i < this.selection.length; ++i) {
+        var hero = this.selection[i];
+        heroOps[hero.heroId] = {
+            pos: { target: 0 },
+        };
+    }
+    requestPost("operatehero", { key: this.playerKey, heros: heroOps, }, function(json) {
+        if (json.success) {
+            callback();
+        }
+    });
+}
+displayHerosModel.exchangeHero = function(callback) {
+    var hero = this.selection[0];
+    var heroPos = this.selection[1];
+    if (!hero.heroId || heroPos.pos == 0) {
+        hero = this.selection[1];
+        heroPos = this.selection[0];
+    }
+    var heroOps = {};
+    heroOps[hero.heroId] = {
+        pos: { target: heroPos.pos, },
+    };
+    requestPost("operatehero", { key: this.playerKey, heros: heroOps, }, function(json) {
+        if (json.success) {
+            callback();
+        }
+    });
+}
+displayHerosModel.setOptions = function(name, isAdd) {
+    if (isAdd) {
+        this.operateTypes[name] = true;
+    } else {
+        delete this.operateTypes[name];
+    }
+}
+displayHerosModel.doOperation = function(opMode, callback) {
+    var options = {};
+    if (opMode == 1) {
+        options.renew = true;
+    }
+    for (var name in this.operateTypes) {
+        options[name] = opMode;
+    }
+    var heroOps = {};
+    for (var i = 0; i < this.selection.length; ++i) {
+        var hero = this.selection[i];
+        heroOps[hero.heroId] = options;
+    }
+    requestPost("operatehero", { key: this.playerKey, heros: heroOps, }, function(json) {
+        if (json.success) {
+            callback();
+        }
+    });
 }
 
 function displayHeros(parentPanel, player) {
@@ -1375,7 +1541,83 @@ function displayHeros(parentPanel, player) {
         parentPanel.html(heroPanelTemplate({
             heroArray: heroArray,
             leftHeros: leftHeros,
+            posTypes: displayHerosModel.posTypes,
+            propOptions: displayHerosModel.propOptions,
+            propOps: displayHerosModel.propOps,
         }));
+
+        var allItemBlocks = parentPanel.find(".div_hero_panel_item");
+        for (var i = 0; i < allItemBlocks.length; ++i) {
+            (function() {
+                var itemBlock = $(allItemBlocks[i]);
+                var pos = Number(itemBlock.attr("hero_pos"));
+                var heroId = itemBlock.attr("hero_id");
+                itemBlock.click(function() {
+                    itemBlock.toggleClass("div_hero_panel_item_selected");
+                    var selected = itemBlock.hasClass("div_hero_panel_item_selected");
+                    displayHerosModel.setSelected(selected, pos, heroId);
+                    updateOperate();
+                });
+            })();
+        }
+        var posOperateBlocks = parentPanel.find(".div_hero_panel_operate_pos").find(".div_hero_panel_operate_item");
+        for (var i = 0; i < displayHerosModel.posTypes.length; ++i) {
+            (function() {
+                var posType = displayHerosModel.posTypes[i];
+                var posOperate = $(posOperateBlocks[i]);
+                posOperate.click(function() {
+                    posType.execute(function() {
+                        displayHeros(parentPanel, player);
+                    });
+                });
+            })();
+        }
+        var propOptionBlocks = parentPanel.find(".div_hero_panel_operate_props").find(".input_hero_panel_operate_check");
+        var propOperateBlocks = parentPanel.find(".div_hero_panel_operate_props").find(".div_hero_panel_operate_do");
+        for (var i = 0; i < displayHerosModel.propOptions.length; ++i) {
+            (function() {
+                var optionType = displayHerosModel.propOptions[i];
+                var optionOperate = $(propOptionBlocks[i]);
+                optionOperate.change(function() {
+                    var checked = optionOperate.is(":checked");
+                    displayHerosModel.setOptions(optionType.name, checked);
+                });
+            })();
+        }
+        for (var i = 0; i < displayHerosModel.propOps.length; ++i) {
+            (function() {
+                var propType = displayHerosModel.propOps[i];
+                var propOperate = $(propOperateBlocks[i]);
+                propOperate.click(function() {
+                    displayHerosModel.doOperation(propType.val, function() {
+                        displayHeros(parentPanel, player);
+                    });
+                });
+            })();
+        }
+        function updateOperate() {
+            for (var i = 0; i < displayHerosModel.posTypes.length; ++i) {
+                var posType = displayHerosModel.posTypes[i];
+                var posOperate = $(posOperateBlocks[i]);
+                var visible = posType.visible();
+                if (visible) {
+                    posOperate.show();
+                } else {
+                    posOperate.hide();
+                }
+            }
+            for (var i = 0; i < displayHerosModel.propOps.length; ++i) {
+                var propType = displayHerosModel.propOps[i];
+                var propOperate = $(propOperateBlocks[i]);
+                var visible = propType.visible();
+                if (visible) {
+                    propOperate.show();
+                } else {
+                    propOperate.hide();
+                }
+            }
+        }
+        updateOperate();
     });
 }
 
