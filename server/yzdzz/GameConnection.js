@@ -520,7 +520,7 @@ Base.extends("GameConnection", {
             if (result != 'done') {
                 this.log("stat failed playerId:{0} error:{1}".format(this.gameInfo.playerId, JSON.stringify(result)));
             }
-            this.log("Player id:{0}, server:{1} delta:{2}, delay:{3}".format(this.gameInfo.playerId, server.desc, deltaTime, delayTime));
+            this.log("entering - Player id:{0}, server:{1} delta:{2}, delay:{3}".format(this.gameInfo.playerId, server.desc, deltaTime, delayTime));
             //var obj = yield GameHTTP.save(this.accountInfo.accountId, this.gameInfo.playerId, server.serverId, this.accountInfo.accessToken, next);
             //if (obj.code != 'SUCCESS') {
             //    this.log("save failed accountId:{0} code:{1} reason:{2}".format(this.accountInfo.playerId, obj.code, obj.desc));
