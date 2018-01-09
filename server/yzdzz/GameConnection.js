@@ -459,7 +459,7 @@ Base.extends("GameConnection", {
             //this.log("Connected with ip:{0}, port:{1}, server:{2}".format(server.ip, server.port, server.desc));
             this.sock = sock;
             this.serverInfo = server;
-            GameSock.receive(sock, (c, m, data, change) => {
+            GameSock.receive(sock, this, (c, m, data, change) => {
                 this.updateDiamondCost(change);
                 if (change) {
                     //console.log("change happen -", c, m, change);
@@ -3348,6 +3348,11 @@ Base.extends("GameConnection", {
         GameSock.send(this.sock, c, m, data, options, callback);
     },
     onReceive:function(c, m, data) {
+        if (!c || !m) {
+            this.quit();
+            this.dispatchKicks(data);
+            return;
+        }
         var key = c + "." + m;
         var callbackArray = this.recvCallbacks[key];
         if (callbackArray && callbackArray.length > 0) {
@@ -3427,18 +3432,21 @@ Base.extends("GameConnection", {
             delete this.kickCallbacks[kickKey];
         }
     },
+    dispatchKicks:function(data) {
+        var kickCallbacks = this.kickCallbacks;
+        this.kickCallbacks = [];
+        for (var kickKey in kickCallbacks) {
+            safe(kickCallbacks[kickKey])(data);
+        }
+        safe(this.events["break"])();
+    },
     registerMessages:function() {
         this.regMsg("MsgBox", "message", (data) => {});
         this.regMsg("Chat", "msg", (data) => {});
         this.regMsg("Role", "kick", (data) => {
             this.log("User Kicked!");
             this.quit();
-            var kickCallbacks = this.kickCallbacks;
-            this.kickCallbacks = [];
-            for (var kickKey in kickCallbacks) {
-                safe(kickCallbacks[kickKey])(data);
-            }
-            safe(this.events["break"])();
+            this.dispatchKicks(data);
         });
         this.regMsg("RoleScout", "notify", (data) => {
             console.log("RoleScout_notify", data);

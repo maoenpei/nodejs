@@ -81,12 +81,17 @@ GameSock.connect = function(ip, port, done) {
     });
 }
 
-GameSock.receive = function(sock, callback) {
+var maxPackageSize = 1024;
+GameSock.receive = function(sock, logger, callback) {
     var stream = Buffer.alloc(0);
     sock.on("data", (buf) => {
         stream = Buffer.concat([stream, buf]);
         while (stream.length >= 4) {
             var packageSize = stream.readInt32BE(0);
+            if (packageSize > maxPackageSize) {
+                maxPackageSize = packageSize;
+                console.log("-- Max package size incresed! --", maxPackageSize);
+            }
             if (stream.length < packageSize + 4) {
                 return;
             }
@@ -94,14 +99,15 @@ GameSock.receive = function(sock, callback) {
             stream = stream.slice(packageSize + 4);
             zlib.gunzip(package, (err, decoded) => {
                 if (!decoded) {
-                    console.log("Error in package unzip...", err);
+                    logger.log("Error in package unzip...", err);
                     console.log("packageSize", packageSize);
                     console.log("package", package);
+                    safe(callback)(null, null);
                     return;
                 }
                 var obj = JSON.parse(decoded.toString());
                 if (!obj.data) {
-                    console.log(">> - Protocol error on c({0}) m({1}):".format(obj.c, obj.m), obj.error);
+                    logger.log(">> - Protocol error on c({0}) m({1}):".format(obj.c, obj.m), obj.error);
                 }
                 safe(callback)(obj.c, obj.m, obj.data, obj.change);
             });
