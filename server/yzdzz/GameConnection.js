@@ -232,10 +232,46 @@ Base.extends("HeroInfo", {
             });
         }, this);
     },
-    setStone:function(level, done) {
+    setStoneLevel:function(level, done) {
         var next = coroutine(function*() {
             if (!this.heroData) {
                 return safe(done)({});
+            }
+            var currLevel = this.heroData.stoneLevel;
+            if (currLevel >= level) {
+                return safe(done)({});
+            }
+            for (var i = currLevel; i < level; ++i) {
+                this.log("Stone upgrading");
+                var data = yield this.conn.autoWakeHero(this.heroData.pid, next);
+                // ignore if data failed here
+                var data = yield this.conn.upWakeHero(this.heroData.pid, next);
+                if (!data.success) {
+                    return safe(done)({});
+                }
+            }
+            safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    setSkillLevel:function(level, done) {
+        var next = coroutine(function*() {
+            if (!this.heroData) {
+                return safe(done)({});
+            }
+            var currLevel = this.heroData.stoneSkill;
+            if (currLevel >= level) {
+                return safe(done)({});
+            }
+            for (var i = currLevel; i < level; ++i) {
+                this.log("Skill upgrading");
+                var data = yield this.conn.autoSkillHero(this.heroData.pid, next);
+                // ignore if data failed here
+                var data = yield this.conn.upSkillHero(this.heroData.pid, next);
+                if (!data.success) {
+                    return safe(done)({});
+                }
             }
             safe(done)({
                 success: true,
@@ -247,6 +283,17 @@ Base.extends("HeroInfo", {
             if (!this.heroData) {
                 return safe(done)({});
             }
+            var currLevel = this.heroData.gemWake;
+            if (currLevel >= level) {
+                return safe(done)({});
+            }
+            for (var i = currLevel; i < level; ++i) {
+                this.log("Gem waking");
+                var data = yield this.conn.wakeGemHero(this.heroData.pid, next);
+                if (!data.success) {
+                    return safe(done)({});
+                }
+            }
             safe(done)({
                 success: true,
             });
@@ -256,6 +303,17 @@ Base.extends("HeroInfo", {
         var next = coroutine(function*() {
             if (!this.heroData) {
                 return safe(done)({});
+            }
+            var currLevel = this.heroData.gemLevel;
+            if (currLevel >= level) {
+                return safe(done)({});
+            }
+            for (var i = currLevel; i < level; ++i) {
+                this.log("Gem leveling");
+                var data = yield this.conn.upGemHero(this.heroData.pid, next);
+                if (!data.success) {
+                    return safe(done)({});
+                }
             }
             safe(done)({
                 success: true,
@@ -302,6 +360,45 @@ Base.extends("HeroInfo", {
             }
             var topLevel = (this.heroData.upgrade + 1) * 60;
             this.setFood(topLevel, done);
+        }, this);
+    },
+    fullStone:function(done) {
+        var next = coroutine(function*() {
+            if (!this.heroData) {
+                return safe(done)({});
+            }
+            var topStoneLevel = this.heroData.color * 5;
+            if (this.heroData.stoneLevel < topStoneLevel) {
+                yield this.setStoneLevel(topStoneLevel, next);
+            }
+            var topSkillLevel = 9;
+            if (this.heroData.stoneLevel == topStoneLevel && this.heroData.stoneSkill < topSkillLevel) {
+                yield this.setSkillLevel(topSkillLevel, next);
+            }
+            safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    fullGem:function(done) {
+        var next = coroutine(function*() {
+            if (!this.heroData) {
+                return safe(done)({});
+            }
+            /*
+            var color = this.heroData.color;
+            var topGemWake = (color < 5 ? 0 : (color == 5 ? 5 : (color == 6 ? 10 : 20)));
+            if (this.heroData.gemWake < topGemWake) {
+                yield this.setGemWake(topGemWake, next);
+            }
+            */
+            var topGemLevel = (this.heroData.gemWake == 0 ? 0 : (this.heroData.gemWake - 1) * 10 + 5);
+            if (this.heroData.gemLevel < topGemLevel) {
+                yield this.setGemLevel(topGemLevel, next);
+            }
+            safe(done)({
+                success: true,
+            });
         }, this);
     },
 
@@ -811,6 +908,13 @@ Base.extends("GameConnection", {
             });
         }, this);
     },
+    updateHeroStone:function(pid, data) {
+        if (this.herosInfo && this.herosMap) {
+            var heroId = this.herosMap[pid];
+            var heroInfo = this.herosInfo[heroId];
+            heroInfo.updateWake(data.level, data.skill_level);
+        }
+    },
     autoWakeHero:function(pid, done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("RoleWake", "auto", { pid:pid }, next);
@@ -828,6 +932,7 @@ Base.extends("GameConnection", {
             if (!data) {
                 return safe(done)({});
             }
+            this.updateHeroStone(pid, data);
             return safe(done)({
                 success: true,
             });
@@ -850,6 +955,7 @@ Base.extends("GameConnection", {
             if (!data) {
                 return safe(done)({});
             }
+            this.updateHeroStone(pid, data);
             return safe(done)({
                 success: true,
             });
@@ -2920,7 +3026,7 @@ Base.extends("GameConnection", {
                                 heros.push(detail.id);
                                 heroNames.push(itemName);
                                 if (detail.num != 1) {
-                                    console.log("============ hero card >1 detected ===============", itemName, detail);
+                                    this.log("============ hero card >1 detected ===============", itemName, detail);
                                 }
                             }
                         }

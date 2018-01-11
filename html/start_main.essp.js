@@ -1121,7 +1121,6 @@ function displayAutomation() {
                 displayDetail();
             });
 
-        if (false) {
             // heropanel
             var divAutoHerosBlock = $(autoItemTemplate({name: "勇者面板"}));
             divAutoHerosBlock.appendTo(divAutomationContent);
@@ -1130,7 +1129,6 @@ function displayAutomation() {
                 displayAutomationModel.toCatalog({ name: "勇者面板", func: displayHeroPanel, });
                 displayDetail();
             });
-        }
         }
         function displayHeroPanel() {
             displayCommands({name: "刷新", func: function() {

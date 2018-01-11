@@ -967,8 +967,20 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                         }
                     }
                     if (ops.stone) {
+                        if (ops.stone == 1) {
+                            yield heroObj.setStoneLevel(oriStoneLevel, tnext);
+                            yield heroObj.setSkillLevel(oriSkillLevel, tnext);
+                        } else if (ops.stone == 2) {
+                            yield heroObj.fullStone(tnext);
+                        }
                     }
                     if (ops.gem) {
+                        if (ops.gem == 1) {
+                            yield heroObj.setGemWake(oriGemWake, tnext);
+                            yield heroObj.setGemLevel(oriGemLevel, tnext);
+                        } else if (ops.gem == 2) {
+                            yield heroObj.fullGem(tnext);
+                        }
                     }
                     safe(tdone)();
                 }, this);
