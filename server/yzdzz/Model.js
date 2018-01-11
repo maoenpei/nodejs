@@ -42,6 +42,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         this.accountManager = this.controller.getAccountManager();
         this.accounts = {};
         this.players = {};
+        this.playerHerosInfo = {};
 
         this.onRefreshEnd = [];
         this.delayRefresh = "";
@@ -842,6 +843,23 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         userData.accounts.splice(accountBelong, 1);
     },
 
+    findHeroCache:function(playerKey) {
+        var heroCache = this.playerHerosInfo[playerKey];
+        if (heroCache) {
+            var nowTime = new Date().getTime();
+            if (nowTime - heroCache.time < 5 * 60 * 1000) {
+                return heroCache.heros;
+            }
+        }
+        return null;
+    },
+    commitHeroCache:function(playerKey, heros) {
+        this.playerHerosInfo[playerKey] = {
+            time: new Date().getTime(),
+            heros: heros,
+        };
+    },
+
     listheros:function(requestor, responder, done) {
         var next = coroutine(function*() {
             var obj = yield this.httpServer.tokenValid(requestor, next);
@@ -870,6 +888,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             }
 
             var playerKey = json.key;
+            var isForce = json.force;
             var playerData = this.players[playerKey];
             if (!playerData) {
                 responder.addError("Invalid player key.");
@@ -882,7 +901,11 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 return responder.respondJson({}, done);
             }
 
-            var heros = yield this.controller.getPlayerHeroData(playerData, next);
+            var heros = (!isForce ? this.findHeroCache(playerKey) : null);
+            if (!heros) {
+                heros = yield this.controller.getPlayerHeroData(playerData, next);
+                this.commitHeroCache(playerKey, heros);
+            }
             responder.respondJson({
                 heros: heros,
             }, done);
@@ -933,7 +956,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             for (var heroId in heroOps) {
                 heroIds.push(heroId);
             }
-            yield this.controller.dealWithPlayerHeros(playerData, heroIds, (heroId, heroObj, tdone) => {
+            var heros = yield this.controller.dealWithPlayerHeros(playerData, heroIds, (heroId, heroObj, tdone) => {
                 var tnext = coroutine(function*() {
                     var oriPos = heroObj.getPos();
                     var oriUpgrade = heroObj.getUpgrade();
@@ -985,6 +1008,8 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                     safe(tdone)();
                 }, this);
             }, next);
+
+            this.commitHeroCache(playerKey, heros);
 
             responder.respondJson({
                 success: true,

@@ -71,48 +71,54 @@ Base.extends("GameController", {
         return this.accountManager;
     },
 
-    getPlayerHeroData:function(playerData, done) {
+    readPlayerHeros:function(conn, done) {
         var next = coroutine(function*() {
             var heroData = [];
-            yield this.manualOnePlayer(playerData, (conn, tdone) => {
-                var tnext = coroutine(function*() {
-                    var heroIds = yield conn.getOnlineHeroIds(tnext);
-                    for (var i = 0; i < heroIds.length; ++i) {
-                        var heroId = heroIds[i];
-                        var heroObj = yield conn.getOnlineHero(heroId, tnext);
-                        var stone = heroObj.getStoneLevel();
-                        heroData.push({
-                            heroId: heroId,
-                            color: heroObj.getColor(),
-                            name: heroObj.getName(),
-                            pos: heroObj.getPos(),
-                            upgrade: heroObj.getUpgrade(),
-                            food: heroObj.getFood(),
-                            stone: stone,
-                            stoneColor: Math.floor((stone - 1) / 5) + 1,
-                            stoneLevel: (stone - 1) % 5 + 1,
-                            skill: (stone >= heroObj.getStoneBase() ? heroObj.getSkillLevel() + 1 : 0),
-                            gemWake: heroObj.getGemWake(),
-                            gemLevel: heroObj.getGemLevel(),
-                        });
-                    }
-                    safe(tdone)();
-                }, this);
-            }, next);
+            var heroIds = yield conn.getOnlineHeroIds(next);
+            for (var i = 0; i < heroIds.length; ++i) {
+                var heroId = heroIds[i];
+                var heroObj = yield conn.getOnlineHero(heroId, next);
+                var stone = heroObj.getStoneLevel();
+                heroData.push({
+                    heroId: heroId,
+                    color: heroObj.getColor(),
+                    name: heroObj.getName(),
+                    pos: heroObj.getPos(),
+                    upgrade: heroObj.getUpgrade(),
+                    food: heroObj.getFood(),
+                    stone: stone,
+                    stoneColor: Math.floor((stone - 1) / 5) + 1,
+                    stoneLevel: (stone - 1) % 5 + 1,
+                    skill: (stone >= heroObj.getStoneBase() ? heroObj.getSkillLevel() + 1 : 0),
+                    gemWake: heroObj.getGemWake(),
+                    gemLevel: heroObj.getGemLevel(),
+                });
+            }
             safe(done)(heroData);
         }, this);
     },
+    getPlayerHeroData:function(playerData, done) {
+        this.manualOnePlayer(playerData, (conn, tdone) => {
+            this.readPlayerHeros(conn, (heroData) => {
+                safe(tdone)();
+                safe(done)(heroData);
+            });
+        }, null);
+    },
     dealWithPlayerHeros:function(playerData, heroIds, operate, done) {
         this.manualOnePlayer(playerData, (conn, tdone) => {
-            var tnext = coroutine(function*() {
+            var next = coroutine(function*() {
                 for (var i = 0; i < heroIds.length; ++i) {
                     var heroId = heroIds[i];
-                    var heroObj = yield conn.getOnlineHero(heroId, tnext);
-                    yield operate(heroId, heroObj, tnext);
+                    var heroObj = yield conn.getOnlineHero(heroId, next);
+                    yield operate(heroId, heroObj, next);
                 }
-                safe(tdone)();
+                this.readPlayerHeros(conn, (heroData) => {
+                    safe(tdone)();
+                    safe(done)(heroData);
+                });
             }, this);
-        }, done);
+        }, null);
     },
 
     getPlayerBrief:function(playerData) {

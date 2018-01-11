@@ -1132,7 +1132,7 @@ function displayAutomation() {
         }
         function displayHeroPanel() {
             displayCommands({name: "刷新", func: function() {
-                displayHeros(divAutomationContent, displayAutomationModel.getLastPlayer());
+                displayHeros(divAutomationContent, displayAutomationModel.getLastPlayer(), true);
             }});
 
             displayHeros(divAutomationContent, displayAutomationModel.getLastPlayer());
@@ -1352,9 +1352,9 @@ displayHerosModel.propOps = [
 displayHerosModel.setPlayerKey = function(playerKey) {
     this.playerKey = playerKey
 }
-displayHerosModel.get = function(callback) {
+displayHerosModel.get = function(force, callback) {
     $this = this;
-    requestPost("listheros", { key: this.playerKey }, function(json) {
+    requestPost("listheros", { force:force, key: this.playerKey }, function(json) {
         $this.heros = json.heros;
         $this.initialize();
         callback(json);
@@ -1539,14 +1539,14 @@ displayHerosModel.doOperation = function(opMode, callback) {
     });
 }
 
-function displayHeros(parentPanel, player) {
+function displayHeros(parentPanel, player, isForce) {
     var waitingTemplate = templates.read(".hd_display_loading");
     parentPanel.html(waitingTemplate({loading_data: true}));
 
     var heroPanelTemplate = templates.read(".hd_hero_panel");
 
     displayHerosModel.setPlayerKey(player.key);
-    displayHerosModel.get(function() {
+    displayHerosModel.get(isForce, function() {
         var heroArray = displayHerosModel.getHeroArray();
         var leftHeros = displayHerosModel.getLeftHeros();
         parentPanel.html(heroPanelTemplate({
