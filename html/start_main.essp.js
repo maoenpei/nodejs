@@ -1557,6 +1557,7 @@ function displayHeros(parentPanel, player) {
             propOps: displayHerosModel.propOps,
         }));
 
+        var divOperationMask = parentPanel.find(".div_hero_panel_loading_mask");
         var allItemBlocks = parentPanel.find(".div_hero_panel_item");
         for (var i = 0; i < allItemBlocks.length; ++i) {
             (function() {
@@ -1577,6 +1578,7 @@ function displayHeros(parentPanel, player) {
                 var posType = displayHerosModel.posTypes[i];
                 var posOperate = $(posOperateBlocks[i]);
                 posOperate.click(function() {
+                    divOperationMask.show();
                     posType.execute(function() {
                         displayHeros(parentPanel, player);
                     });
@@ -1600,6 +1602,7 @@ function displayHeros(parentPanel, player) {
                 var propType = displayHerosModel.propOps[i];
                 var propOperate = $(propOperateBlocks[i]);
                 propOperate.click(function() {
+                    divOperationMask.show();
                     displayHerosModel.doOperation(propType.val, function() {
                         displayHeros(parentPanel, player);
                     });

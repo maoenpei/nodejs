@@ -519,6 +519,12 @@ input[type='checkbox']{
 .div_hero_panel_operate_do{
     display: inline-block;
 }
+.div_hero_panel_loading_text{
+    position: absolute;
+    top: 50%;
+    width: 100%;
+    color: white;
+}
 
 .div_hero_panel_item{
     display: inline-block;
