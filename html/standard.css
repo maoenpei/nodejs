@@ -546,6 +546,11 @@ input[type='checkbox']{
     white-space: nowrap;
     font-size: 0.6rem;
 }
+.div_hero_panel_item_mark{
+    border-bottom: 1px solid #e50;
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+}
 .div_hero_panel_item_food{
     color: white;
 }

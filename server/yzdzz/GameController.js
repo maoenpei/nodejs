@@ -85,13 +85,17 @@ Base.extends("GameController", {
                     name: heroObj.getName(),
                     pos: heroObj.getPos(),
                     upgrade: heroObj.getUpgrade(),
+                    upgradeLow: !heroObj.isUpgradeFull(),
                     food: heroObj.getFood(),
+                    foodLow: !heroObj.isFoodFull(),
                     stone: stone,
                     stoneColor: Math.floor((stone - 1) / 5) + 1,
                     stoneLevel: (stone - 1) % 5 + 1,
                     skill: (stone >= heroObj.getStoneBase() ? heroObj.getSkillLevel() + 1 : 0),
+                    stoneLow: !heroObj.isStoneFull(),
                     gemWake: heroObj.getGemWake(),
                     gemLevel: heroObj.getGemLevel(),
+                    gemLow: !heroObj.isGemFull(),
                 });
             }
             safe(done)(heroData);

@@ -360,13 +360,15 @@
                         {{name}}
                     </div>
                     {{#if upgrade}}
-                    <div class="div_hero_panel_item_upgrade">
+                    <div class="div_hero_panel_item_upgrade {{#if upgradeLow}}div_hero_panel_item_mark{{/if}}">
                         进化 +{{upgrade}}
                     </div>
                     {{/if}}
-                    <div class="div_hero_panel_item_food">Lv.{{food}}</div>
+                    <div class="div_hero_panel_item_food {{#if foodLow}}div_hero_panel_item_mark{{/if}}">
+                        Lv.{{food}}
+                    </div>
                     {{#if stone}}
-                    <div class="div_hero_panel_item_stone {{stoneCls}}">
+                    <div class="div_hero_panel_item_stone {{stoneCls}} {{#if stoneLow}}div_hero_panel_item_mark{{/if}}">
                         ★ {{stoneLevel}}
                         {{#if skill}}
                         <div class="div_hero_panel_item_skill">
@@ -376,7 +378,7 @@
                     </div>
                     {{/if}}
                     {{#if gemWake}}
-                    <div class="div_hero_panel_item_gem">
+                    <div class="div_hero_panel_item_gem {{#if gemLow}}div_hero_panel_item_mark{{/if}}">
                         觉醒+{{gemWake}} Lv.{{gemLevel}}
                     </div>
                     {{/if}}

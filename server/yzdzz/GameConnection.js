@@ -320,38 +320,52 @@ Base.extends("HeroInfo", {
             });
         }, this);
     },
+    getFullUpgrade:function() {
+        var cap = Database.heroCap(this.heroData.heroId);
+        if (!cap) {
+            return 0;
+        }
+        if (this.heroData.upgrade == cap.maxUpgrade) {
+            return 0;
+        }
+
+        var heroCardId = "hero_" + String(this.heroData.heroId);
+        var count = this.conn.getItemCount(heroCardId);
+        var targetUpgrade = this.heroData.upgrade;
+        var cardTotal = 0;
+        do {
+            var cardNeeded = Math.floor(targetUpgrade / 3) + 1;
+            if (cardTotal + cardNeeded > count) {
+                break;
+            }
+            cardTotal += cardNeeded;
+            targetUpgrade ++;
+        } while(targetUpgrade < cap.maxUpgrade);
+        if (targetUpgrade == this.heroData.upgrade) {
+            return 0;
+        }
+        return targetUpgrade;
+    },
+    isUpgradeFull:function() {
+        return this.heroData ? this.getFullUpgrade() == 0 : true;
+    },
     fullUpgrade:function(done) {
         var next = coroutine(function*() {
             if (!this.heroData) {
                 return safe(done)({});
             }
-            var cap = Database.heroCap(this.heroData.heroId);
-            if (!cap) {
-                return safe(done)({});
-            }
-            if (this.heroData.upgrade == cap.maxUpgrade) {
-                return safe(done)({});
-            }
 
-            var heroCardId = "hero_" + String(this.heroData.heroId);
             yield this.conn.readAllItems(next);
-            var count = this.conn.getItemCount(heroCardId);
-            var targetUpgrade = this.heroData.upgrade;
-            var cardTotal = 0;
-            do {
-                var cardNeeded = Math.floor(targetUpgrade / 3) + 1;
-                if (cardTotal + cardNeeded > count) {
-                    break;
-                }
-                cardTotal += cardNeeded;
-                targetUpgrade ++;
-            } while(targetUpgrade < cap.maxUpgrade);
-            if (targetUpgrade == this.heroData.upgrade) {
+            var targetUpgrade = this.getFullUpgrade();
+            if (targetUpgrade == 0) {
                 return safe(done)({});
             }
 
             this.setUpgrade(targetUpgrade, done);
         }, this);
+    },
+    isFoodFull:function() {
+        return this.heroData ? (this.heroData.upgrade + 1) * 60 == this.heroData.food : true;
     },
     fullFood:function(done) {
         var next = coroutine(function*() {
@@ -361,6 +375,9 @@ Base.extends("HeroInfo", {
             var topLevel = (this.heroData.upgrade + 1) * 60;
             this.setFood(topLevel, done);
         }, this);
+    },
+    isStoneFull:function() {
+        return this.heroData ? this.heroData.stoneLevel == this.heroData.color * 5 && this.heroData.stoneSkill == 9 : true;
     },
     fullStone:function(done) {
         var next = coroutine(function*() {
@@ -379,6 +396,9 @@ Base.extends("HeroInfo", {
                 success: true,
             });
         }, this);
+    },
+    isGemFull:function() {
+        return this.heroData ? (this.heroData.gemWake - 1) * 10 + 5 <= this.heroData.gemLevel : true;
     },
     fullGem:function(done) {
         var next = coroutine(function*() {
