@@ -346,9 +346,6 @@ Base.extends("HeroInfo", {
         }
         return targetUpgrade;
     },
-    isUpgradeFull:function() {
-        return this.heroData ? this.getFullUpgrade() == 0 : true;
-    },
     fullUpgrade:function(done) {
         var next = coroutine(function*() {
             if (!this.heroData) {

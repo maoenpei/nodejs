@@ -85,7 +85,6 @@ Base.extends("GameController", {
                     name: heroObj.getName(),
                     pos: heroObj.getPos(),
                     upgrade: heroObj.getUpgrade(),
-                    upgradeLow: !heroObj.isUpgradeFull(),
                     food: heroObj.getFood(),
                     foodLow: !heroObj.isFoodFull(),
                     stone: stone,

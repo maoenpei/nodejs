@@ -171,6 +171,10 @@ var usedKeys = {
     "serial":true,
     "showKingwar":true,
     "showQuit":true,
+    "hero_upgrade":true,
+    "hero_food":true,
+    "hero_stone":true,
+    "hero_gem":true,
 };
 
 // login
@@ -1396,7 +1400,10 @@ displayHerosModel.initialize = function() {
     this.operateTypes = {};
     for (var i = 0; i < this.propOptions.length; ++i) {
         var propType = this.propOptions[i];
-        this.operateTypes[propType.name] = true;
+        var propChecked = StorageItem()["hero_" + propType.name] != "F";
+        if (propChecked) {
+            this.operateTypes[propType.name] = true;
+        }
     }
 }
 displayHerosModel.getHeroArray = function() {
@@ -1512,12 +1519,16 @@ displayHerosModel.exchangeHero = function(callback) {
         }
     });
 }
-displayHerosModel.setOptions = function(name, isAdd) {
+displayHerosModel.setOption = function(name, isAdd) {
+    StorageItem()["hero_" + name] = (isAdd ? "T" : "F");
     if (isAdd) {
         this.operateTypes[name] = true;
     } else {
         delete this.operateTypes[name];
     }
+}
+displayHerosModel.getOption = function(name) {
+    return this.operateTypes[name] || false;
 }
 displayHerosModel.doOperation = function(opMode, callback) {
     var options = {};
@@ -1591,9 +1602,12 @@ function displayHeros(parentPanel, player, isForce) {
             (function() {
                 var optionType = displayHerosModel.propOptions[i];
                 var optionOperate = $(propOptionBlocks[i]);
+                if (displayHerosModel.getOption(optionType.name)) {
+                    optionOperate.attr("checked", "checked");
+                }
                 optionOperate.change(function() {
                     var checked = optionOperate.is(":checked");
-                    displayHerosModel.setOptions(optionType.name, checked);
+                    displayHerosModel.setOption(optionType.name, checked);
                 });
             })();
         }
