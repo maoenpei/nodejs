@@ -2419,21 +2419,27 @@ Base.extends("GameConnection", {
                     return safe(done)({});
                 }
                 // auto pray
-                var prayLimit = (config.prayNumber > 23 ? 23 : config.prayNumber);
-                var allMedal = this.gameInfo.leagueMedal;
-                var prayMax = 3;
-                var prayCost = 50;
-                while (prayMax < prayLimit && prayCost <= allMedal) {
-                    allMedal -= prayCost;
-                    prayMax++;
-                    if (prayCost < 1600) {
-                        prayCost *= 2;
+                if (new Date().getHours() < 12) {
+                    var prayLimit = (config.prayNumber > 23 ? 23 : config.prayNumber);
+                    var prayUsed = 3 - data.pray_num;
+                    var allMedal = this.gameInfo.leagueMedal;
+                    var prayNum = 3;
+                    var prayCost = 50;
+                    var totalCost = 0;
+                    while (prayNum < prayLimit) {
+                        if (prayNum >= prayUsed) {
+                            if (totalCost + prayCost > allMedal) {
+                                break;
+                            }
+                            totalCost += prayCost;
+                        }
+                        prayNum++;
+                        if (prayCost < 1600) {
+                            prayCost *= 2;
+                        }
                     }
-                }
-                prayLimit = (prayLimit < prayMax ? prayLimit : prayMax);
-                prayLimit = 3 - prayLimit;
-                if (data.pray_num > prayLimit) {
-                    for (var i = data.pray_num; i > prayLimit; --i) {
+                    this.log("-- daily League", prayUsed, prayNum);
+                    for (var i = prayUsed; i < prayNum; ++i) {
                         var data_pray = yield this.sendMsg("League", "pray", null, next);
                         if (!data_pray) {
                             break;
@@ -3391,68 +3397,10 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("RoleHero", "sethero", {pos:1,pid:95328}, next); // 换位置
             //var data = yield this.sendMsg("RoleWake", "getinfo", null, next);
             //var data = yield this.sendMsg("Collect", "getinfo", null, next);
+            //var data = yield this.sendMsg("League", "getinfo", null, next);
+            var data = yield this.sendMsg("Arena", "getinfo", null, next);
 
-            if (true) {
-                var data = yield this.sendMsg("RoleHero", "getHeros", null, next); // 勇者阵容
-                var targetPid = 0;
-                for (var pid in data.list) {
-                    if (73004 == data.list[pid].sysid) {
-                        targetPid = pid;
-                        break;
-                    }
-                }
-                if (false) {
-                    var targetLevel = data.list[targetPid].level;
-                    var targetExp = data.list[targetPid].exp;
-                    var eatCount = 0;
-                    if (false) {
-                        do {
-                            var data = yield this.sendMsg("RoleHero", "addexp", {pid:targetPid,sysid:"food_6", num:600}, next); // 吃屎
-                            eatCount += 10;
-                            var data = yield this.sendMsg("RoleHero", "getHeros", null, next); // 勇者阵容
-                        } while(data.list[targetPid].level <= targetLevel);
-                        targetExp += eatCount * 20000;
-                        targetExp -= data.list[targetPid].exp;
-                        console.log(data);
-                        console.log("eatCount", eatCount);
-                        console.log("targetLevel", targetLevel);
-                        console.log("targetExp", targetExp);
-                    } else {
-                        var base = 1;
-                        var exp = Database.foodExp("food_6", 600) + 0;
-                        var level = Database.expLevel(base, exp);
-                        var restExp = exp - Database.levelExp(base, level);
-                        console.log(data);
-                        console.log("computeLevel", level, restExp);
-                    }
-                } else {
-                    //var data = yield this.sendMsg("RoleHero", "addexp", {pid:targetPid,sysid:"food_2", num:10}, next);
-                    //var data = yield this.sendMsg("RoleHero", "sell", { pid:95880, master:0 }, next);
-                    //var data = yield this.useHeroCard(73004, next);
-                    //var data = yield this.sendMsg("RoleWake", "auto", { pid:95865 }, next);
-                    //var data = yield this.sendMsg("RoleWake", "start", { pid:95865 }, next);
-                    //var data = yield this.sendMsg("RoleWake", "autoSkill", { pid:95865 }, next);
-                    //var data = yield this.sendMsg("RoleWake", "upSkill", { pid:95865 }, next);
-                    //var data = yield this.sendMsg("RoleWake", "getinfo", null, next);
-                    //var data = yield this.sendMsg("RoleHero", "getHeros", null, next);
-                    //var heroIds = yield this.getOnlineHeroIds(next);
-                    var heroObj = yield this.getOnlineHero(70018, next);
-                    if (heroObj) {
-                        //var data = yield heroObj.setPos(0, next);
-                        //var data = yield heroObj.renew(next);
-                        //var data = heroObj.getUpgrade();
-                        //var data = yield heroObj.setUpgrade(3, next);
-                        //var data = heroObj.getFood();
-                        //var data = yield heroObj.setFood(240, next);
-                        //var data = yield heroObj.fullUpgrade(next);
-                        var data = yield heroObj.fullFood(next);
-                    }
-                    console.log(data, !!heroObj);
-                }
-            } else {
-                console.log(data);
-            }
-
+            console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
             //yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data, null, 2), next);
             return safe(done)();
