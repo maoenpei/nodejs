@@ -2821,9 +2821,16 @@ Base.extends("GameConnection", {
                     }
                     if (fightItem) {
                         for (var i = data.fight_num; i < fightMax; ++i) {
+                            if (!this.checkDiamondEnough("竞技场打人")) {
+                                break;
+                            }
+                            var fightCost = (i < 10 ? 0 : (i < 15 ? 20 : 50));
                             var data_fight = yield this.sendMsg("Arena", "fight", { data: fightItem.uid }, next);
                             if (!data_fight) {
                                 this.log("fight failed", data.list.length, fightItem);
+                                break;
+                            }
+                            if (!this.checkDiamondCost("竞技场打人", fightCost)) {
                                 break;
                             }
                         }
