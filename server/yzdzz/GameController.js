@@ -78,6 +78,9 @@ Base.extends("GameController", {
             for (var i = 0; i < heroIds.length; ++i) {
                 var heroId = heroIds[i];
                 var heroObj = yield conn.getOnlineHero(heroId, next);
+                if (!heroObj) {
+                    return safe(done)([]);
+                }
                 var stone = heroObj.getStoneLevel();
                 heroData.push({
                     heroId: heroId,
@@ -114,6 +117,10 @@ Base.extends("GameController", {
                 for (var i = 0; i < heroIds.length; ++i) {
                     var heroId = heroIds[i];
                     var heroObj = yield conn.getOnlineHero(heroId, next);
+                    if (!heroObj) {
+                        safe(tdone)();
+                        safe(done)([]);
+                    }
                     yield operate(heroId, heroObj, next);
                 }
                 this.readPlayerHeros(conn, (heroData) => {

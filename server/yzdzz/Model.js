@@ -904,7 +904,9 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             var heros = (!isForce ? this.findHeroCache(playerKey) : null);
             if (!heros) {
                 heros = yield this.controller.getPlayerHeroData(playerData, next);
-                this.commitHeroCache(playerKey, heros);
+                if (heros.length > 0) {
+                    this.commitHeroCache(playerKey, heros);
+                }
             }
             responder.respondJson({
                 heros: heros,
@@ -1009,7 +1011,9 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 }, this);
             }, next);
 
-            this.commitHeroCache(playerKey, heros);
+            if (heros.length > 0) {
+                this.commitHeroCache(playerKey, heros);
+            }
 
             responder.respondJson({
                 success: true,
