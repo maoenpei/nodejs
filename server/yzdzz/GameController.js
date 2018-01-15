@@ -613,16 +613,27 @@ Base.extends("GameController", {
     setRepeatRange:function(startTime, endTime) {
         this.unsetEventKeys(this.repeatRanges);
         this.repeatRanges = [];
-        var startKey = this.timingManager.setDailyEvent(startTime.hour, startTime.minute, startTime.second, () => {
+        var startAutomationRepeat = () => {
             console.log("refreshing automation for period start!");
             this.setRefreshStatesOfType("automation", 1);
-        });
+        };
+        var startKey = this.timingManager.setDailyEvent(startTime.hour, startTime.minute, startTime.second, startAutomationRepeat);
         this.repeatRanges.push(startKey);
         var endKey = this.timingManager.setDailyEvent(endTime.hour, endTime.minute, endTime.second, () => {
             console.log("refreshing automation for period end!");
             this.setRefreshStatesOfType("automation", 2);
         });
         this.repeatRanges.push(endKey);
+        var mement = new Date();
+        var nowTimeSec = mement.getTime();
+        mement.setHours(startTime.hour, startTime.minute, startTime.second, 0);
+        var startTimeSec = mement.getTime();
+        mement.setHours(endTime.hour, endTime.minute, endTime.second, 0);
+        var endTimeSec = mement.getTime();
+        if (nowTimeSec - startTimeSec > 5 * 1000 && endTimeSec - nowTimeSec > 10 * 1000) {
+            console.log("repair automation repeating");
+            startAutomationRepeat();
+        }
     },
 
     ownPowerCoef: 0.9,

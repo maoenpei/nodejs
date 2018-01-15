@@ -81,7 +81,7 @@ GameSock.connect = function(ip, port, done) {
     });
 }
 
-var maxPackageSize = 1024;
+var maxPackageSize = 65535;
 GameSock.receive = function(sock, logger, callback) {
     var stream = Buffer.alloc(0);
     sock.on("data", (buf) => {
