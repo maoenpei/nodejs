@@ -3449,7 +3449,7 @@ Base.extends("GameConnection", {
             return later(callback, null);
         }
         var kickKey = this.regKick(() => {
-            this.log("reply null by kick!");
+            this.log("reply null by kick!", c, m, data);
             safe(callback)(null);
         });
         var key = c + "." + m;
