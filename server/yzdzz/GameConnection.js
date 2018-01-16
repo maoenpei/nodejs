@@ -1819,7 +1819,18 @@ Base.extends("GameConnection", {
     // Automation
     autoSpecial:function(config, done) {
         var next = coroutine(function*() {
-            var data = yield this.sendMsg("RoleExplore", "update", {type:'', login:1}, next);
+            var hour = new Date().getHours();
+            var repeatTime = (hour >= 2 && hour < 7 ? rand(10) + 5 : 1);
+            if (repeatTime > 1) {
+                this.log("waiting automation rounds", repeatTime);
+            }
+            for (var i = 0; i < repeatTime; ++i) {
+                if (i > 0) {
+                    this.log("waiting automation!");
+                    yield setTimeout(next, 1000);
+                }
+                var data = yield this.sendMsg("RoleExplore", "update", {type:'', login:1}, next);
+            }
             var compare = 100;
             if (config.limitOfShort == 0) {
                 compare = 0;
@@ -2949,7 +2960,9 @@ Base.extends("GameConnection", {
                             var item = data.list[i];
                             var weaponNumber = weaponUpdateCounts[item.type];
                             var total = Database.weaponUpdateCount(item.level, weaponNumber);
-                            this.log("weapon update", item.type, item.level, weaponNumber, total);
+                            if (total > 0) {
+                                this.log("weapon update", item.type, item.level, weaponNumber, total);
+                            }
                             for (var j = 0; j < total; ++j) {
                                 var data_up = yield this.sendMsg("RoleTeam", "upWeaponType", {type:item.type}, next);
                                 if (!data_up) {
