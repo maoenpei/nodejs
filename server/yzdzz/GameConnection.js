@@ -2825,15 +2825,23 @@ Base.extends("GameConnection", {
                 // auto fight
                 var fightMax = (config.fightMax > 20 ? 20 : config.fightMax);
                 if (config.fightPlayer && data.fight_num < fightMax) {
-                    var fightItem = data.list[data.list.length - 1];
-                    if (fightItem.cpi > this.gameInfo.power) {
-                        fightItem = null;
+                    var findFightableItem = (data_arena) => {
+                        for (var i = data_arena.list.length - 1; i >= 0; --i) {
+                            var item = data_arena.list[i];
+                            if (item.rank < data_arena.rank) {
+                                break;
+                            }
+                            if (this.gameInfo.power >= item.cpi) {
+                                return item;
+                            }
+                        }
+                        return null;
+                    };
+                    var fightItem = findFightableItem(data);
+                    if (!fightItem) {
                         var data_refresh = yield this.sendMsg("Arena", "refresh", null, next);
                         if (data_refresh && data_refresh.list) {
-                            fightItem = data_refresh.list[data_refresh.list.length - 1];
-                            if (fightItem.cpi > this.gameInfo.power) {
-                                fightItem = null;
-                            }
+                            fightItem = findFightableItem(data_refresh);
                         }
                     }
                     if (fightItem) {
