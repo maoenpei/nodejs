@@ -2828,7 +2828,7 @@ Base.extends("GameConnection", {
                     var findFightableItem = (data_arena) => {
                         for (var i = data_arena.list.length - 1; i >= 0; --i) {
                             var item = data_arena.list[i];
-                            if (item.rank < data_arena.rank) {
+                            if (item.rank < data.rank) {
                                 break;
                             }
                             if (this.gameInfo.power >= item.cpi) {
