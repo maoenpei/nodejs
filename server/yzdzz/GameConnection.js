@@ -1755,6 +1755,12 @@ Base.extends("GameConnection", {
             if (this.justSpeak) {
                 yield setTimeout(next, 3100);
             }
+            var now = new Date();
+            msgTime = "(" + String(now.getHours()) + ":" + String(now.getMinutes()) + ")";
+            message = message + msgTime;
+            if (message.length > 40) {
+                message = message.substr(0, 40);
+            }
             var data = yield this.sendMsg("Chat", "send", {type:channel, msg:message, uid:this.gameInfo.playerId}, next, {hasUnicode:true});
             this.justSpeak = true;
             safe(done)(data);
