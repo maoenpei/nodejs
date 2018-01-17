@@ -1755,9 +1755,6 @@ Base.extends("GameConnection", {
             if (this.justSpeak) {
                 yield setTimeout(next, 3100);
             }
-            var now = new Date();
-            msgTime = "(" + String(now.getHours()) + ":" + String(now.getMinutes()) + ")";
-            message = message + msgTime;
             if (message.length > 40) {
                 message = message.substr(0, 40);
             }
@@ -1783,7 +1780,11 @@ Base.extends("GameConnection", {
                 var hasTail = shortTypes.length > l;
                 shortTypes.splice(l, shortTypes.length - l);
                 var content = shortTypes.join("，");
-                yield this.speakTo(3, "无法完成{0}{1}".format(content, (hasTail ? "..." : "")), next);
+                content = "无法完成{0}{1}".format(content, (hasTail ? "..." : ""));
+                var now = new Date();
+                msgTime = "(" + String(now.getHours()) + ":" + String(now.getMinutes()) + ")";
+                content = content + msgTime;
+                yield this.speakTo(3, content, next);
             }
             safe(done)();
         }, this);
@@ -1819,18 +1820,6 @@ Base.extends("GameConnection", {
     // Automation
     autoSpecial:function(config, done) {
         var next = coroutine(function*() {
-            var hour = new Date().getHours();
-            var repeatTime = (hour >= 2 && hour < 7 ? rand(10) + 5 : 1);
-            if (repeatTime > 1) {
-                this.log("waiting automation rounds", repeatTime);
-            }
-            for (var i = 0; i < repeatTime; ++i) {
-                if (i > 0) {
-                    this.log("waiting automation!");
-                    yield setTimeout(next, 1000);
-                }
-                var data = yield this.sendMsg("RoleExplore", "update", {type:'', login:1}, next);
-            }
             var compare = 100;
             if (config.limitOfShort == 0) {
                 compare = 0;
