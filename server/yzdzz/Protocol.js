@@ -92,6 +92,14 @@ GameSock.receive = function(sock, logger, callback) {
                 maxPackageSize = packageSize;
                 console.log("-- Max package size incresed! --", maxPackageSize);
             }
+            if (packageSize <= 0 || packageSize > 0xfffff) {
+                logger.log("Error in package receive...");
+                console.log("packageSize", packageSize);
+                console.log("bufferSize", stream.length, buf.length);
+                console.log("buffer", stream);
+                safe(callback)(null, null);
+                return;
+            }
             if (stream.length < packageSize + 4) {
                 return;
             }
