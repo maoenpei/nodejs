@@ -7,6 +7,8 @@ require("../TaskManager");
 require("../TimingManager");
 require("./GameConnection");
 
+var process = require("process");
+
 // states:
 // 0: 什么都不做
 // 1: 定期执行(kingwar/playerlist/automation)
@@ -1101,6 +1103,7 @@ Base.extends("GameController", {
         return false;
     },
     refreshAllPlayers:function(checkFun, done, taskManager) {
+        console.log("refresh all player start -", process.memoryUsage());
         var select = new Select();
         for (var accountGameKey in this.refreshData) {
             var refreshInfo = this.refreshData[accountGameKey];
@@ -1116,7 +1119,10 @@ Base.extends("GameController", {
                 this.refreshOnePlayer(refreshInfo, executables, select.setup(), (taskManager ? taskManager.addTask() : undefined));
             }
         }
-        select.all(done);
+        select.all(() => {
+            console.log("refresh all player finish -", process.memoryUsage());
+            safe(done)();
+        });
     },
     refreshOnePlayer:function(refreshInfo, executables, done, taskItem) {
         var next = coroutine(function*() {
@@ -1159,6 +1165,7 @@ Base.extends("GameController", {
     },
     manualOnePlayer:function(playerData, func, done) {
         var next = coroutine(function*() {
+            console.log("manual one player start -", process.memoryUsage());
             yield playerData.mutex.lock(next);
             var conn = this.accountManager.connectAccount(playerData.account, playerData.validator);
             if (!conn) {
@@ -1180,6 +1187,7 @@ Base.extends("GameController", {
             yield func(conn, next);
             conn.quit();
             playerData.mutex.unlock();
+            console.log("manual one player finish -", process.memoryUsage());
             safe(done)({
                 success: true,
             });
