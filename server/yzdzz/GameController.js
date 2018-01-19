@@ -519,10 +519,14 @@ Base.extends("GameController", {
         var doUnionwar = () => {
             this.refreshAllPlayers((funcObj) => { return funcObj.state == 7; });
         };
-        for (var i = 0; i < defaults.normal.length; ++i) {
-            var time = defaults.normal[i];
-            var unionwarKey = this.timingManager.setWeeklyEvent(time.day, time.hour, time.minute, time.second, doUnionwar);
-            this.unionwarTimes.push(unionwarKey);
+        for (var i = 0; i < defaults.days.length; ++i) {
+            var day = defaults.days[i];
+            for (var j = 0; j < defaults.moments.length; ++j) {
+                var moment = defaults.moments[j];
+                var unionwarKey = this.timingManager.setWeeklyEvent(day, moment.hour, moment.minute, moment.second, doUnionwar);
+                console.log("-- setUnionwarEvent --", day, moment.hour, moment.minute, moment.second, unionwarKey);
+                this.unionwarTimes.push(unionwarKey);
+            }
         }
     },
 

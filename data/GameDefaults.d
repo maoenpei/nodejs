@@ -119,17 +119,12 @@
     }
     ,"unionwar":{
         "selfUnion":"b275705814a85d98"
-        ,"normal":[
-            {"day":2,"hour":20,"minute":0,"second":55}
-            ,{"day":4,"hour":20,"minute":0,"second":55}
-            ,{"day":6,"hour":20,"minute":0,"second":55}
-            ,{"day":2,"hour":20,"minute":10,"second":55}
-            ,{"day":4,"hour":20,"minute":10,"second":55}
-            ,{"day":6,"hour":20,"minute":10,"second":55}
-            ,{"day":2,"hour":20,"minute":20,"second":55}
-            ,{"day":4,"hour":20,"minute":20,"second":55}
-            ,{"day":6,"hour":20,"minute":20,"second":55}
+        ,"moments":[
+            {"hour":20,"minute":0,"second":55}
+            ,{"hour":20,"minute":15,"second":55}
+            ,{"hour":20,"minute":23,"second":55}
         ]
+        ,"days":[2, 4, 6]
         ,"normal_order":[4,3,1,2]
         ,"fighting":[
             {"day":0,"hour":19,"minute":59,"second":55}
