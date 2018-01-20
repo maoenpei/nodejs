@@ -638,11 +638,14 @@ Base.extends("GameConnection", {
                 playerId: data.uid,
                 name: data.role_name, // 名字
                 power: data.cpi, // 战力
+                serverDay: data.server_day, // 服务器天数
+                magicGirl: data.mgirl_type || 0, // 魔女类型(01234:无 金币 神石 食物 红魂)
 
-                hasTimeGift: !!(data.act_manygold), // 1
-                hasHeroReward: !!(data.act_goldenhero), // 2
-                hasXReward: !!(data.act_goldsign), // 2
-                hasRedPacket: !!(data.act_redpacket), // 2
+                hasTimeGift: !!(data.act_manygold), // 9万福利
+                hasHeroReward: !!(data.act_goldenhero), // 金色勇者奖励
+                hasXReward: !!(data.act_goldsign), // 暗金任务
+                hasRedPacket: !!(data.act_redpacket), // 红包
+                hasMagicGirl: !!(data.mgirl_tips), // 可以买书的魔女
             };
             this.updateGameInfo(data, true);
             var result = yield GameHTTP.stat(this.gameInfo.playerId, "reg", next);
@@ -2958,14 +2961,14 @@ Base.extends("GameConnection", {
                     }
                 }
                 // 专精
-                var weaponUpdateCounts = {
-                    "1":this.getItemCount("master_scroll_1"),
-                    "2":this.getItemCount("master_scroll_2"),
-                    "3":this.getItemCount("master_scroll_3"),
-                    "4":this.getItemCount("master_scroll_4"),
-                    "5":this.getItemCount("master_scroll_5"),
-                };
                 if (config.updateWeapon) {
+                    var weaponUpdateCounts = {
+                        "1":this.getItemCount("master_scroll_1"),
+                        "2":this.getItemCount("master_scroll_2"),
+                        "3":this.getItemCount("master_scroll_3"),
+                        "4":this.getItemCount("master_scroll_4"),
+                        "5":this.getItemCount("master_scroll_5"),
+                    };
                     var data = yield this.sendMsg("RoleTeam", "getWeaponTypes", null, next);
                     if (data && data.list) {
                         for (var i = 0; i < data.list.length; ++i) {
@@ -3439,7 +3442,10 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("RoleWake", "getinfo", null, next);
             //var data = yield this.sendMsg("Collect", "getinfo", null, next);
             //var data = yield this.sendMsg("League", "getinfo", null, next);
-            var data = yield this.sendMsg("Arena", "getinfo", null, next);
+            //var data = yield this.sendMsg("Arena", "getinfo", null, next);
+            //var data = yield this.sendMsg("ActSplendid", "getinfo", null, next);
+            //var data = yield this.sendMsg("ActMagicalGirl", "getinfo", null, next);
+            //var data = yield this.sendMsg("ActMagicalGirl", "fire", {level:1}, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
