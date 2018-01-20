@@ -10,6 +10,10 @@ Base.extends("GameValidator", {
     _constructor: function() {
         this.setDay = {}; // day of a week
         this.setHour = {}; // hour of a day
+        this.conn = null;
+    },
+    setConnect:function(conn) {
+        this.conn = conn;
     },
     getDailyState:function(currDay) {
         var dailyNames = [];
@@ -32,6 +36,10 @@ Base.extends("GameValidator", {
         var currDay = this.peekDaily(name);
         if (!currDay) {
             return false;
+        }
+        if (this.conn) {
+            var now = new Date();
+            this.conn.log("-- checkDaily --", name, currDay, this.setDay[name], "{0}:{1}".format(now.getHours(), now.getSeconds()));
         }
         this.commitDaily(name, currDay);
         return true;
@@ -445,6 +453,10 @@ Base.extends("GameConnection", {
         this.herosLock = new Mutex();
         this.diamondCost = 0;
 
+        if (this.validator) {
+            this.validator.setConnect(this);
+        }
+
         this.sock = null;
 
         this.recvCallbacks = {};
@@ -480,6 +492,9 @@ Base.extends("GameConnection", {
     // Connection
     quit:function() {
         if (this.sock) {
+            if (this.validator) {
+                this.validator.setConnect(null);
+            }
             this.log("quiting");
             this.sock.end();
             this.sock = null;

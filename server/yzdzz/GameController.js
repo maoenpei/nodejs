@@ -524,7 +524,7 @@ Base.extends("GameController", {
             for (var j = 0; j < defaults.moments.length; ++j) {
                 var moment = defaults.moments[j];
                 var unionwarKey = this.timingManager.setWeeklyEvent(day, moment.hour, moment.minute, moment.second, doUnionwar);
-                console.log("-- setUnionwarEvent --", day, moment.hour, moment.minute, moment.second, unionwarKey);
+                //console.log("-- setUnionwarEvent --", day, moment.hour, moment.minute, moment.second, unionwarKey);
                 this.unionwarTimes.push(unionwarKey);
             }
         }
