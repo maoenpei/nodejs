@@ -2912,6 +2912,7 @@ Base.extends("GameConnection", {
             });
         }, this);
     },
+    equipTitles: { "1":"武具", "2":"防具", "3":"饰品" },
     autoConsume:function(config, done) {
         var next = coroutine(function*() {
             if (this.validator.checkHourly("autoConsume")) {
@@ -3023,6 +3024,74 @@ Base.extends("GameConnection", {
                             var data_compose = yield this.sendMsg("RoleMerge", "compose", {type:type, level:level, luckly:0}, next);
                             if (data_compose) {
                                 break;
+                            }
+                        }
+                    }
+                }
+                // 30次打造任务
+                // this.validator.checkDaily("autoDaily30Merge")
+                var equipStone = this.getItemCount("equip_compose_4_extra");
+                var equipMetal = this.getItemCount("equip_compose_4_any");
+                if (config.mergeTask && this.gameInfo.level > 260 && this.gameInfo.serverDay > 45 && equipMetal >= 300 && !this.gameInfo.hasMagicGirl && true) {
+                    // check for current counts
+                    var data = yield this.sendMsg("ActSplendid", "getinfo", null, next);
+                    if (data && data.list) {
+                        var equipMerge = null;
+                        for (var i = 0; i < data.list.length; ++i) {
+                            var item = data.list[i];
+                            if (item.short == "超级打造") {
+                                equipMerge = item;
+                                break;
+                            }
+                        }
+                        if (equipMerge && equipMerge.box) {
+                            var equipCounts = {};
+                            for (var type = 1; type <= 3; ++type) {
+                                var name = this.equipTitles[type];
+                                for (var i = 0; i < equipMerge.box.length; ++i) {
+                                    var item = equipMerge.box[i];
+                                    if (item.desc.indexOf(name) >= 0 && item.num < item.max) {
+                                        equipCounts[type] = 30 - item.num;
+                                        equipCounts[type] = (equipCounts[type] < 0 ? 0 : equipCounts[type]);
+                                        break;
+                                    }
+                                }
+                            }
+                            this.log("equip merge counts", equipCounts);
+                            var typeOrder = [
+                                config.mergeOrder1 || 3,
+                                config.mergeOrder2 || 1,
+                                config.mergeOrder3 || 2,
+                            ];
+                            var nextType = (t) => { return t % 3 + 1; };
+                            if (typeOrder[1] == typeOrder[0]) {
+                                typeOrder[1] = nextType(typeOrder[1]);
+                                if (typeOrder[1] == typeOrder[2]) {
+                                    typeOrder[1] = nextType(typeOrder[1]);
+                                }
+                            }
+                            if (typeOrder[2] == typeOrder[0] || typeOrder[2] == typeOrder[1]) {
+                                typeOrder[2] = nextType(typeOrder[2]);
+                                if (typeOrder[2] == typeOrder[0] || typeOrder[2] == typeOrder[1]) {
+                                    typeOrder[2] = nextType(typeOrder[2]);
+                                }
+                            }
+                            for (var i = 0; i < typeOrder.length; ++i) {
+                                var type = typeOrder[i];
+                                if (equipCounts[type]) {
+                                    for (var j = 0; j < equipCounts[type]; ++j) {
+                                        if (equipMetal < 10) {
+                                            break;
+                                        }
+                                        var req_compose = {type:type, level:4, luckly:(equipStone >= 5)};
+                                        var data_compose = yield this.sendMsg("RoleMerge", "compose", req_compose, next);
+                                        if (!data_compose) {
+                                            break;
+                                        }
+                                        equipMetal -= 10;
+                                        equipStone -= 5;
+                                    }
+                                }
                             }
                         }
                     }

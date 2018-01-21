@@ -43,6 +43,10 @@
             ,"updateWeapon":false
             ,"dailyFeed":true
             ,"dailyMerge":true
+            ,"mergeTask":false
+            ,"mergeOrder1":3
+            ,"mergeOrder2":1
+            ,"mergeOrder3":2
             ,"decompose":0
             ,"roleMerge":0
             ,"roleCollect":true

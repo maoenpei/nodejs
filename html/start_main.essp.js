@@ -486,7 +486,11 @@ var displayAutomationModel = {
             {name: "tavern", desc: "使用契约书", type: "check"},
             {name: "updateWeapon", desc: "升级专精", type: "check"},
             {name: "dailyFeed", desc: "吃100食物(只对已使用的勇者)", type: "check"},
-            {name: "dailyMerge", desc: "3种装备各打造1个(不使用龙石)", type: "check"},
+            {name: "dailyMerge", desc: "3种装备每天各打造1个(不使用龙石)", type: "check"},
+            {name: "mergeTask", desc: "超级打造(有任务时打造30次，使用龙石)", type: "check"},
+            {name: "mergeOrder1", desc: "打造顺序1号", type: "number", limit:[1, 3], alias:["武具", "防具", "饰品"]},
+            {name: "mergeOrder2", desc: "打造顺序2号", type: "number", limit:[1, 3], alias:["武具", "防具", "饰品"]},
+            {name: "mergeOrder3", desc: "打造顺序3号", type: "number", limit:[1, 3], alias:["武具", "防具", "饰品"]},
             {name: "decompose", desc: "分解装备", type: "number", limit:[0, 6], alias: [
                 "不分解",
                 "绿色以下分解",
