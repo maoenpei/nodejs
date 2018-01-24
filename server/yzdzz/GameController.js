@@ -1342,7 +1342,7 @@ Base.extends("GameController", {
             playerData = managedPlayers.playerDatas.random();
         } else {
             playerData = (card.isBenefit ? managedPlayers.helpPlayer : managedPlayers.damagePlayer);
-            if (!this.isCardValid(card, playerData)) {
+            if (!playerData || !this.isCardValid(card, playerData)) {
                 playerData = null;
                 if (card.isBenefit) {
                     for (var i = 0; i < managedPlayers.playerDatas.length; ++i) {
