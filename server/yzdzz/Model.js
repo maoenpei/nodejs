@@ -18,14 +18,21 @@ GAME_KINGWAR_CONFIG = "GameKingwar.d";
 GAME_PLAYER_NAME_CONFIG = "GamePlayerNames.d";
 GAME_HEROSHOP_CONFIG = "GameHeroshop.d";
 
+var AllRequirements = {
+    "kingwar": {},
+    "playerlist": {},
+    "serverInfo": {},
+    "automation": {},
+    "management": {},
+};
+
 var AllFuncs = [
-    //{name:"refresh", authBase:2},
-    {name:"kingwar", authBase:1, refreshType:"kingwar", },
-    {name:"playerlist", authBase:1, refreshType:"kingwar;playerlist", },
-    {name:"serverInfo", authBase:1},
-    {name:"automation", authBase:2, refreshType:"automation", },
-    {name:"setting", authBase:3},
-    {name:"users", authBase:3},
+    {name:"kingwar", authBase:1, requirement:"kingwar", },
+    {name:"playerlist", authBase:1, requirement:"playerlist", },
+    {name:"serverInfo", authBase:1, requirement:"serverInfo", },
+    {name:"automation", authBase:2, requirement:"automation", },
+    //{name:"setting", authBase:3, requirement:"setting", },
+    {name:"users", authBase:3, requirement:"management", },
 ];
 var AllFuncStr = ";";
 var AllFuncMap = {};
@@ -45,7 +52,6 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         this.playerHerosInfo = {};
 
         this.onRefreshEnd = [];
-        this.delayRefresh = "";
 
         this.randKey2PlayerId = {};
         this.playerId2RandKey = {};
@@ -1666,22 +1672,21 @@ $HttpModel.addClass("YZDZZ_CLASS", {
 
             var func = json.func;
             var funcItem = AllFuncMap[func];
-            if (!funcItem || !funcItem.refreshType) {
+            if (!funcItem) {
                 responder.addError("Not valid func.");
                 return responder.respondJson({}, done);
             }
 
-            var delay = this.delayRefresh != "";
+            var delay = !!this.delayRefresh;
             if (!delay) {
                 delay = this.noConfliction((delayed) => {
-                    var refreshType = (delayed ? this.delayRefresh : funcItem.refreshType);
-                    this.delayRefresh = "";
+                    this.delayRefresh = false;
                     console.log("delayRefresh end");
-                    this.doRefresh(refreshType);
+                    this.doRefresh("kingwar;playerlist");
                 });
             }
             if (delay) {
-                this.delayRefresh += ";" + funcItem.refreshType;
+                this.delayRefresh = true;
                 console.log("delayRefresh", this.delayRefresh);
             }
 
