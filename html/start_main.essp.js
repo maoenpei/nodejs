@@ -295,7 +295,7 @@ function displayFuncs() {
         }
 
         templates.delayLoad(".hd_title_content", supportFuncs, function(titleBlocks) {
-            var defaultFunc = "kingwar";
+            var defaultFunc = (supportFuncs.length > 0 ? supportFuncs[0].funcKey : "");
             var divTitleBar = $(".div_title_bar");
             divTitleBar.html("");
             for (var i = 0; i < titleBlocks.length; ++i) {
