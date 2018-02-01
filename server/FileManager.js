@@ -9,9 +9,8 @@ Base.extends("$FileManager", {
 
     visitFile:function(path, done) {
         var filepath = this.RootDirectory + path;
-        console.log("visiting file:", filepath);
         fs.readFile(filepath, (err, data) => {
-            console.log(data ? "success" : "failed");
+            console.log("visiting file:", filepath, (!err ? "success" : "failed"));
             safe(done)(data);
         });
     },
@@ -29,8 +28,8 @@ Base.extends("$FileManager", {
     },
     saveFile:function(path, data, done) {
         var filepath = this.RootDirectory + path;
-        console.log("saving file:", filepath);
         fs.writeFile(filepath, data, (err) => {
+            console.log("saving file:", filepath, (!err ? "success" : "failed"));
             safe(done)();
         });
     },
