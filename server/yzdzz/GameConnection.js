@@ -39,7 +39,7 @@ Base.extends("GameValidator", {
         }
         if (this.conn) {
             var now = new Date();
-            this.conn.log("-- checkDaily --", name, currDay, this.setDay[name], "{0}:{1}".format(now.getHours(), now.getSeconds()));
+            this.conn.log("-- checkDaily --", name, currDay, this.setDay[name], "{0}:{1}".format(now.getHours(), now.getMinutes()));
         }
         this.commitDaily(name, currDay);
         return true;
