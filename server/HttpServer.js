@@ -5,6 +5,7 @@ require("./FileManager");
 require("./LoginManager");
 require("./Requestor");
 require("./Responder");
+require("./Session");
 require("./StateManager");
 require("./TemplateParser");
 var assert = require("assert");
@@ -101,7 +102,8 @@ Base.extends("HttpServer", {
                 var model = this.commands[cmd];
                 if (model) {
                     var memberFunc = model[cmd];
-                    yield model.run(memberFunc, requestor, responder, next);
+                    var session = new Session(requestor, responder);
+                    yield model.run(memberFunc, requestor, responder, session, next);
                 }
             }
 

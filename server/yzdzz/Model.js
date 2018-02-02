@@ -866,25 +866,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         };
     },
 
-    listheros:function(requestor, responder, done) {
+    listheros:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (!obj) {
-                responder.addError("Not valid token for logout.");
-                return responder.respondJson({}, done);
-            }
-
-            var userStates = $StateManager.getState(USER_CONFIG);
-            var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData || !keyData.userKey) {
-                responder.addError("Not an authorized user.");
-                return responder.respondJson({}, done);
-            }
-
-            var userData = userStates.users[keyData.userKey];
-            if (!userData || userData.auth < 2) {
-                responder.addError("Admin level not enough.");
-                return responder.respondJson({}, done);
+            if (!(yield session.checkConnection({USER:3, AUTH: 2}, next))) {
+                return;
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -901,7 +886,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 return responder.respondJson({}, done);
             }
 
-            var playerBelong = this.getPlayerIndex(userData, playerKey);
+            var playerBelong = this.getPlayerIndex(session.getUserData(), playerKey);
             if (playerBelong < 0) {
                 responder.addError("Player doesn't belong to user.");
                 return responder.respondJson({}, done);
@@ -919,25 +904,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             }, done);
         }, this);
     },
-    operatehero:function(requestor, responder, done) {
+    operatehero:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (!obj) {
-                responder.addError("Not valid token for logout.");
-                return responder.respondJson({}, done);
-            }
-
-            var userStates = $StateManager.getState(USER_CONFIG);
-            var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData || !keyData.userKey) {
-                responder.addError("Not an authorized user.");
-                return responder.respondJson({}, done);
-            }
-
-            var userData = userStates.users[keyData.userKey];
-            if (!userData || userData.auth < 2) {
-                responder.addError("Admin level not enough.");
-                return responder.respondJson({}, done);
+            if (!(yield session.checkConnection({USER:3, AUTH: 2}, next))) {
+                return;
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -954,7 +924,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 return responder.respondJson({}, done);
             }
 
-            var playerBelong = this.getPlayerIndex(userData, playerKey);
+            var playerBelong = this.getPlayerIndex(session.getUserData(), playerKey);
             if (playerBelong < 0) {
                 responder.addError("Player doesn't belong to user.");
                 return responder.respondJson({}, done);
@@ -1026,25 +996,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             }, done);
         }, this);
     },
-    addaccount:function(requestor, responder, done) {
+    addaccount:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (!obj) {
-                responder.addError("Not valid token for logout.");
-                return responder.respondJson({}, done);
-            }
-
-            var userStates = $StateManager.getState(USER_CONFIG);
-            var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData || !keyData.userKey) {
-                responder.addError("Not an authorized user.");
-                return responder.respondJson({}, done);
-            }
-
-            var userData = userStates.users[keyData.userKey];
-            if (!userData || userData.auth < 2) {
-                responder.addError("Admin level not enough.");
-                return responder.respondJson({}, done);
+            if (!(yield session.checkConnection({USER:3, AUTH: 2}, next))) {
+                return;
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1080,10 +1035,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 password: password,
             };
             this.addAccount(accountKey, username, account);
-            var userAccounts = userData.accounts;
+            var userAccounts = session.getUserData().accounts;
             userAccounts = (userAccounts ? userAccounts : []);
             userAccounts.push(accountKey);
-            userData.accounts = userAccounts;
+            session.getUserData().accounts = userAccounts;
             yield $StateManager.commitState(GAME_ACCOUNTS_CONFIG, next);
             yield $StateManager.commitState(USER_CONFIG, next);
 
@@ -1093,25 +1048,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             }, done);
         }, this);
     },
-    delaccount:function(requestor, responder, done) {
+    delaccount:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (!obj) {
-                responder.addError("Not valid token for logout.");
-                return responder.respondJson({}, done);
-            }
-
-            var userStates = $StateManager.getState(USER_CONFIG);
-            var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData || !keyData.userKey) {
-                responder.addError("Not an authorized user.");
-                return responder.respondJson({}, done);
-            }
-
-            var userData = userStates.users[keyData.userKey];
-            if (!userData || userData.auth < 2) {
-                responder.addError("Admin level not enough.");
-                return responder.respondJson({}, done);
+            if (!(yield session.checkConnection({USER:3, AUTH: 2}, next))) {
+                return;
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1126,14 +1066,14 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 return responder.respondJson({}, done);
             }
 
-            var accountBelong = this.getAccountIndex(userData, accountKey);
+            var accountBelong = this.getAccountIndex(session.getUserData(), accountKey);
             if (accountBelong < 0) {
                 responder.addError("Account doesn't belong to user.");
                 return responder.respondJson({}, done);
             }
 
             var info = {};
-            this.delUserAccount(userData, accountBelong, info);
+            this.delUserAccount(session.getUserData(), accountBelong, info);
 
             if (info.settingsChanged) {
                 yield $StateManager.commitState(GAME_SETTING_CONFIG, next);
@@ -1149,25 +1089,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             }, done);
         }, this);
     },
-    addplayer:function(requestor, responder, done) {
+    addplayer:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (!obj) {
-                responder.addError("Not valid token for logout.");
-                return responder.respondJson({}, done);
-            }
-
-            var userStates = $StateManager.getState(USER_CONFIG);
-            var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData || !keyData.userKey) {
-                responder.addError("Not an authorized user.");
-                return responder.respondJson({}, done);
-            }
-
-            var userData = userStates.users[keyData.userKey];
-            if (!userData || userData.auth < 2) {
-                responder.addError("Admin level not enough.");
-                return responder.respondJson({}, done);
+            if (!(yield session.checkConnection({USER:3, AUTH: 2}, next))) {
+                return;
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1183,24 +1108,21 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 return responder.respondJson({}, done);
             }
 
-            var accountBelong = this.getAccountIndex(userData, accountKey);
+            var accountBelong = this.getAccountIndex(session.getUserData(), accountKey);
             if (accountBelong < 0) {
                 responder.addError("Account doesn't belong to user.");
                 return responder.respondJson({}, done);
             }
 
-            if (userData.players) {
-                for (var i = 0; i < userData.players.length; ++i) {
-                    var playerKey = userData.players[i];
-                    var playerData = this.players[playerKey];
-                    if (playerData.accountKey == accountKey && playerData.server == server) {
-                        responder.addError("Player already added.");
-                        return responder.respondJson({}, done);
-                    }
+            for (var playerKey in this.players) {
+                var playerData = this.players[playerKey];
+                if (playerData.accountKey == accountKey && playerData.server == server) {
+                    responder.addError("Player already added.");
+                    return responder.respondJson({}, done);
                 }
             }
 
-            var isAdmin = userData.auth >= 3;
+            var isAdmin = session.authorized(3);
             var playerKey = rkey();
             while(this.players[playerKey]) { playerKey = rkey(); }
             var accountStates = $StateManager.getState(GAME_ACCOUNTS_CONFIG);
@@ -1209,10 +1131,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 server: server,
             };
             this.addPlayer(playerKey, accountKey, server);
-            var userPlayers = userData.players;
+            var userPlayers = session.getUserData().players;
             userPlayers = (userPlayers ? userPlayers : []);
             userPlayers.push(playerKey);
-            userData.players = userPlayers;
+            session.getUserData().players = userPlayers;
             yield $StateManager.commitState(GAME_ACCOUNTS_CONFIG, next);
             yield $StateManager.commitState(USER_CONFIG, next);
 
@@ -1231,25 +1153,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             }, done);
         }, this);
     },
-    delplayer:function(requestor, responder, done) {
+    delplayer:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (!obj) {
-                responder.addError("Not valid token for logout.");
-                return responder.respondJson({}, done);
-            }
-
-            var userStates = $StateManager.getState(USER_CONFIG);
-            var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData || !keyData.userKey) {
-                responder.addError("Not an authorized user.");
-                return responder.respondJson({}, done);
-            }
-
-            var userData = userStates.users[keyData.userKey];
-            if (!userData || userData.auth < 2) {
-                responder.addError("Admin level not enough.");
-                return responder.respondJson({}, done);
+            if (!(yield session.checkConnection({USER:3, AUTH: 2}, next))) {
+                return;
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1264,14 +1171,14 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 return responder.respondJson({}, done);
             }
 
-            var playerBelong = this.getPlayerIndex(userData, playerKey);
+            var playerBelong = this.getPlayerIndex(session.getUserData(), playerKey);
             if (playerBelong < 0) {
                 responder.addError("Player doesn't belong to user.");
                 return responder.respondJson({}, done);
             }
 
             var info = {};
-            this.delUserPlayer(userData, playerBelong, info);
+            this.delUserPlayer(session.getUserData(), playerBelong, info);
 
             if (info.settingsChanged) {
                 yield $StateManager.commitState(GAME_SETTING_CONFIG, next);
@@ -1287,25 +1194,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             }, done);
         }, this);
     },
-    playersetting:function(requestor, responder, done) {
+    playersetting:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (!obj) {
-                responder.addError("Not valid token for logout.");
-                return responder.respondJson({}, done);
-            }
-
-            var userStates = $StateManager.getState(USER_CONFIG);
-            var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData || !keyData.userKey) {
-                responder.addError("Not an authorized user.");
-                return responder.respondJson({}, done);
-            }
-
-            var userData = userStates.users[keyData.userKey];
-            if (!userData || userData.auth < 2) {
-                responder.addError("Admin level not enough.");
-                return responder.respondJson({}, done);
+            if (!(yield session.checkConnection({USER:3, AUTH: 2}, next))) {
+                return;
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1322,13 +1214,13 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 return responder.respondJson({}, done);
             }
 
-            var playerBelong = this.getPlayerIndex(userData, playerKey);
+            var playerBelong = this.getPlayerIndex(session.getUserData(), playerKey);
             if (playerBelong < 0) {
                 responder.addError("Player doesn't belong to user.");
                 return responder.respondJson({}, done);
             }
 
-            var isAdmin = userData.auth >= 3;
+            var isAdmin = session.authorized(3);
             var changed = false;
             if (isAdmin && settings.kingwar) {
                 playerData.validator.resetDaily();
@@ -1358,25 +1250,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             }, done);
         }, this);
     },
-    playerautomation:function(requestor, responder, done) {
+    playerautomation:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (!obj) {
-                responder.addError("Not valid token for logout.");
-                return responder.respondJson({}, done);
-            }
-
-            var userStates = $StateManager.getState(USER_CONFIG);
-            var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData || !keyData.userKey) {
-                responder.addError("Not an authorized user.");
-                return responder.respondJson({}, done);
-            }
-
-            var userData = userStates.users[keyData.userKey];
-            if (!userData || userData.auth < 2) {
-                responder.addError("Admin level not enough.");
-                return responder.respondJson({}, done);
+            if (!(yield session.checkConnection({USER:3, AUTH: 2}, next))) {
+                return;
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1393,7 +1270,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 return responder.respondJson({}, done);
             }
 
-            var playerBelong = this.getPlayerIndex(userData, playerKey);
+            var playerBelong = this.getPlayerIndex(session.getUserData(), playerKey);
             if (playerBelong < 0) {
                 responder.addError("Player doesn't belong to user.");
                 return responder.respondJson({}, done);
@@ -1414,25 +1291,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             }, done);
         }, this);
     },
-    playermanual:function(requestor, responder, done) {
+    playermanual:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (!obj) {
-                responder.addError("Not valid token for logout.");
-                return responder.respondJson({}, done);
-            }
-
-            var userStates = $StateManager.getState(USER_CONFIG);
-            var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData || !keyData.userKey) {
-                responder.addError("Not an authorized user.");
-                return responder.respondJson({}, done);
-            }
-
-            var userData = userStates.users[keyData.userKey];
-            if (!userData || userData.auth < 2) {
-                responder.addError("Admin level not enough.");
-                return responder.respondJson({}, done);
+            if (!(yield session.checkConnection({USER:3, AUTH: 2}, next))) {
+                return;
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1448,7 +1310,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 return responder.respondJson({}, done);
             }
 
-            var playerBelong = this.getPlayerIndex(userData, playerKey);
+            var playerBelong = this.getPlayerIndex(session.getUserData(), playerKey);
             if (playerBelong < 0) {
                 responder.addError("Player doesn't belong to user.");
                 return responder.respondJson({}, done);
@@ -1464,28 +1326,14 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             }, done);
         }, this);
     },
-    listautomation:function(requestor, responder, done) {
+    listautomation:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (!obj) {
-                responder.addError("Not valid token for logout.");
-                return responder.respondJson({}, done);
+            if (!(yield session.checkConnection({USER:3, AUTH: 2}, next))) {
+                return;
             }
 
-            var userStates = $StateManager.getState(USER_CONFIG);
-            var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData || !keyData.userKey) {
-                responder.addError("Not an authorized user.");
-                return responder.respondJson({}, done);
-            }
-
-            var userData = userStates.users[keyData.userKey];
-            if (!userData || userData.auth < 2) {
-                responder.addError("Admin level not enough.");
-                return responder.respondJson({}, done);
-            }
-
-            var isAdmin = userData.auth >= 3;
+            var isAdmin = session.authorized(3);
+            var userData = session.getUserData();
             var accounts = [];
             if (userData.accounts) {
                 for (var i = 0; i < userData.accounts.length; ++i) {
@@ -1547,25 +1395,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             }, done);
         }, this);
     },
-    orderautomation:function(requestor, responder, done) {
+    orderautomation:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (!obj) {
-                responder.addError("Not valid token for logout.");
-                return responder.respondJson({}, done);
-            }
-
-            var userStates = $StateManager.getState(USER_CONFIG);
-            var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData || !keyData.userKey) {
-                responder.addError("Not an authorized user.");
-                return responder.respondJson({}, done);
-            }
-
-            var userData = userStates.users[keyData.userKey];
-            if (!userData || userData.auth < 2) {
-                responder.addError("Admin level not enough.");
-                return responder.respondJson({}, done);
+            if (!(yield session.checkConnection({USER:3, AUTH: 2}, next))) {
+                return;
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1576,6 +1409,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
 
             // use new order
             var orders = json.orders;
+            var userData = session.getUserData();
             var oldAccounts = clone(userData.accounts);
             var newAccounts = [];
             for (var i = 0; i < orders.length; ++i) {
@@ -1600,30 +1434,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             });
         }, this);
     },
-    checkrefresh:function(requestor, responder, done) {
+    checkrefresh:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (requestor.getMethod() == "GET") {
-                responder.addError("Not valid for 'GET' method.");
-                return responder.respondJson({}, done);
-            }
-
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (!obj) {
-                responder.addError("Not valid token for logout.");
-                return responder.respondJson({}, done);
-            }
-
-            var userStates = $StateManager.getState(USER_CONFIG);
-            var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData || !keyData.userKey) {
-                responder.addError("Not an authorized user.");
-                return responder.respondJson({}, done);
-            }
-
-            var userData = userStates.users[keyData.userKey];
-            if (!userData || userData.auth < 2) {
-                responder.addError("Admin level not enough.");
-                return responder.respondJson({}, done);
+            if (!(yield session.checkConnection({POST:true, USER:3, AUTH: 2}, next))) {
+                return;
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1638,30 +1452,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             }, done);
         }, this);
     },
-    manrefresh:function(requestor, responder, done) {
+    manrefresh:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (requestor.getMethod() == "GET") {
-                responder.addError("Not valid for 'GET' method.");
-                return responder.respondJson({}, done);
-            }
-
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (!obj) {
-                responder.addError("Not valid token for logout.");
-                return responder.respondJson({}, done);
-            }
-
-            var userStates = $StateManager.getState(USER_CONFIG);
-            var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData || !keyData.userKey) {
-                responder.addError("Not an authorized user.");
-                return responder.respondJson({}, done);
-            }
-
-            var userData = userStates.users[keyData.userKey];
-            if (!userData || userData.auth < 2) {
-                responder.addError("Admin level not enough.");
-                return responder.respondJson({}, done);
+            if (!(yield session.checkConnection({POST:true, USER:3, AUTH: 2}, next))) {
+                return;
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1696,25 +1490,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             }, done);
         }, this);
     },
-    setheroshop:function(requestor, responder, done) {
+    setheroshop:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (!obj) {
-                responder.addError("Not valid token for logout.");
-                return responder.respondJson({}, done);
-            }
-
-            var userStates = $StateManager.getState(USER_CONFIG);
-            var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData || !keyData.userKey) {
-                responder.addError("Not an authorized user.");
-                return responder.respondJson({}, done);
-            }
-
-            var userData = userStates.users[keyData.userKey];
-            if (!userData || userData.auth < 1) {
-                responder.addError("Admin level not enough.");
-                return responder.respondJson({}, done);
+            if (!(yield session.checkConnection({USER:3, AUTH: 1}, next))) {
+                return;
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1731,40 +1510,24 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 return responder.respondJson({}, done);
             }
 
-            var userHeros = userData.heros;
-            userHeros = (userHeros ? userHeros : {});
+            var userHeros = session.getUserData().heros || {};
             if (cmd == "add") {
                 userHeros[heroId] = true;
             } else {
                 delete userHeros[heroId];
             }
-            userData.heros = userHeros;
-            $StateManager.commitState(USER_CONFIG);
+            session.getUserData().heros = userHeros;
+            yield $StateManager.commitState(USER_CONFIG, next);
 
             responder.respondJson({
                 success: true,
             });
         }, this);
     },
-    listserverinfo:function(requestor, responder, done) {
+    listserverinfo:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (!obj) {
-                responder.addError("Not valid token for logout.");
-                return responder.respondJson({}, done);
-            }
-
-            var userStates = $StateManager.getState(USER_CONFIG);
-            var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData || !keyData.userKey) {
-                responder.addError("Not an authorized user.");
-                return responder.respondJson({}, done);
-            }
-
-            var userData = userStates.users[keyData.userKey];
-            if (!userData || userData.auth < 1) {
-                responder.addError("Admin level not enough.");
-                return responder.respondJson({}, done);
+            if (!(yield session.checkConnection({USER:3, AUTH: 1}, next))) {
+                return;
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1775,8 +1538,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
 
             var heros = Database.allHeros(8); // at least 'SSS'
             var heroshopInfo = $StateManager.getState(GAME_HEROSHOP_CONFIG);
-            var userHeros = userData.heros;
-            userHeros = (userHeros ? userHeros : {});
+            var userHeros = session.getUserData().heros || {};
 
             responder.respondJson({
                 heros: heros,
@@ -1785,25 +1547,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             });
         }, this);
     },
-    listplayers:function(requestor, responder, done) {
+    listplayers:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (!obj) {
-                responder.addError("Not valid token for logout.");
-                return responder.respondJson({}, done);
-            }
-
-            var userStates = $StateManager.getState(USER_CONFIG);
-            var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData || !keyData.userKey) {
-                responder.addError("Not an authorized user.");
-                return responder.respondJson({}, done);
-            }
-
-            var userData = userStates.users[keyData.userKey];
-            if (!userData || userData.auth < 1) {
-                responder.addError("Admin level not enough.");
-                return responder.respondJson({}, done);
+            if (!(yield session.checkConnection({USER:3, AUTH: 1}, next))) {
+                return;
             }
 
             var players = [];
@@ -1819,7 +1566,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                     kingwar: playerItem.kingwar,
                 });
             }
-            var hasRefresh = userData.auth >= 2;
+            var hasRefresh = session.authorized(2);
             var tag = this.getTag(playersData) + String(hasRefresh);
             if (!requestor.compareTags(tag)) {
                 responder.setCode(304);
@@ -1828,34 +1575,19 @@ $HttpModel.addClass("YZDZZ_CLASS", {
 
             responder.setTag(tag);
             responder.respondJson({
-                hasRefresh: userData.auth >= 2,
+                hasRefresh: hasRefresh,
                 players: players,
             }, done);
         }, this);
     },
-    listkingwars:function(requestor, responder, done) {
+    listkingwars:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (!obj) {
-                responder.addError("Not valid token for logout.");
-                return responder.respondJson({}, done);
-            }
-
-            var userStates = $StateManager.getState(USER_CONFIG);
-            var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData || !keyData.userKey) {
-                responder.addError("Not an authorized user.");
-                return responder.respondJson({}, done);
-            }
-
-            var userData = userStates.users[keyData.userKey];
-            if (!userData || userData.auth < 1) {
-                responder.addError("Admin level not enough.");
-                return responder.respondJson({}, done);
+            if (!(yield session.checkConnection({USER:3, AUTH: 1}, next))) {
+                return;
             }
 
             var kingwarData = this.controller.getKingwar();
-            var hasRefresh = userData.auth >= 2;
+            var hasRefresh = session.authorized(2);
             var tag = this.getTag(kingwarData) + String(hasRefresh);
             if (!requestor.compareTags(tag)) {
                 responder.setCode(304);
@@ -1863,35 +1595,20 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             }
             responder.setTag(tag);
             responder.respondJson({
-                hasRefresh: userData.auth >= 2,
+                hasRefresh: hasRefresh,
                 areastars:kingwarData,
             }, done);
         }, this);
     },
-    functions:function(requestor, responder, done) {
+    functions:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (!obj) {
-                responder.addError("Not valid token for logout.");
-                return responder.respondJson({}, done);
-            }
-
-            var userStates = $StateManager.getState(USER_CONFIG);
-            var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData || !keyData.userKey) {
-                responder.addError("Not an authorized user.");
-                return responder.respondJson({}, done);
-            }
-
-            var userData = userStates.users[keyData.userKey];
-            if (!userData || userData.auth < 1) {
-                responder.addError("Admin level not enough.");
-                return responder.respondJson({}, done);
+            if (!(yield session.checkConnection({USER:3, AUTH: 1}, next))) {
+                return;
             }
 
             var funcs = [];
             for (var i = 0; i < AllFuncs.length; ++i) {
-                if (userData.auth >= AllFuncs[i].authBase) {
+                if (session.authorized(AllFuncs[i].authBase)) {
                     funcs.push(AllFuncs[i].name);
                 }
             }

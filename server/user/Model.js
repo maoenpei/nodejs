@@ -63,32 +63,13 @@ $HttpModel.addClass("USER_CLASS", {
         return userKey;
     },
 
-    listusers:function(requestor, responder, done) {
+    listusers:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (requestor.getMethod() == "GET") {
-                responder.addError("Not valid for 'GET' method.");
-                return responder.respondJson({}, done);
-            }
-
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (!obj) {
-                responder.addError("Not valid token for logout.");
-                return responder.respondJson({}, done);
+            if (!(yield session.checkConnection({POST:true, USER:3, AUTH: 3}, next))) {
+                return;
             }
 
             var userStates = $StateManager.getState(USER_CONFIG);
-            var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData || !keyData.userKey) {
-                responder.addError("Not an authorized user.");
-                return responder.respondJson({}, done);
-            }
-
-            var rootUserData = userStates.users[keyData.userKey];
-            if (!rootUserData || rootUserData.auth < 3) {
-                responder.addError("Admin level not enough.");
-                return responder.respondJson({}, done);
-            }
-
             var json = yield requestor.visitBodyJson(next);
             if (!json || !json.jetson) {
                 responder.addError("Parameter data not correct.");
@@ -128,39 +109,20 @@ $HttpModel.addClass("USER_CLASS", {
                 }
             }
 
-            var canAuthorize = (AuthorizeOnlySuperAdmin ? rootUserData.auth >= 4 : true);
+            var canAuthorize = (AuthorizeOnlySuperAdmin ? session.authorized(4) : true);
             responder.respondJson({
                 canAuthorize: canAuthorize,
                 users: allUsers,
             }, done);
         }, this);
     },
-    promote:function(requestor, responder, done) {
+    promote:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (requestor.getMethod() == "GET") {
-                responder.addError("Not valid for 'GET' method.");
-                return responder.respondJson({}, done);
-            }
-
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (!obj) {
-                responder.addError("Not valid token for logout.");
-                return responder.respondJson({}, done);
+            if (!(yield session.checkConnection({POST:true, USER:3, AUTH: 3}, next))) {
+                return;
             }
 
             var userStates = $StateManager.getState(USER_CONFIG);
-            var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData || !keyData.userKey) {
-                responder.addError("Not an authorized user.");
-                return responder.respondJson({}, done);
-            }
-
-            var userData = userStates.users[keyData.userKey];
-            if (!userData || userData.auth < 3) {
-                responder.addError("Admin level not enough.");
-                return responder.respondJson({}, done);
-            }
-
             var json = yield requestor.visitBodyJson(next);
             if (!json || !json.target || !json.auth) {
                 responder.addError("Parameter data not correct.");
@@ -196,32 +158,13 @@ $HttpModel.addClass("USER_CLASS", {
             responder.respondJson({success:true}, done);
         }, this);
     },
-    disable:function(requestor, responder, done) {
+    disable:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (requestor.getMethod() == "GET") {
-                responder.addError("Not valid for 'GET' method.");
-                return responder.respondJson({}, done);
-            }
-
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (!obj) {
-                responder.addError("Not valid token for logout.");
-                return responder.respondJson({}, done);
+            if (!(yield session.checkConnection({POST:true, USER:3, AUTH: 3}, next))) {
+                return;
             }
 
             var userStates = $StateManager.getState(USER_CONFIG);
-            var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData || !keyData.userKey) {
-                responder.addError("Not an authorized user.");
-                return responder.respondJson({}, done);
-            }
-
-            var userData = userStates.users[keyData.userKey];
-            if (!userData || userData.auth < 3) {
-                responder.addError("Admin level not enough.");
-                return responder.respondJson({}, done);
-            }
-
             var json = yield requestor.visitBodyJson(next);
             if (!json || !json.target) {
                 responder.addError("Parameter data not correct.");
@@ -230,7 +173,7 @@ $HttpModel.addClass("USER_CLASS", {
 
             var targetSerial = json.target;
             var keepUser = json.keep;
-            if (targetSerial == obj.getSerial()) {
+            if (targetSerial == session.getSerial()) {
                 responder.addError("Cannot disable self.");
                 return responder.respondJson({}, done);
             }
@@ -276,32 +219,13 @@ $HttpModel.addClass("USER_CLASS", {
             responder.respondJson({success:true}, done);
         }, this);
     },
-    rename:function(requestor, responder, done) {
+    rename:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (requestor.getMethod() == "GET") {
-                responder.addError("Not valid for 'GET' method.");
-                return responder.respondJson({}, done);
-            }
-
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (!obj) {
-                responder.addError("Not valid token for logout.");
-                return responder.respondJson({}, done);
+            if (!(yield session.checkConnection({POST:true, USER:3, AUTH: 3}, next))) {
+                return;
             }
 
             var userStates = $StateManager.getState(USER_CONFIG);
-            var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData || !keyData.userKey) {
-                responder.addError("Not an authorized user.");
-                return responder.respondJson({}, done);
-            }
-
-            var userData = userStates.users[keyData.userKey];
-            if (!userData || userData.auth < 3) {
-                responder.addError("Admin level not enough.");
-                return responder.respondJson({}, done);
-            }
-
             var json = yield requestor.visitBodyJson(next);
             if (!json || !json.target || !json.name) {
                 responder.addError("Parameter data not correct.");
@@ -322,32 +246,13 @@ $HttpModel.addClass("USER_CLASS", {
             responder.respondJson({success:true}, done);
         }, this);
     },
-    authorize:function(requestor, responder, done) {
+    authorize:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (requestor.getMethod() == "GET") {
-                responder.addError("Not valid for 'GET' method.");
-                return responder.respondJson({}, done);
-            }
-
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (!obj) {
-                responder.addError("Not valid token for logout.");
-                return responder.respondJson({}, done);
+            if (!(yield session.checkConnection({POST:true, USER:3, AUTH: 3}, next))) {
+                return;
             }
 
             var userStates = $StateManager.getState(USER_CONFIG);
-            var keyData = userStates.keys[obj.getSerial()];
-            if (!keyData || !keyData.userKey) {
-                responder.addError("Not an authorized user.");
-                return responder.respondJson({}, done);
-            }
-
-            var userData = userStates.users[keyData.userKey];
-            if (!userData || userData.auth < 3) {
-                responder.addError("Admin level not enough.");
-                return responder.respondJson({}, done);
-            }
-
             var json = yield requestor.visitBodyJson(next);
             if (!json || !json.previous) {
                 responder.addError("Parameter data not correct.");
@@ -374,7 +279,7 @@ $HttpModel.addClass("USER_CLASS", {
                 nextUserData.auth = 1;
                 this.invokeUserListener("added", nextUserData);
             } else {
-                if (AuthorizeOnlySuperAdmin && userData.auth < 4) {
+                if (AuthorizeOnlySuperAdmin && !session.authorized(4)) {
                     responder.addError("Admin level not enough.");
                     return responder.respondJson({}, done);
                 }
@@ -396,21 +301,14 @@ $HttpModel.addClass("USER_CLASS", {
             responder.respondJson({success:true}, done);
         }, this);
     },
-    apply:function(requestor, responder, done) {
+    apply:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (requestor.getMethod() == "GET") {
-                responder.addError("Not valid for 'GET' method.");
-                return responder.respondJson({}, done);
-            }
-
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (!obj) {
-                responder.addError("Not valid token for logout.");
-                return responder.respondJson({}, done);
+            if (!(yield session.checkConnection({POST:true, TOKEN:true}, next))) {
+                return;
             }
 
             var userStates = $StateManager.getState(USER_CONFIG);
-            var keyData = userStates.keys[obj.getSerial()];
+            var keyData = userStates.keys[session.getSerial()];
             if (!keyData) {
                 responder.addError("No such user.");
                 return responder.respondJson({}, done);
@@ -449,11 +347,10 @@ $HttpModel.addClass("USER_CLASS", {
             }, done);
         }, this);
     },
-    question:function(requestor, responder, done) {
+    question:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (requestor.getMethod() == "GET") {
-                responder.addError("Not valid for 'GET' method.");
-                return safe(done)();
+            if (!(yield session.checkConnection({POST:true}, next))) {
+                return;
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -486,15 +383,7 @@ $HttpModel.addClass("USER_CLASS", {
                 state = 1;
             }
 
-            var obj = yield this.httpServer.tokenValid(requestor, next);
-            if (obj && obj.getSerial() != serial) {
-                $LoginManager.logoff(obj.getSerial());
-                obj = null;
-            }
-            if (!obj) {
-                obj = $LoginManager.login(serial);
-                responder.setCookies({token:obj.getToken()});
-            }
+            session.renew(serial);
             responder.respondJson({
                 serial:newSerial,
                 state:state,
