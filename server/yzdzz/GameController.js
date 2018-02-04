@@ -1137,7 +1137,7 @@ Base.extends("GameController", {
             }
 
             if (executables.length > 0) {
-                this.refreshOnePlayer(refreshInfo, executables, select.setup(), (taskManager ? taskManager.addTask() : undefined));
+                this.executeOnePlayer(refreshInfo, executables, select.setup(), (taskManager ? taskManager.addTask() : undefined));
             }
         }
         select.all(() => {
@@ -1145,16 +1145,29 @@ Base.extends("GameController", {
             safe(done)();
         });
     },
-    refreshOnePlayer:function(refreshInfo, executables, done, taskItem) {
+    executeOnePlayer:function(refreshInfo, executables, done, taskItem) {
         var next = coroutine(function*() {
+            var token = { finished: false, };
             yield refreshInfo.mutex.lock(next);
             var doEnd = (unexpected) => {
+                if (token.finished) {
+                    return;
+                }
+                token.finished = true;
                 if (unexpected && taskItem) {
                     taskItem.giveup();
                 }
                 refreshInfo.mutex.unlock();
-                safe(done)();
+                safe(done)({
+                    success: !unexpected,
+                });
             };
+            setTimeout(() => {
+                if (!token.finished) {
+                    console.log("============= one player timeout =============");
+                    doEnd(true);
+                }
+            }, 1000 * 60 * 1.5);
             var conn = this.accountManager.connectAccount(refreshInfo.account, refreshInfo.validator);
             if (!conn) {
                 this.errLog("connectAccount", "account:{0}".format(refreshInfo.account));
@@ -1162,12 +1175,12 @@ Base.extends("GameController", {
             }
             //console.log("start -- player!", refreshInfo.account, refreshInfo.server);
             var data = yield conn.loginAccount(next);
-            if (!data.success) {
+            if (token.finished || !data.success) {
                 this.errLog("loginAccount", "account({0}), server({1})".format(refreshInfo.account, refreshInfo.server));
                 return doEnd(true);
             }
             var data = yield conn.loginGame(refreshInfo.server, next);
-            if (!data.success) {
+            if (token.finished || !data.success) {
                 this.errLog("loginGame", "account({0}), server({1})".format(refreshInfo.account, refreshInfo.server));
                 return doEnd(true);
             }
@@ -1178,6 +1191,9 @@ Base.extends("GameController", {
             };
             for (var i = 0; i < executables.length; ++i) {
                 yield executables[i](conn, next, taskItem);
+                if (token.finished) {
+                    return doEnd(true);
+                }
             }
             //console.log("quit -- player!", refreshInfo.account, refreshInfo.server, conn.getGameInfo().name);
             conn.quit();
@@ -1185,34 +1201,11 @@ Base.extends("GameController", {
         }, this);
     },
     manualOnePlayer:function(playerData, func, done) {
-        var next = coroutine(function*() {
-            console.log("manual one player start -", process.memoryUsage());
-            yield playerData.mutex.lock(next);
-            var conn = this.accountManager.connectAccount(playerData.account, playerData.validator);
-            if (!conn) {
-                return safe(done)({});
-            }
-            var data = yield conn.loginAccount(next);
-            if (!data.success) {
-                return safe(done)({});
-            }
-            var data = yield conn.loginGame(playerData.server, next);
-            if (!data.success) {
-                return safe(done)({});
-            }
-            var accountGameKey = playerData.account + "$" + playerData.server;
-            this.lastPlayerInfo[accountGameKey] = {
-                name: conn.getGameInfo().name,
-                power: conn.getGameInfo().power,
-            };
-            yield func(conn, next);
-            conn.quit();
-            playerData.mutex.unlock();
+        console.log("manual one player start -", process.memoryUsage());
+        this.executeOnePlayer(playerData, [func], (result) => {
             console.log("manual one player finish -", process.memoryUsage());
-            safe(done)({
-                success: true,
-            });
-        }, this);
+            safe(done)(result);
+        });
     },
 
     // Private refresh operations
