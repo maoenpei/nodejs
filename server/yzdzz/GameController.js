@@ -601,7 +601,7 @@ Base.extends("GameController", {
                 this.heroshopDate = new Date().getDate();
                 safe(this.heroshopUpdateCallback)(this.heroshopDate, this.heroshopInfo);
                 console.log("daily task end!");
-            });
+            }, null, true);
         };
         for (var i = 0; i < dailyTimes.length; ++i) {
             var dailyInfo = dailyTimes[i];
@@ -1123,7 +1123,7 @@ Base.extends("GameController", {
         }
         return false;
     },
-    refreshAllPlayers:function(checkFun, done, taskManager) {
+    refreshAllPlayers:function(checkFun, done, taskManager, showWave) {
         console.log("refresh all player start -", process.memoryUsage());
         var select = new Select();
         for (var accountGameKey in this.refreshData) {
@@ -1142,7 +1142,17 @@ Base.extends("GameController", {
         }
         select.all(() => {
             console.log("refresh all player finish -", process.memoryUsage());
+            if (showWave) {
+                this.showMemoryWave();
+            }
             safe(done)();
+        });
+    },
+    manualOnePlayer:function(playerData, func, done) {
+        console.log("manual one player start -", process.memoryUsage());
+        this.executeOnePlayer(playerData, [func], (result) => {
+            console.log("manual one player finish -", process.memoryUsage());
+            safe(done)(result);
         });
     },
     executeOnePlayer:function(refreshInfo, executables, done, taskItem) {
@@ -1200,12 +1210,13 @@ Base.extends("GameController", {
             doEnd();
         }, this);
     },
-    manualOnePlayer:function(playerData, func, done) {
-        console.log("manual one player start -", process.memoryUsage());
-        this.executeOnePlayer(playerData, [func], (result) => {
-            console.log("manual one player finish -", process.memoryUsage());
-            safe(done)(result);
-        });
+    showMemoryWave:function() {
+        var next = coroutine(function*() {
+            for (var i = 0; i < 100; ++i) {
+                yield setTimeout(next, 1000);
+                console.log("wave:", i, process.memoryUsage());
+            }
+        }, this);
     },
 
     // Private refresh operations
