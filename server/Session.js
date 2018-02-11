@@ -2,6 +2,14 @@
 
 require("./Base");
 
+var AllRequirements = {
+    "kingwar": {},
+    "playerlist": {},
+    "serverInfo": {},
+    "automation": {},
+    "management": {},
+};
+
 Base.extends("Session", {
     _constructor:function(requestor, responder) {
         this.requestor = requestor;
@@ -42,14 +50,16 @@ Base.extends("Session", {
                             return this.responder.respondJson({}, doErr);
                         }
                     }
-                    if (validation.USER >= 3 && validation.AUTH) {
+                    var vAUTH = validation.AUTH;
+                    var vREQ = validation.REQ;
+                    if (validation.USER >= 3 && (vAUTH || vREQ)) {
                         var userData = userStates.users[keyData.userKey];
-                        if (!userData || userData.auth < validation.AUTH) {
+                        var authed = (vAUTH ? userData.auth >= vAUTH : true) && (vREQ ? userData.req && userData.req[vREQ] : true);
+                        if (!userData || !authed) {
                             this.responder.addError("Admin level not enough.");
                             return this.responder.respondJson({}, doErr);
                         }
                         this.userKey = keyData.userKey;
-                        this.userAuth = userData.auth;
                     }
                 }
             }
@@ -70,8 +80,10 @@ Base.extends("Session", {
     getSerial:function() {
         return (this.tokenObj ? this.tokenObj.getSerial() : null);
     },
-    authorized:function(auth) {
-        return this.userAuth ? this.userAuth >= auth : false;
+    authorized:function(auth, req) {
+        var userStates = $StateManager.getState(USER_CONFIG);
+        var userData = userStates.users[this.userKey];
+        return (auth ? userData.auth >= auth : true) && (req ? userData.req && userData.req[req] : true);
     },
     getUserData:function() {
         var userStates = $StateManager.getState(USER_CONFIG);

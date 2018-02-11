@@ -104,6 +104,7 @@ $HttpModel.addClass("USER_CLASS", {
                             dead:!!keyData.dead,
                             serial:serial,
                             auth:userData.auth,
+                            req:userData.req,
                         });
                     }
                 }

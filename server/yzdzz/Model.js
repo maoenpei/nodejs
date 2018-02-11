@@ -18,14 +18,6 @@ GAME_KINGWAR_CONFIG = "GameKingwar.d";
 GAME_PLAYER_NAME_CONFIG = "GamePlayerNames.d";
 GAME_HEROSHOP_CONFIG = "GameHeroshop.d";
 
-var AllRequirements = {
-    "kingwar": {},
-    "playerlist": {},
-    "serverInfo": {},
-    "automation": {},
-    "management": {},
-};
-
 var AllFuncs = [
     {name:"kingwar", authBase:1, requirement:"kingwar", },
     {name:"playerlist", authBase:1, requirement:"playerlist", },
