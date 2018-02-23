@@ -19,6 +19,7 @@ $HttpModel.addClass("USER_CLASS", {
         httpServer.registerCommand("rename", this);
         httpServer.registerCommand("authorize", this);
         httpServer.registerCommand("apply", this);
+        httpServer.registerCommand("requirement", this);
         httpServer.registerCommand("question", this);
     },
     initialize:function(done) {
@@ -104,7 +105,7 @@ $HttpModel.addClass("USER_CLASS", {
                             dead:!!keyData.dead,
                             serial:serial,
                             auth:userData.auth,
-                            req:userData.req,
+                            req:userData.req || {},
                         });
                     }
                 }
@@ -113,6 +114,8 @@ $HttpModel.addClass("USER_CLASS", {
             var canAuthorize = (AuthorizeOnlySuperAdmin ? session.authorized(4) : true);
             responder.respondJson({
                 canAuthorize: canAuthorize,
+                auths: session.availableAuths(),
+                reqs: session.availableRequirements(),
                 users: allUsers,
             }, done);
         }, this);
@@ -345,6 +348,39 @@ $HttpModel.addClass("USER_CLASS", {
             responder.respondJson({
                 state: (keyData.userKey ? 2 : 1),
                 name:keyData.name,
+            }, done);
+        }, this);
+    },
+    requirement:function(requestor, responder, session, done) {
+        var next = coroutine(function*() {
+            if (!(yield session.checkConnection({POST:true, USER:3, AUTH: 3}, next))) {
+                return;
+            }
+
+            var userStates = $StateManager.getState(USER_CONFIG);
+            var json = yield requestor.visitBodyJson(next);
+            if (!json || !json.target || !json.val) {
+                responder.addError("Parameter data not correct.");
+                return responder.respondJson({}, done);
+            }
+
+            var targetSerial = json.target;
+            var reqName = json.val;
+            var isAdd = json.add;
+            var targetKeyData = userStates.keys[targetSerial];
+
+            var userKey = targetKeyData.userKey;
+            var req = userStates.users[userKey].req || {};
+            if (isAdd) {
+                req[reqName] = true;
+            } else {
+                delete req[reqName];
+            }
+            userStates.users[userKey].req = req;
+            yield $StateManager.commitState(USER_CONFIG, next);
+
+            responder.respondJson({
+                success: true,
             }, done);
         }, this);
     },

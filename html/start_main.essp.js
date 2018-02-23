@@ -2066,11 +2066,6 @@ function displayKingWar() {
 }
 
 var displayUsersModel = {
-    authLevels: [
-        {name:"查看", val:1},
-        {name:"自动", val:2},
-        {name:"管理", val:3},
-    ],
     canAuthorize:false,
 };
 displayUsersModel.canAssociate = function() {
@@ -2080,6 +2075,8 @@ displayUsersModel.get = function(callback) {
     $this = this;
     requestPost("listusers", {jetson:true}, function(json) {
         if (json.users) {
+            $this.auths = json.auths;
+            $this.reqs = json.reqs;
             $this.canAuthorize = json.canAuthorize;
             $this.users = json.users;
             callback($this.users);
@@ -2128,8 +2125,43 @@ displayUsersModel.breakuser = function(serial, callback) {
         }
     });
 }
-displayUsersModel.auths = function() {
-    return this.authLevels;
+displayUsersModel.getAuths = function() {
+    if (!this.validAuths) {
+        this.validAuths = [];
+        for (var i = 0; i < this.auths.length; ++i) {
+            var item = this.auths[i];
+            if (item.val) {
+                this.validAuths.push(item);
+            }
+        }
+    }
+    return this.validAuths;
+}
+displayUsersModel.getReqs = function(userInfo) {
+    var reqinfo = [];
+    for (var i = 0; i < this.reqs.length; ++i) {
+        var item = this.reqs[i];
+        reqinfo.push({
+            name: item.name,
+            val: item.val,
+            enabled: !!userInfo.req[item.val],
+        });
+    }
+    return reqinfo;
+}
+displayUsersModel.addReq = function(serial, val, callback) {
+    requestPost("requirement", {target:serial, val:val, add:true}, function(json) {
+        if (json.success) {
+            callback();
+        }
+    });
+}
+displayUsersModel.delReq = function(serial, val, callback) {
+    requestPost("requirement", {target:serial, val:val, add:false}, function(json) {
+        if (json.success) {
+            callback();
+        }
+    });
 }
 
 function displayUsers() {
@@ -2144,6 +2176,7 @@ function displayUsers() {
         var userItemBlocks = [];
         var associateBlockInfo = null;
         var userItemTemplate = templates.read(".hd_user_item");
+        var userDetailTemplate = templates.read(".hd_user_detail");
         for (var i = 0; i < usersData.length; ++i) {
             (function() {
                 var userInfo = usersData[i];
@@ -2155,7 +2188,6 @@ function displayUsers() {
                     superAdmin:superAdmin,
                     canDelete:!superAdmin && !isSelf,
                     authorized:authorized,
-                    auths:displayUsersModel.auths(),
                     associate:displayUsersModel.canAssociate(),
                     canBreak:displayUsersModel.canAssociate() && !userInfo.dead && !isSelf,
                 };
@@ -2215,14 +2247,43 @@ function displayUsers() {
                             displayUsersModel.breakuser(userInfo.serial, displayUsers);
                         }
                     });
-                    var selectAuthLevel = divUserItemBlock.find(".div_user_select_auth_level");
-                    selectAuthLevel.val(userInfo.auth);
-                    selectAuthLevel.change(function() {
-                        var level = selectAuthLevel.val();
-                        if (confirm("确认为'" + userInfo.name + "'修改权限？")) {
-                            displayUsersModel.promote(userInfo.serial, level, displayUsers);
-                        }
+                    var divUserSetting = divUserItemBlock.find(".div_user_setting_detail");
+                    divUserSetting.click(function() {
+                        var reqs = displayUsersModel.getReqs(userInfo);
+                        divContentPanel.html(userDetailTemplate({
+                            name:userInfo.name,
+                            auths:displayUsersModel.getAuths(),
+                            reqs:reqs,
+                        }));
+                        var selectAuthLevel = divContentPanel.find(".div_user_select_auth_level");
                         selectAuthLevel.val(userInfo.auth);
+                        selectAuthLevel.change(function() {
+                            var level = selectAuthLevel.val();
+                            if (confirm("确认为'" + userInfo.name + "'修改权限？")) {
+                                displayUsersModel.promote(userInfo.serial, level, function() {
+                                    alert("修改成功");
+                                });
+                            }
+                            selectAuthLevel.val(userInfo.auth);
+                        });
+                        var checkRequirements = divContentPanel.find(".input_check_user_requirement");
+                        for (var i = 0; i < reqs.length; ++i) {
+                            (function() {
+                                var item = reqs[i];
+                                var checkBlock = $(checkRequirements[i]);
+                                checkBlock.change(function() {
+                                    if (checkBlock.is(":checked")) {
+                                        displayUsersModel.addReq(userInfo.serial, item.val, function() {
+                                            alert("添加权限成功");
+                                        });
+                                    } else {
+                                        displayUsersModel.delReq(userInfo.serial, item.val, function() {
+                                            alert("添加权限成功");
+                                        });
+                                    }
+                                });
+                            })();
+                        }
                     });
                 } else if (!authorized) {
                     var divNewUser = divUserItemBlock.find(".div_user_auth_new");

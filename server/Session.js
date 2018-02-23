@@ -2,13 +2,20 @@
 
 require("./Base");
 
-var AllRequirements = {
-    "kingwar": {},
-    "playerlist": {},
-    "serverInfo": {},
-    "automation": {},
-    "management": {},
-};
+var AllAuthorizations = [
+    {name:"固定权限", val:1},
+    {name:"弹性权限", val:2, configurable:true},
+    {name:"管理员", val:3},
+    {name:"超级管理员"},
+];
+
+var AllRequirements = [
+    {name:"帝国战", val:"kingwar", extends:[]},
+    {name:"玩家", val:"playerlist", extends:[]},
+    {name:"信息", val:"serverInfo", extends:[]},
+    {name:"配置", val:"automation", extends:[]},
+    {name:"管理", val:"management", extends:[]},
+];
 
 Base.extends("Session", {
     _constructor:function(requestor, responder) {
@@ -54,7 +61,7 @@ Base.extends("Session", {
                     var vREQ = validation.REQ;
                     if (validation.USER >= 3 && (vAUTH || vREQ)) {
                         var userData = userStates.users[keyData.userKey];
-                        var authed = (vAUTH ? userData.auth >= vAUTH : true) && (vREQ ? userData.req && userData.req[vREQ] : true);
+                        var authed = this.checkRequirement(userData, vAUTH, vREQ);
                         if (!userData || !authed) {
                             this.responder.addError("Admin level not enough.");
                             return this.responder.respondJson({}, doErr);
@@ -83,12 +90,21 @@ Base.extends("Session", {
     authorized:function(auth, req) {
         var userStates = $StateManager.getState(USER_CONFIG);
         var userData = userStates.users[this.userKey];
-        return (auth ? userData.auth >= auth : true) && (req ? userData.req && userData.req[req] : true);
+        return this.checkRequirement(userData, auth, req);
     },
     getUserData:function() {
         var userStates = $StateManager.getState(USER_CONFIG);
         var userData = userStates.users[this.userKey];
         return userData;
+    },
+    checkRequirement:function(userData, auth, req) {
+        return (auth ? userData.auth >= auth : true) && (req ? userData.req && userData.req[req] : true);
+    },
+    availableAuths:function() {
+        return AllAuthorizations;
+    },
+    availableRequirements:function() {
+        return AllRequirements;
     },
 
     tokenValid:function(done) {

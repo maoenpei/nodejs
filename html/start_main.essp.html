@@ -282,17 +282,35 @@
                 {{#if canBreak}}
                 <div class="div_user_delete_target visit_label">解除关联</div>
                 {{/if}}
-                <select class="div_user_select_auth_level">
-                    {{#each auths}}
-                    <option value="{{val}}">{{name}}</option>
-                    {{/each}}
-                </select>
+                <div class="div_user_setting_detail visit_label">设置</div>
                 {{else}}
                 <div class="div_user_auth_new visit_label">新用户</div>
                     {{#if associate}}
                     <div class="div_user_auth_target visit_label">关联用户</div>
                     {{/if}}
                 {{/if}}
+            </div>
+        </div>
+</script>
+<script type="text/x-handlebars-template" class="hd_user_detail">
+        <div class="div_user_detail">
+            <div class="common_item_divider">
+                {{name}}
+            </div>
+            <div class="common_item_divider">
+                <select class="div_user_select_auth_level">
+                    {{#each auths}}
+                    <option value="{{val}}">{{name}}</option>
+                    {{/each}}
+                </select>
+            </div>
+            <div class="common_item_divider">
+                {{#each reqs}}
+                <div class="div_requirement_label">
+                    {{name}}
+                    <input type="checkbox" class="input_check_user_requirement" {{#if enabled}}checked{{/if}}>
+                </div>
+                {{/each}}
             </div>
         </div>
 </script>
