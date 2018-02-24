@@ -19,13 +19,13 @@ GAME_PLAYER_NAME_CONFIG = "GamePlayerNames.d";
 GAME_HEROSHOP_CONFIG = "GameHeroshop.d";
 
 var AllFuncs = [
-    {name:"kingwar", authBase:1, requirement:"kingwar", },
-    {name:"playerlist", authBase:1, requirement:"playerlist", },
-    {name:"serverInfo", authBase:1, requirement:"serverInfo", },
-    {name:"automation", authBase:2, requirement:"automation", },
+    {name:"kingwar", authBase:4, requirement:"kingwar", },
+    {name:"playerlist", authBase:4, requirement:"playerlist", },
+    {name:"serverInfo", authBase:4, requirement:"serverInfo", },
+    {name:"automation", authBase:4, requirement:"automation", },
     //{name:"setting", authBase:3, requirement:"setting", },
-    {name:"users", authBase:3, requirement:"management", },
-    {name:"selfdesc", authBase:1, requirement:"selfdesc", },
+    {name:"users", authBase:3, },
+    {name:"selfdesc", authBase:1, },
 ];
 var AllFuncStr = ";";
 var AllFuncMap = {};
@@ -1601,7 +1601,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
 
             var funcs = [];
             for (var i = 0; i < AllFuncs.length; ++i) {
-                if (session.authorized(AllFuncs[i].authBase)) {
+                if (session.authorized(AllFuncs[i].authBase, AllFuncs[i].requirement)) {
                     funcs.push(AllFuncs[i].name);
                 }
             }

@@ -14,7 +14,6 @@ var AllRequirements = [
     {name:"玩家", val:"playerlist", extends:[]},
     {name:"信息", val:"serverInfo", extends:[]},
     {name:"配置", val:"automation", extends:[]},
-    {name:"管理", val:"management", extends:[]},
 ];
 
 Base.extends("Session", {

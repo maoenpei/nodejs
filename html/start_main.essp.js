@@ -2262,7 +2262,8 @@ function displayUsers() {
                             var level = selectAuthLevel.val();
                             if (confirm("确认为'" + userInfo.name + "'修改权限？")) {
                                 displayUsersModel.promote(userInfo.serial, level, function() {
-                                    alert("修改成功");
+                                    alert("修改权限 - 成功");
+                                    window.location.reload();
                                 });
                             }
                             selectAuthLevel.val(userInfo.auth);
@@ -2275,11 +2276,13 @@ function displayUsers() {
                                 checkBlock.change(function() {
                                     if (checkBlock.is(":checked")) {
                                         displayUsersModel.addReq(userInfo.serial, item.val, function() {
-                                            alert("添加权限成功");
+                                            alert("添加权限 - 成功");
+                                            window.location.reload();
                                         });
                                     } else {
                                         displayUsersModel.delReq(userInfo.serial, item.val, function() {
-                                            alert("添加权限成功");
+                                            alert("删除权限 - 成功");
+                                            window.location.reload();
                                         });
                                     }
                                 });
