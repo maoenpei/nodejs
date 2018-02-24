@@ -233,7 +233,7 @@ var displayFuncsModel = {
         automation:{name:"配置", show:displayAutomation, },
         //setting:{name:"设置", },
         users:{name:"用户", show:displayUsers, },
-        selfdesc:{name:"描述", show:displaySelf, },
+        selfdesc:{name:"✺", show:displaySelf, },
     },
 };
 displayFuncsModel.get = function(callback){
