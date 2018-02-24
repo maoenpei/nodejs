@@ -3,8 +3,8 @@
 require("./Base");
 
 var AllAuthorizations = [
-    {name:"固定权限", val:1},
-    {name:"弹性权限", val:2, configurable:true},
+    {name:"无权限", val:1},
+    {name:"可配置权限", val:2, configurable:true},
     {name:"管理员", val:3},
     {name:"超级管理员"},
 ];
@@ -98,7 +98,7 @@ Base.extends("Session", {
         return userData;
     },
     checkRequirement:function(userData, auth, req) {
-        return (auth ? userData.auth >= auth : true) && (req ? userData.req && userData.req[req] : true);
+        return (auth ? userData.auth >= auth : false) || (req ? userData.req && userData.req[req] : false);
     },
     availableAuths:function() {
         return AllAuthorizations;

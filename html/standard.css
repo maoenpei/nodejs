@@ -569,3 +569,17 @@ input[type='checkbox']{
     color: rgb(255, 222, 0);
     font-size: 0.45rem;
 }
+
+.div_self_summary_item{
+    background-color: #bbbbbb;
+}
+.div_self_summary_item_type{
+    display: inline-block;
+    color: rgb(0, 127, 255);
+    width: 30%;
+}
+.div_self_summary_item_content{
+    display: inline-block;
+    color: rgb(0, 127, 255);
+    width: 60%;
+}

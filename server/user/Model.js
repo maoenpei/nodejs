@@ -20,6 +20,7 @@ $HttpModel.addClass("USER_CLASS", {
         httpServer.registerCommand("authorize", this);
         httpServer.registerCommand("apply", this);
         httpServer.registerCommand("requirement", this);
+        httpServer.registerCommand("listself", this);
         httpServer.registerCommand("question", this);
     },
     initialize:function(done) {
@@ -66,7 +67,7 @@ $HttpModel.addClass("USER_CLASS", {
 
     listusers:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({POST:true, USER:3, AUTH: 3}, next))) {
+            if (!(yield session.checkConnection({POST:true, USER:3, AUTH:3}, next))) {
                 return;
             }
 
@@ -122,7 +123,7 @@ $HttpModel.addClass("USER_CLASS", {
     },
     promote:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({POST:true, USER:3, AUTH: 3}, next))) {
+            if (!(yield session.checkConnection({POST:true, USER:3, AUTH:3}, next))) {
                 return;
             }
 
@@ -164,7 +165,7 @@ $HttpModel.addClass("USER_CLASS", {
     },
     disable:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({POST:true, USER:3, AUTH: 3}, next))) {
+            if (!(yield session.checkConnection({POST:true, USER:3, AUTH:3}, next))) {
                 return;
             }
 
@@ -225,7 +226,7 @@ $HttpModel.addClass("USER_CLASS", {
     },
     rename:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({POST:true, USER:3, AUTH: 3}, next))) {
+            if (!(yield session.checkConnection({POST:true, USER:3, AUTH:3}, next))) {
                 return;
             }
 
@@ -252,7 +253,7 @@ $HttpModel.addClass("USER_CLASS", {
     },
     authorize:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({POST:true, USER:3, AUTH: 3}, next))) {
+            if (!(yield session.checkConnection({POST:true, USER:3, AUTH:3}, next))) {
                 return;
             }
 
@@ -353,7 +354,7 @@ $HttpModel.addClass("USER_CLASS", {
     },
     requirement:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({POST:true, USER:3, AUTH: 3}, next))) {
+            if (!(yield session.checkConnection({POST:true, USER:3, AUTH:3}, next))) {
                 return;
             }
 
@@ -381,6 +382,20 @@ $HttpModel.addClass("USER_CLASS", {
 
             responder.respondJson({
                 success: true,
+            }, done);
+        }, this);
+    },
+    listself:function(requestor, responder, session, done) {
+        var next = coroutine(function*() {
+            if (!(yield session.checkConnection({POST:true, USER:3, AUTH:1}, next))) {
+                return;
+            }
+
+            var detail = session.getUserData();
+            responder.respondJson({
+                detail: detail,
+                auths: session.availableAuths(),
+                reqs: session.availableRequirements(),
             }, done);
         }, this);
     },

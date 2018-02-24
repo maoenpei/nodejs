@@ -233,6 +233,7 @@ var displayFuncsModel = {
         automation:{name:"配置", show:displayAutomation, },
         //setting:{name:"设置", },
         users:{name:"用户", show:displayUsers, },
+        selfdesc:{name:"描述", show:displaySelf, },
     },
 };
 displayFuncsModel.get = function(callback){
@@ -2325,6 +2326,79 @@ function displayUsers() {
                     }
                 });
             })();
+        }
+    });
+}
+
+var displaySelfModel = {};
+displaySelfModel.get = function(callback) {
+    $this = this;
+    requestPost("listself", {}, function(json) {
+        if (json.detail) {
+            $this.detail = json.detail;
+            $this.auths = json.auths;
+            $this.reqs = json.reqs;
+            $this.initialize();
+            callback($this.detail);
+        }
+    });
+}
+displaySelfModel.initialize = function() {
+    this.reqNameMap = {};
+    for (var i = 0; i < this.reqs.length; ++i) {
+        var reqItem = this.reqs[i];
+        this.reqNameMap[reqItem.val] = reqItem.name;
+    }
+}
+displaySelfModel.getAuthName = function() {
+    var authIndex = this.detail.auth - 1;
+    var authDesc = this.auths[authIndex];
+    if (authDesc) {
+        return authDesc.name;
+    }
+    return "";
+}
+displaySelfModel.getReqNames = function() {
+    if (!this.detail.req) {
+        return "";
+    }
+    var reqNames = [];
+    for (var req in this.detail.req) {
+        var reqName = this.reqNameMap[req];
+        if (reqName) {
+            reqNames.push(reqName);
+        }
+    }
+    return reqNames.join("，");
+}
+
+function displaySelf() {
+    var divContentPanel = $(".div_content_panel");
+    var waitingTemplate = templates.read(".hd_display_loading");
+    divContentPanel.html(waitingTemplate({refreshing_data: true}));
+
+    displaySelfModel.get(function(detail) {
+        divContentPanel.html($(".hd_self_all").html());
+
+        var selfItemTemplate = templates.read(".hd_self_item");
+
+        var divSelfPanel = divContentPanel.find(".div_self_panel");
+        //divSelfPanel.html(JSON.stringify(detail, null, 2));
+
+        $(selfItemTemplate({type:"权限级别", value:displaySelfModel.getAuthName()})).appendTo(divSelfPanel);
+        $(selfItemTemplate({type:"权限细节", value:displaySelfModel.getReqNames()})).appendTo(divSelfPanel);
+        if (detail.accounts) {
+            $(selfItemTemplate({type:"账号", value:detail.accounts.length})).appendTo(divSelfPanel);
+        }
+        if (detail.players) {
+            $(selfItemTemplate({type:"角色", value:detail.players.length})).appendTo(divSelfPanel);
+        }
+        if (detail.heros) {
+            var heroCount = 0;
+            for (var i in detail.heros) {
+                heroCount++;
+            }
+            $(selfItemTemplate({type:"关注勇者", value:heroCount})).appendTo(divSelfPanel);
         }
     });
 }

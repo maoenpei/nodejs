@@ -25,6 +25,7 @@ var AllFuncs = [
     {name:"automation", authBase:2, requirement:"automation", },
     //{name:"setting", authBase:3, requirement:"setting", },
     {name:"users", authBase:3, requirement:"management", },
+    {name:"selfdesc", authBase:1, requirement:"selfdesc", },
 ];
 var AllFuncStr = ";";
 var AllFuncMap = {};
@@ -860,7 +861,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
 
     listheros:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH: 2}, next))) {
+            if (!(yield session.checkConnection({USER:3, AUTH:2}, next))) {
                 return;
             }
 
@@ -898,7 +899,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     operatehero:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH: 2}, next))) {
+            if (!(yield session.checkConnection({USER:3, AUTH:2}, next))) {
                 return;
             }
 
@@ -990,7 +991,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     addaccount:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH: 2}, next))) {
+            if (!(yield session.checkConnection({USER:3, AUTH:2}, next))) {
                 return;
             }
 
@@ -1042,7 +1043,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     delaccount:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH: 2}, next))) {
+            if (!(yield session.checkConnection({USER:3, AUTH:2}, next))) {
                 return;
             }
 
@@ -1083,7 +1084,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     addplayer:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH: 2}, next))) {
+            if (!(yield session.checkConnection({USER:3, AUTH:2}, next))) {
                 return;
             }
 
@@ -1147,7 +1148,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     delplayer:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH: 2}, next))) {
+            if (!(yield session.checkConnection({USER:3, AUTH:2}, next))) {
                 return;
             }
 
@@ -1188,7 +1189,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     playersetting:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH: 2}, next))) {
+            if (!(yield session.checkConnection({USER:3, AUTH:2}, next))) {
                 return;
             }
 
@@ -1244,7 +1245,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     playerautomation:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH: 2}, next))) {
+            if (!(yield session.checkConnection({USER:3, AUTH:2}, next))) {
                 return;
             }
 
@@ -1285,7 +1286,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     playermanual:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH: 2}, next))) {
+            if (!(yield session.checkConnection({USER:3, AUTH:2}, next))) {
                 return;
             }
 
@@ -1320,7 +1321,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     listautomation:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH: 2}, next))) {
+            if (!(yield session.checkConnection({USER:3, AUTH:2}, next))) {
                 return;
             }
 
@@ -1389,7 +1390,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     orderautomation:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH: 2}, next))) {
+            if (!(yield session.checkConnection({USER:3, AUTH:2}, next))) {
                 return;
             }
 
@@ -1428,7 +1429,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     checkrefresh:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({POST:true, USER:3, AUTH: 2}, next))) {
+            if (!(yield session.checkConnection({POST:true, USER:3, AUTH:2}, next))) {
                 return;
             }
 
@@ -1446,7 +1447,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     manrefresh:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({POST:true, USER:3, AUTH: 2}, next))) {
+            if (!(yield session.checkConnection({POST:true, USER:3, AUTH:2}, next))) {
                 return;
             }
 
@@ -1484,7 +1485,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     setheroshop:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH: 1}, next))) {
+            if (!(yield session.checkConnection({USER:3, AUTH:1}, next))) {
                 return;
             }
 
@@ -1518,7 +1519,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     listserverinfo:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH: 1}, next))) {
+            if (!(yield session.checkConnection({USER:3, AUTH:1}, next))) {
                 return;
             }
 
@@ -1541,7 +1542,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     listplayers:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH: 1}, next))) {
+            if (!(yield session.checkConnection({USER:3, AUTH:1}, next))) {
                 return;
             }
 
@@ -1574,7 +1575,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     listkingwars:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH: 1}, next))) {
+            if (!(yield session.checkConnection({USER:3, AUTH:1}, next))) {
                 return;
             }
 
@@ -1594,7 +1595,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     functions:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH: 1}, next))) {
+            if (!(yield session.checkConnection({USER:3, AUTH:1}, next))) {
                 return;
             }
 
