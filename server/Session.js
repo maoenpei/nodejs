@@ -10,11 +10,37 @@ var AllAuthorizations = [
 ];
 
 var AllRequirements = [
-    {name:"帝国战", val:"kingwar", extends:[]},
-    {name:"玩家", val:"playerlist", extends:[]},
-    {name:"信息", val:"serverInfo", extends:[]},
-    {name:"配置", val:"automation", extends:[]},
+    {name:"帝国战面板", val:"kingwar", extends:[]},
+    {name:"玩家面板", val:"playerlist", extends:[]},
+    {name:"信息面板", val:"serverInfo", extends:[]},
+    {name:"配置面板", val:"automation", extends:[
+        {name:"日常", val:"auto_daily", extends:[]},
+        {name:"帝国战", val:"auto_kingwar", extends:[]},
+        {name:"商店", val:"auto_heroshop", extends:[]},
+        {name:"领地战", val:"auto_unionwar", extends:[]},
+        {name:"信息查询", val:"auto_detail", extends:[]},
+        {name:"勇者操作", val:"auto_heropanel", extends:[]},
+    ]},
 ];
+
+var RequirementsRelations = {};
+var ManageRequirements = (requirements, parent) => {
+    for (var i = 0; i < requirements.length; ++i) {
+        var item = requirements[i];
+        var related = {
+            name: item.name,
+            val: item.val,
+            parent: parent,
+            children: [],
+        };
+        RequirementsRelations[item.val] = related;
+        if (parent) {
+            parent.children.push(related);
+        }
+        ManageRequirements(item.extends, related);
+    }
+};
+ManageRequirements(AllRequirements, null);
 
 Base.extends("Session", {
     _constructor:function(requestor, responder) {
@@ -104,6 +130,9 @@ Base.extends("Session", {
     },
     availableRequirements:function() {
         return AllRequirements;
+    },
+    getRequirementRelation:function(reqName) {
+        return RequirementsRelations[reqName];
     },
 
     tokenValid:function(done) {

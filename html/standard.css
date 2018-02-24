@@ -570,6 +570,18 @@ input[type='checkbox']{
     font-size: 0.45rem;
 }
 
+.user_detail_item{
+    background-color: #bbbbbb;
+}
+.div_requirement_item{
+    padding-left: 2rem;
+}
+.div_requirement_label{
+    width: 40%;
+    display: inline-block;
+    text-align: left;
+}
+
 .div_self_summary_item{
     background-color: #bbbbbb;
 }

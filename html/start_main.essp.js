@@ -2140,14 +2140,22 @@ displayUsersModel.getAuths = function() {
 }
 displayUsersModel.getReqs = function(userInfo) {
     var reqinfo = [];
-    for (var i = 0; i < this.reqs.length; ++i) {
-        var item = this.reqs[i];
-        reqinfo.push({
-            name: item.name,
-            val: item.val,
-            enabled: !!userInfo.req[item.val],
-        });
-    }
+    var addRequirements = (reqs, indent) => {
+        var indentStr = "";
+        for (var i = 0; i < indent - 1; ++i) {
+            indentStr = "░░" + indentStr;
+        }
+        for (var i = 0; i < reqs.length; ++i) {
+            var item = reqs[i];
+            reqinfo.push({
+                name: indentStr + (indent ? (i != reqs.length - 1 ? "├ " : "└ ") : "") + item.name,
+                val: item.val,
+                enabled: !!userInfo.req[item.val],
+            });
+            addRequirements(item.extends, indent + 1);
+        }
+    };
+    addRequirements(this.reqs, 0);
     return reqinfo;
 }
 displayUsersModel.addReq = function(serial, val, callback) {
@@ -2348,10 +2356,14 @@ displaySelfModel.get = function(callback) {
 }
 displaySelfModel.initialize = function() {
     this.reqNameMap = {};
-    for (var i = 0; i < this.reqs.length; ++i) {
-        var reqItem = this.reqs[i];
-        this.reqNameMap[reqItem.val] = reqItem.name;
-    }
+    var addRequirementMap = (reqs) => {
+        for (var i = 0; i < reqs.length; ++i) {
+            var reqItem = reqs[i];
+            this.reqNameMap[reqItem.val] = reqItem.name;
+            addRequirementMap(reqItem.extends);
+        }
+    };
+    addRequirementMap(this.reqs);
 }
 displaySelfModel.getAuthName = function() {
     var authIndex = this.detail.auth - 1;

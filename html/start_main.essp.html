@@ -304,21 +304,21 @@
 </script>
 <script type="text/x-handlebars-template" class="hd_user_detail">
         <div class="div_user_detail">
-            <div class="common_item_divider">
+            <div class="common_item_divider user_detail_item">
                 {{name}}
             </div>
-            <div class="common_item_divider">
+            <div class="common_item_divider user_detail_item">
                 <select class="div_user_select_auth_level">
                     {{#each auths}}
                     <option value="{{val}}">{{name}}</option>
                     {{/each}}
                 </select>
             </div>
-            <div class="common_item_divider">
+            <div class="common_item_divider user_detail_item">
                 {{#each reqs}}
-                <div class="div_requirement_label">
-                    {{name}}
+                <div class="div_requirement_item">
                     <input type="checkbox" class="input_check_user_requirement" {{#if enabled}}checked{{/if}}>
+                    <div class="div_requirement_label">{{name}}</div>
                 </div>
                 {{/each}}
             </div>

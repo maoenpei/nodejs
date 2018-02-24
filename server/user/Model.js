@@ -369,13 +369,27 @@ $HttpModel.addClass("USER_CLASS", {
             var reqName = json.val;
             var isAdd = json.add;
             var targetKeyData = userStates.keys[targetSerial];
+            var reqRelation = session.getRequirementRelation(reqName);
+            if (!reqRelation) {
+                responder.addError("Not valid requirement name.");
+                return responder.respondJson({}, done);
+            }
 
             var userKey = targetKeyData.userKey;
             var req = userStates.users[userKey].req || {};
             if (isAdd) {
-                req[reqName] = true;
+                while (reqRelation) {
+                    req[reqRelation.val] = true;
+                    reqRelation = reqRelation.parent;
+                }
             } else {
-                delete req[reqName];
+                var remoteReq = (rel) => {
+                    delete req[rel.val];
+                    for (var i = 0; i < rel.children.length; ++i) {
+                        remoteReq(rel.children[i]);
+                    }
+                }
+                remoteReq(reqRelation);
             }
             userStates.users[userKey].req = req;
             yield $StateManager.commitState(USER_CONFIG, next);
