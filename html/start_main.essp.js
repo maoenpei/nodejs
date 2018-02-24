@@ -2257,6 +2257,11 @@ function displayUsers() {
                         }
                     });
                     var divUserSetting = divUserItemBlock.find(".div_user_setting_detail");
+                    var updateChange = function() {
+                        if (isSelf) {
+                            window.location.reload();
+                        }
+                    };
                     divUserSetting.click(function() {
                         var reqs = displayUsersModel.getReqs(userInfo);
                         divContentPanel.html(userDetailTemplate({
@@ -2271,7 +2276,8 @@ function displayUsers() {
                             if (confirm("确认为'" + userInfo.name + "'修改权限？")) {
                                 displayUsersModel.promote(userInfo.serial, level, function() {
                                     alert("修改权限 - 成功");
-                                    window.location.reload();
+                                    selectAuthLevel.val(level);
+                                    updateChange();
                                 });
                             }
                             selectAuthLevel.val(userInfo.auth);
@@ -2285,12 +2291,12 @@ function displayUsers() {
                                     if (checkBlock.is(":checked")) {
                                         displayUsersModel.addReq(userInfo.serial, item.val, function() {
                                             alert("添加权限 - 成功");
-                                            window.location.reload();
+                                            updateChange();
                                         });
                                     } else {
                                         displayUsersModel.delReq(userInfo.serial, item.val, function() {
                                             alert("删除权限 - 成功");
-                                            window.location.reload();
+                                            updateChange();
                                         });
                                     }
                                 });
