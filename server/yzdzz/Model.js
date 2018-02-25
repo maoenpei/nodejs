@@ -19,10 +19,10 @@ GAME_PLAYER_NAME_CONFIG = "GamePlayerNames.d";
 GAME_HEROSHOP_CONFIG = "GameHeroshop.d";
 
 var AllFuncs = [
-    {name:"kingwar", authBase:4, requirement:"kingwar", },
-    {name:"playerlist", authBase:4, requirement:"playerlist", },
-    {name:"serverInfo", authBase:4, requirement:"serverInfo", },
-    {name:"automation", authBase:4, requirement:"automation", },
+    {name:"kingwar", requirement:"view_kingwar", },
+    {name:"playerlist", requirement:"view_playerlist", },
+    {name:"serverInfo", requirement:"server", },
+    {name:"automation", requirement:"automation", },
     //{name:"setting", authBase:3, requirement:"setting", },
     {name:"users", authBase:3, },
     {name:"selfdesc", authBase:1, },
@@ -859,9 +859,40 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         };
     },
 
+    setupPlayerAuto:function(playerKey, session, playerAuto) {
+        if (session.authorized(0, "auto_heropanel")) {
+            playerAuto.heroPanel = true;
+        }
+        if (session.authorized(0, "auto_daily")) {
+            playerAuto.configs = this.getSettingAutomation(playerKey);
+        }
+        var auth_kingwar = session.authorized(0, "auto_kingwar");
+        var auth_heroshop = session.authorized(0, "auto_heroshop");
+        var auth_unionwar = session.authorized(0, "auto_unionwar");
+        var auth_detail = session.authorized(0, "auto_detail");
+        if (auth_kingwar || auth_heroshop || auth_unionwar || auth_detail) {
+            playerAuto.settings = {};
+            if (auth_kingwar) {
+                playerAuto.settings.targeting = this.getSettingTyped("targeting", playerKey);
+                playerAuto.settings.dropping = this.getSettingTyped("dropping", playerKey);
+            }
+            if (auth_heroshop) {
+                playerAuto.settings.heroshop = this.getSettingTyped("heroshop", playerKey);
+            }
+            if (auth_unionwar) {
+                playerAuto.settings.unionwar = this.getSettingTyped("unionwar", playerKey);
+            }
+            if (auth_detail) {
+                playerAuto.settings.kingwar = this.getSettingTyped("kingwar", playerKey);
+                playerAuto.settings.listing = this.getSettingTyped("listing", playerKey);
+            }
+        }
+        return playerAuto;
+    },
+
     listheros:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH:2}, next))) {
+            if (!(yield session.checkConnection({USER:3, REQ:"auto_heropanel"}, next))) {
                 return;
             }
 
@@ -899,7 +930,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     operatehero:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH:2}, next))) {
+            if (!(yield session.checkConnection({USER:3, REQ:"auto_heropanel"}, next))) {
                 return;
             }
 
@@ -991,7 +1022,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     addaccount:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH:2}, next))) {
+            if (!(yield session.checkConnection({USER:3, REQ:"automation"}, next))) {
                 return;
             }
 
@@ -1043,7 +1074,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     delaccount:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH:2}, next))) {
+            if (!(yield session.checkConnection({USER:3, REQ:"automation"}, next))) {
                 return;
             }
 
@@ -1084,7 +1115,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     addplayer:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH:2}, next))) {
+            if (!(yield session.checkConnection({USER:3, REQ:"automation"}, next))) {
                 return;
             }
 
@@ -1115,7 +1146,6 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 }
             }
 
-            var isAdmin = session.authorized(3);
             var playerKey = rkey();
             while(this.players[playerKey]) { playerKey = rkey(); }
             var accountStates = $StateManager.getState(GAME_ACCOUNTS_CONFIG);
@@ -1131,24 +1161,16 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             yield $StateManager.commitState(GAME_ACCOUNTS_CONFIG, next);
             yield $StateManager.commitState(USER_CONFIG, next);
 
-            responder.respondJson({
+            var playerAuto = this.setupPlayerAuto(playerKey, session, {
                 success: true,
                 key: playerKey,
-                configs: this.getSettingAutomation(playerKey),
-                settings: {
-                    kingwar: (isAdmin ? this.getSettingTyped("kingwar", playerKey) : undefined),
-                    listing: (isAdmin ? this.getSettingTyped("listing", playerKey) : undefined),
-                    targeting: this.getSettingTyped("targeting", playerKey),
-                    dropping: this.getSettingTyped("dropping", playerKey),
-                    heroshop: this.getSettingTyped("heroshop", playerKey),
-                    unionwar: this.getSettingTyped("unionwar", playerKey),
-                },
-            }, done);
+            });
+            responder.respondJson(playerAuto, done);
         }, this);
     },
     delplayer:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH:2}, next))) {
+            if (!(yield session.checkConnection({USER:3, REQ:"automation"}, next))) {
                 return;
             }
 
@@ -1189,7 +1211,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     playersetting:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH:2}, next))) {
+            if (!(yield session.checkConnection({USER:3, REQ:"automation"}, next))) {
                 return;
             }
 
@@ -1213,26 +1235,29 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 return responder.respondJson({}, done);
             }
 
-            var isAdmin = session.authorized(3);
+            var auth_kingwar = session.authorized(0, "auto_kingwar");
+            var auth_heroshop = session.authorized(0, "auto_heroshop");
+            var auth_unionwar = session.authorized(0, "auto_unionwar");
+            var auth_detail = session.authorized(0, "auto_detail");
             var changed = false;
-            if (isAdmin && settings.kingwar) {
+            if (auth_kingwar && settings.targeting) {
+                changed = this.setSettingTargeting(playerKey, settings.targeting) || changed;
+            }
+            if (auth_kingwar && settings.dropping) {
+                changed = this.setSettingDropping(playerKey, settings.dropping) || changed;
+            }
+            if (auth_heroshop && settings.heroshop) {
+                changed = this.setSettingHeroshop(playerKey, settings.heroshop) || changed;
+            }
+            if (auth_unionwar && settings.unionwar) {
+                changed = this.setSettingUnionwar(playerKey, settings.unionwar) || changed;
+            }
+            if (auth_detail && settings.kingwar) {
                 playerData.validator.resetDaily();
                 changed = this.setSettingKingwar(playerKey, settings.kingwar) || changed;
             }
-            if (isAdmin && settings.listing) {
+            if (auth_detail && settings.listing) {
                 changed = this.setSettingListing(playerKey, settings.listing) || changed;
-            }
-            if (settings.targeting) {
-                changed = this.setSettingTargeting(playerKey, settings.targeting) || changed;
-            }
-            if (settings.dropping) {
-                changed = this.setSettingDropping(playerKey, settings.dropping) || changed;
-            }
-            if (settings.heroshop) {
-                changed = this.setSettingHeroshop(playerKey, settings.heroshop) || changed;
-            }
-            if (settings.unionwar) {
-                changed = this.setSettingUnionwar(playerKey, settings.unionwar) || changed;
             }
             if (changed) {
                 yield $StateManager.commitState(GAME_SETTING_CONFIG, next);
@@ -1245,7 +1270,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     playerautomation:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH:2}, next))) {
+            if (!(yield session.checkConnection({USER:3, REQ:"auto_daily"}, next))) {
                 return;
             }
 
@@ -1286,7 +1311,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     playermanual:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH:2}, next))) {
+            if (!(yield session.checkConnection({USER:3, REQ:"auto_daily"}, next))) {
                 return;
             }
 
@@ -1321,11 +1346,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     listautomation:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH:2}, next))) {
+            if (!(yield session.checkConnection({USER:3, REQ:"automation"}, next))) {
                 return;
             }
 
-            var isAdmin = session.authorized(3);
             var userData = session.getUserData();
             var accounts = [];
             if (userData.accounts) {
@@ -1346,21 +1370,13 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                     for (var j = 0; j < accounts.length; ++j) {
                         if (playerData.accountKey == accounts[j].key) {
                             var brief = this.controller.getPlayerBrief(playerData);
-                            accounts[j].players.push({
+                            var playerAuto = this.setupPlayerAuto(playerKey, session, {
                                 name: (brief ? brief.name : undefined),
                                 power: (brief ? brief.power : undefined),
                                 server: playerData.server,
                                 key: playerKey,
-                                configs: this.getSettingAutomation(playerKey),
-                                settings: {
-                                    kingwar: (isAdmin ? this.getSettingTyped("kingwar", playerKey) : undefined),
-                                    listing: (isAdmin ? this.getSettingTyped("listing", playerKey) : undefined),
-                                    targeting: this.getSettingTyped("targeting", playerKey),
-                                    dropping: this.getSettingTyped("dropping", playerKey),
-                                    heroshop: this.getSettingTyped("heroshop", playerKey),
-                                    unionwar: this.getSettingTyped("unionwar", playerKey),
-                                },
                             });
+                            accounts[j].players.push(playerAuto);
                             break;
                         }
                     }
@@ -1390,7 +1406,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     orderautomation:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH:2}, next))) {
+            if (!(yield session.checkConnection({USER:3, REQ:"automation"}, next))) {
                 return;
             }
 
@@ -1429,7 +1445,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     checkrefresh:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({POST:true, USER:3, AUTH:2}, next))) {
+            if (!(yield session.checkConnection({POST:true, USER:3, REQ:"view_refresh"}, next))) {
                 return;
             }
 
@@ -1447,7 +1463,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     manrefresh:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({POST:true, USER:3, AUTH:2}, next))) {
+            if (!(yield session.checkConnection({POST:true, USER:3, REQ:"view_refresh"}, next))) {
                 return;
             }
 
@@ -1485,7 +1501,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     setheroshop:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH:1}, next))) {
+            if (!(yield session.checkConnection({USER:3, REQ:"server_heroshop"}, next))) {
                 return;
             }
 
@@ -1519,7 +1535,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     listserverinfo:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH:1}, next))) {
+            if (!(yield session.checkConnection({USER:3, REQ:"server"}, next))) {
                 return;
             }
 
@@ -1529,20 +1545,25 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 return responder.respondJson({}, done);
             }
 
-            var heros = Database.allHeros(8); // at least 'SSS'
-            var heroshopInfo = $StateManager.getState(GAME_HEROSHOP_CONFIG);
-            var userHeros = session.getUserData().heros || {};
+            var allServerInfo = {};
 
-            responder.respondJson({
-                heros: heros,
-                heroshop: heroshopInfo.info,
-                userHeros: userHeros,
-            });
+            if (session.authorized(0, "server_heroshop")) {
+                var heros = Database.allHeros(8); // at least 'SSS'
+                var heroshopInfo = $StateManager.getState(GAME_HEROSHOP_CONFIG);
+                var userHeros = session.getUserData().heros || {};
+                allServerInfo.heroshop = {
+                    heros: heros,
+                    heroshop: heroshopInfo.info,
+                    userHeros: userHeros,
+                };
+            }
+
+            responder.respondJson(allServerInfo);
         }, this);
     },
     listplayers:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH:1}, next))) {
+            if (!(yield session.checkConnection({USER:3, REQ:"view_playerlist"}, next))) {
                 return;
             }
 
@@ -1559,7 +1580,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                     kingwar: playerItem.kingwar,
                 });
             }
-            var hasRefresh = session.authorized(2);
+            var hasRefresh = session.authorized(0, "view_refresh");
             var tag = this.getTag(playersData) + String(hasRefresh);
             if (!requestor.compareTags(tag)) {
                 responder.setCode(304);
@@ -1575,12 +1596,12 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     listkingwars:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
-            if (!(yield session.checkConnection({USER:3, AUTH:1}, next))) {
+            if (!(yield session.checkConnection({USER:3, REQ:"view_kingwar"}, next))) {
                 return;
             }
 
             var kingwarData = this.controller.getKingwar();
-            var hasRefresh = session.authorized(2);
+            var hasRefresh = session.authorized(0, "view_refresh");
             var tag = this.getTag(kingwarData) + String(hasRefresh);
             if (!requestor.compareTags(tag)) {
                 responder.setCode(304);

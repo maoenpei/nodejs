@@ -792,8 +792,12 @@ displayAutomationModel.delPlayer = function(player, callback) {
 }
 displayAutomationModel.backupPlayer = function(player) {
     console.log("backupPlayer", player);
-    player.copy_configs = deep_clone(player.configs);
-    player.copy_settings = deep_clone(player.settings);
+    if (player.configs) {
+        player.copy_configs = deep_clone(player.configs);
+    }
+    if (player.settings) {
+        player.copy_settings = deep_clone(player.settings);
+    }
 }
 displayAutomationModel.compareConfig = function(player, playerBase) {
     console.log("diffing", player.copy_configs, playerBase.copy_configs);
@@ -1096,48 +1100,54 @@ function displayAutomation() {
             displayAutomationModel.backupPlayer(lastPlayer);
 
             // configs
-            var divAutoConfigsBlock = $(autoItemTemplate({
-                name: "日常",
-                hasCheck: true,
-                enabled: !lastPlayer.copy_configs.disabled,
-                rightText: "收菜一次",
-            }));
-            divAutoConfigsBlock.appendTo(divAutomationContent);
+            if (lastPlayer.configs) {
+                var divAutoConfigsBlock = $(autoItemTemplate({
+                    name: "日常",
+                    hasCheck: true,
+                    enabled: !lastPlayer.copy_configs.disabled,
+                    rightText: "收菜一次",
+                }));
+                divAutoConfigsBlock.appendTo(divAutomationContent);
 
-            divAutoConfigsBlock.find(".clickable").click(function() {
-                displayAutomationModel.toCatalog({ name: "日常", func: displayConfig, });
-                displayDetail();
-            });
-            divAutoConfigsBlock.find(".div_auto_item_right").click(function() {
-                displayAutomationModel.manualConfig(lastPlayer, function(success) {
-                    alert(success ? "收菜成功，请登陆游戏查看" : "收菜失败");
+                divAutoConfigsBlock.find(".clickable").click(function() {
+                    displayAutomationModel.toCatalog({ name: "日常", func: displayConfig, });
+                    displayDetail();
                 });
-            });
-            var inputEnablePlayer = divAutoConfigsBlock.find(".input_check_auto_item");
-            inputEnablePlayer.change(function() {
-                lastPlayer.copy_configs.disabled = (inputEnablePlayer.is(":checked") ? undefined : true);
-                displayAutomationModel.saveConfig(lastPlayer, function() {
-                    displayCatalog();
+                divAutoConfigsBlock.find(".div_auto_item_right").click(function() {
+                    displayAutomationModel.manualConfig(lastPlayer, function(success) {
+                        alert(success ? "收菜成功，请登陆游戏查看" : "收菜失败");
+                    });
                 });
-            });
+                var inputEnablePlayer = divAutoConfigsBlock.find(".input_check_auto_item");
+                inputEnablePlayer.change(function() {
+                    lastPlayer.copy_configs.disabled = (inputEnablePlayer.is(":checked") ? undefined : true);
+                    displayAutomationModel.saveConfig(lastPlayer, function() {
+                        displayCatalog();
+                    });
+                });
+            }
 
             // settings
-            var divAutoSettingsBlock = $(autoItemTemplate({name: "设置"}));
-            divAutoSettingsBlock.appendTo(divAutomationContent);
+            if (lastPlayer.settings) {
+                var divAutoSettingsBlock = $(autoItemTemplate({name: "设置"}));
+                divAutoSettingsBlock.appendTo(divAutomationContent);
 
-            divAutoSettingsBlock.find(".clickable").click(function() {
-                displayAutomationModel.toCatalog({ name: "设置", func: displaySetting, });
-                displayDetail();
-            });
+                divAutoSettingsBlock.find(".clickable").click(function() {
+                    displayAutomationModel.toCatalog({ name: "设置", func: displaySetting, });
+                    displayDetail();
+                });
+            }
 
             // heropanel
-            var divAutoHerosBlock = $(autoItemTemplate({name: "勇者面板"}));
-            divAutoHerosBlock.appendTo(divAutomationContent);
+            if (lastPlayer.heroPanel) {
+                var divAutoHerosBlock = $(autoItemTemplate({name: "勇者面板"}));
+                divAutoHerosBlock.appendTo(divAutomationContent);
 
-            divAutoHerosBlock.find(".clickable").click(function() {
-                displayAutomationModel.toCatalog({ name: "勇者面板", func: displayHeroPanel, });
-                displayDetail();
-            });
+                divAutoHerosBlock.find(".clickable").click(function() {
+                    displayAutomationModel.toCatalog({ name: "勇者面板", func: displayHeroPanel, });
+                    displayDetail();
+                });
+            }
         }
         function displayHeroPanel() {
             displayCommands({name: "刷新", func: function() {
@@ -1660,10 +1670,12 @@ var displayServerInfoModel = {
 displayServerInfoModel.get = function(callback) {
     $this = this;
     requestPost("listserverinfo", {vulkan:true}, function(json) {
-        $this.heros = json.heros;
-        $this.heroshop = json.heroshop;
-        $this.userHeros = json.userHeros;
-        $this.initialize();
+        if (json.heroshop) {
+            $this.heros = json.heroshop.heros;
+            $this.heroshop = json.heroshop.heroshop;
+            $this.userHeros = json.heroshop.userHeros;
+            $this.initialize();
+        }
         callback();
     });
 }
@@ -1741,9 +1753,11 @@ function displayServerInfo() {
     var refreshData = function() {
         var defaultServerInfo = StorageItem().defaultServerInfo;
         defaultServerInfo = (defaultServerInfo ? defaultServerInfo : "heroshop");
+        var heroShopDetail = displayServerInfoModel.getHeroshop();
         var data = {
-            isheroshop: defaultServerInfo == "heroshop",
-            heroshop: displayServerInfoModel.getHeroshop(),
+            existheroshop: !!heroShopDetail,
+            isheroshop: (defaultServerInfo == "heroshop" && !!heroShopDetail),
+            heroshop: heroShopDetail,
             caredhero: displayServerInfoModel.getcaredHeros(),
         };
         var serverListTemplate = templates.read(".hd_server_info_all");
@@ -2140,7 +2154,7 @@ displayUsersModel.getAuths = function() {
 }
 displayUsersModel.getReqs = function(userInfo) {
     var reqinfo = [];
-    var addRequirements = (reqs, indent) => {
+    var addRequirements = function(reqs, indent) {
         var indentStr = "";
         for (var i = 0; i < indent - 1; ++i) {
             indentStr = "░░" + indentStr;
@@ -2361,15 +2375,16 @@ displaySelfModel.get = function(callback) {
     });
 }
 displaySelfModel.initialize = function() {
-    this.reqNameMap = {};
-    var addRequirementMap = (reqs) => {
+    var reqNameMap = {};
+    var addRequirementMap = function(reqs) {
         for (var i = 0; i < reqs.length; ++i) {
             var reqItem = reqs[i];
-            this.reqNameMap[reqItem.val] = reqItem.name;
+            reqNameMap[reqItem.val] = reqItem.name;
             addRequirementMap(reqItem.extends);
         }
     };
     addRequirementMap(this.reqs);
+    this.reqNameMap = reqNameMap;
 }
 displaySelfModel.getAuthName = function() {
     var authIndex = this.detail.auth - 1;

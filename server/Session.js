@@ -4,15 +4,20 @@ require("./Base");
 
 var AllAuthorizations = [
     {name:"无权限", val:1},
-    {name:"可配置权限", val:2, configurable:true},
+    {name:"可配置权限", val:2},
     {name:"管理员", val:3},
     {name:"超级管理员"},
 ];
 
 var AllRequirements = [
-    {name:"帝国战面板", val:"kingwar", extends:[]},
-    {name:"玩家面板", val:"playerlist", extends:[]},
-    {name:"信息面板", val:"serverInfo", extends:[]},
+    {name:"查看详细", val:"view", extends:[
+        {name:"帝国战面板", val:"view_kingwar", extends:[]},
+        {name:"玩家面板", val:"view_playerlist", extends:[]},
+        {name:"刷新详细", val:"view_refresh", extends:[]},
+    ]},
+    {name:"信息面板", val:"server", extends:[
+        {name:"商店折扣", val:"server_heroshop", extends:[]},
+    ]},
     {name:"配置面板", val:"automation", extends:[
         {name:"日常", val:"auto_daily", extends:[]},
         {name:"帝国战", val:"auto_kingwar", extends:[]},
@@ -123,7 +128,7 @@ Base.extends("Session", {
         return userData;
     },
     checkRequirement:function(userData, auth, req) {
-        return (auth ? userData.auth >= auth : false) || (req ? userData.req && userData.req[req] : false);
+        return (userData.auth >= 4) || (auth ? userData.auth >= auth : false) || ((userData.auth >= 2) && (req ? userData.req && userData.req[req] : false));
     },
     availableAuths:function() {
         return AllAuthorizations;
