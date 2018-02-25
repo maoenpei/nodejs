@@ -54,6 +54,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         httpServer.registerCommand("addaccount", this);
         httpServer.registerCommand("delaccount", this);
         httpServer.registerCommand("addplayer", this);
+        httpServer.registerCommand("changepwd", this);
         httpServer.registerCommand("delplayer", this);
         httpServer.registerCommand("playersetting", this);
         httpServer.registerCommand("playerautomation", this);
@@ -1069,6 +1070,47 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             responder.respondJson({
                 success: true,
                 key: accountKey,
+            }, done);
+        }, this);
+    },
+    changepwd:function(requestor, responder, session, done) {
+        var next = coroutine(function*() {
+            if (!(yield session.checkConnection({USER:3, REQ:"automation"}, next))) {
+                return;
+            }
+
+            var json = yield requestor.visitBodyJson(next);
+            if (!json || !json.key || !json.pd) {
+                responder.addError("Parameter data not correct.");
+                return responder.respondJson({}, done);
+            }
+
+            var accountKey = json.key;
+            var password = json.pd;
+            if (!this.accounts[accountKey]) {
+                responder.addError("Invalid account key.");
+                return responder.respondJson({}, done);
+            }
+
+            var accountData = this.accounts[accountKey];
+            var newAccount = this.accountManager.add(accountData.username, password);
+            var conn = this.accountManager.connectAccount(newAccount, null);
+            var data = yield conn.loginAccount(next);
+            this.accountManager.remove(newAccount);
+            if (!data.success) {
+                responder.addError("Account password error.");
+                return responder.respondJson({fail:"account_fault"}, done);
+            }
+
+            var account = accountData.account;
+            this.accountManager.change(account, password);
+
+            var accountStates = $StateManager.getState(GAME_ACCOUNTS_CONFIG);
+            accountStates.accounts[accountKey].password = password;
+            yield $StateManager.commitState(GAME_ACCOUNTS_CONFIG, next);
+
+            responder.respondJson({
+                success: true,
             }, done);
         }, this);
     },

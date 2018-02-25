@@ -40,6 +40,12 @@ Base.extends("AccountManager", {
             delete this.accounts[accountKey];
         }
     },
+    change:function(accountKey, password) {
+        console.log("Account changed. accountKey:{0}".format(accountKey));
+        if (this.accounts[accountKey]) {
+            this.accounts[accountKey].password = password;
+        }
+    },
     list:function() {
         return this.accounts;
     },

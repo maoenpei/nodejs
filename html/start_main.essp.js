@@ -728,6 +728,22 @@ displayAutomationModel.addAccount = function(username, password, callback) {
         }
     });
 }
+displayAutomationModel.changePassword = function(account, password, callback) {
+    $this = this;
+    requestPost("changepwd", { key: account.key, pd: password }, function(json) {
+        if (json.fail) {
+            if (json.fail == "account_fault") {
+                callback("用户名或密码错误!");
+            } else {
+                callback("未知错误!");
+            }
+            return;
+        }
+        if (json.success) {
+            callback();
+        }
+    });
+}
 displayAutomationModel.delAccount = function(account, callback) {
     $this = this;
     requestPost("delaccount", { key: account.key }, function(json) {
@@ -876,20 +892,24 @@ function displayAutomation() {
 
         // add accounts
         var divAccountAddMask = divContentPanel.find(".div_automation_account_add_mask");
+        var divAccountUserName = divAccountAddMask.find(".div_auto_add_username");
         var inputAccountUsername = divAccountAddMask.find(".input_automation_username");
         var inputAccountPassword = divAccountAddMask.find(".input_automation_password");
         divAccountAddMask.find(".div_auto_add_cancel").click(function() {
             divAccountAddMask.hide();
         });
         divAccountAddMask.find(".div_auto_add_confirm").click(function() {
-            var username = inputAccountUsername.val();
-            var password = inputAccountPassword.val();
-            if (username == "") {
-                alert("用户名不能为空");
-                inputAccountUsername.focus();
-                inputAccountUsername.select();
-                return;
+            var lastAccount = displayAutomationModel.getLastAccount();
+            if (!lastAccount) {
+                var username = inputAccountUsername.val();
+                if (username == "") {
+                    alert("用户名不能为空");
+                    inputAccountUsername.focus();
+                    inputAccountUsername.select();
+                    return;
+                }
             }
+            var password = inputAccountPassword.val();
             if (password == "") {
                 alert("密码不能为空");
                 inputAccountPassword.focus();
@@ -897,13 +917,21 @@ function displayAutomation() {
                 return;
             }
             divAccountAddMask.hide();
-            displayAutomationModel.addAccount(username, password, function(failMsg) {
-                if (failMsg) {
-                    alert("添加账户失败，错误：" + failMsg);
-                } else {
-                    displayAccounts();
-                }
-            });
+            if (lastAccount) {
+                displayAutomationModel.changePassword(lastAccount, password, function(failMsg) {
+                    if (failMsg) {
+                        alert("添加账户失败，错误：" + failMsg);
+                    }
+                });
+            } else {
+                displayAutomationModel.addAccount(username, password, function(failMsg) {
+                    if (failMsg) {
+                        alert("添加账户失败，错误：" + failMsg);
+                    } else {
+                        displayAccounts();
+                    }
+                });
+            }
         });
 
         // add players
@@ -986,6 +1014,7 @@ function displayAutomation() {
             displayCommands({name: "添加账号", func: function() {
                 inputAccountUsername.val("");
                 inputAccountPassword.val("");
+                divAccountUserName.show();
                 divAccountAddMask.show();
             }}, {name: "调整顺序", func: function() {
                 var divAutoItemBlocks = divAutomationContent.find(".div_auto_item_block");
@@ -1060,11 +1089,15 @@ function displayAutomation() {
 
             var lastAccount = displayAutomationModel.getLastAccount();
             var servers = displayAutomationModel.getValidServers(lastAccount);
-            var addOption = (servers.length == 0 ? null : {name: "添加角色", func:function() {
+            var addOption = (servers.length == 0 ? null : {name:"添加角色", func:function() {
                 divPlayerServers.html(autoPlayerServersTemplate({servers:servers}));
                 divPlayerAddMask.show();
             }});
-            displayCommands(addOption);
+            displayCommands(addOption, {name:"修改密码", func: function() {
+                inputAccountPassword.val("");
+                divAccountUserName.hide();
+                divAccountAddMask.show();
+            }});
 
             divAutomationContent.html("");
             for (var i = 0; i < lastAccount.players.length; ++i) {
