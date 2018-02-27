@@ -1155,6 +1155,7 @@ Database.weapons = [
     { "level":70, "cost":100 },
     { "level":80, "cost":120 },
     { "level":90, "cost":200 },
+    { "level":100, "cost":300 },
 ];
 
 Database.weapon_costs = ((weapons) => {
