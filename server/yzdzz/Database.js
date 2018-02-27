@@ -172,7 +172,7 @@ Database.expLevel = function(currLevel, totalExp) {
         }
         exp -= endExp;
     }
-    return 600;
+    return Database.level_max;
 }
 
 Database.levelExp = function(currLevel, targetLevel) {
@@ -1191,6 +1191,7 @@ Database.foodNames = [
     "food_6",
 ];
 
+Database.level_max = 780;
 Database.level_exp = [
     { "level":0, "mul":10000, "base":40000 },
     { "level":120, "mul":15000, "base":1860000 },
@@ -1200,7 +1201,7 @@ Database.level_exp = [
     { "level":360, "mul":40000, "base":14560000 },
     { "level":420, "mul":50000, "base":21200000 },
     { "level":480, "mul":60000, "base":29040000 },
-    { "level":540, "mul":60000, "base":32640000 },
+    { "level":600, "mul":70000, "base":42280000 },
 ];
 
 Database.level_coefs = ((level_exp) => {
@@ -1223,7 +1224,7 @@ Database.level_coefs = ((level_exp) => {
         var level_item = level_exp[i];
         var sqr = level_item.mul / 2;
         var mul = level_item.base - level_item.level * level_item.mul - level_item.mul / 2;
-        var levelEnd = (level_exp[i+1] ? level_exp[i+1].level : 600);
+        var levelEnd = (level_exp[i+1] ? level_exp[i+1].level : Database.level_max);
         var coef = {
             level_start: level_item.level,
             level_end: levelEnd,
