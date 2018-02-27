@@ -467,9 +467,9 @@ Database.goblin_price = {
 };
 
 Database.heroLevelInfo = {
-    "10": {upgrade:9, color:7, },
-    "9": {upgrade:9, color:6, },
-    "8": {upgrade:9, color:6, },
+    "10": {upgrade:12, color:7, },
+    "9": {upgrade:12, color:6, },
+    "8": {upgrade:12, color:6, },
     "7": {upgrade:9, color:5, },
     "6": {upgrade:9, color:5, },
     "5": {upgrade:6, color:4, },
