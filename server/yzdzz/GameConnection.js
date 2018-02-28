@@ -2786,25 +2786,27 @@ Base.extends("GameConnection", {
                     var data_reward = yield this.sendMsg("Arena", "reward", null, next);
                 }
                 // auto box
-                var boxUsed = data.box_num;
-                var arenaPointUsed = (boxUsed <= 6 ? this.arenaPointCost[boxUsed] : 4600 + 1600 * (boxUsed - 6 - Math.floor((boxUsed - 6) / 5)));
-                var boxMax = (config.boxMax > 26 ? 26 : config.boxMax);
-                var restArenaPoint = this.gameInfo.arenaPoint + arenaPointUsed;
-                var boxNum = boxMax;
-                if (restArenaPoint < 1400) {
-                    boxNum = 0;
-                } else if (restArenaPoint < 4600) {
-                    boxNum = 3;
-                } else if (restArenaPoint <= 30200) {
-                    var blockNum = Math.floor((restArenaPoint - 4600) / 6400);
-                    boxNum = 6 + blockNum * 5;
-                }
-                boxNum = (boxNum > boxMax ? boxMax : boxNum);
-                for (var i = boxUsed; i < boxNum; ++i) {
-                    var data_box = yield this.sendMsg("Arena", "box", null, next);
-                    if (!data_box) {
-                        this.log("box failed", boxMax, boxNum, restArenaPoint);
-                        break;
+                if (new Date().getHours() < 12) {
+                    var boxUsed = data.box_num;
+                    var arenaPointUsed = (boxUsed <= 6 ? this.arenaPointCost[boxUsed] : 4600 + 1600 * (boxUsed - 6 - Math.floor((boxUsed - 6) / 5)));
+                    var boxMax = (config.boxMax > 26 ? 26 : config.boxMax);
+                    var restArenaPoint = this.gameInfo.arenaPoint + arenaPointUsed;
+                    var boxNum = boxMax;
+                    if (restArenaPoint < 1400) {
+                        boxNum = 0;
+                    } else if (restArenaPoint < 4600) {
+                        boxNum = 3;
+                    } else if (restArenaPoint <= 30200) {
+                        var blockNum = Math.floor((restArenaPoint - 4600) / 6400);
+                        boxNum = 6 + blockNum * 5;
+                    }
+                    boxNum = (boxNum > boxMax ? boxMax : boxNum);
+                    for (var i = boxUsed; i < boxNum; ++i) {
+                        var data_box = yield this.sendMsg("Arena", "box", null, next);
+                        if (!data_box) {
+                            this.log("box failed", boxMax, boxNum, restArenaPoint);
+                            break;
+                        }
                     }
                 }
                 // auto buy
