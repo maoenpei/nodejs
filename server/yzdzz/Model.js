@@ -1295,7 +1295,6 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 changed = this.setSettingUnionwar(playerKey, settings.unionwar) || changed;
             }
             if (auth_detail && settings.kingwar) {
-                playerData.validator.resetDaily();
                 changed = this.setSettingKingwar(playerKey, settings.kingwar) || changed;
             }
             if (auth_detail && settings.listing) {
