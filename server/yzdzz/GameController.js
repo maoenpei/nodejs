@@ -79,78 +79,7 @@ Base.extends("GameController", {
         return this.accountManager;
     },
 
-    readPlayerHeros:function(conn, done) {
-        var next = coroutine(function*() {
-            var heroData = [];
-            var heroIds = yield conn.getOnlineHeroIds(next);
-            for (var i = 0; i < heroIds.length; ++i) {
-                var heroId = heroIds[i];
-                var heroObj = yield conn.getOnlineHero(heroId, next);
-                if (!heroObj) {
-                    return safe(done)([]);
-                }
-                var stone = heroObj.getStoneLevel();
-                heroData.push({
-                    heroId: heroId,
-                    color: heroObj.getColor(),
-                    name: heroObj.getName(),
-                    pos: heroObj.getPos(),
-                    upgrade: heroObj.getUpgrade(),
-                    food: heroObj.getFood(),
-                    foodLow: !heroObj.isFoodFull(),
-                    stone: stone,
-                    stoneColor: Math.floor((stone - 1) / 5) + 1,
-                    stoneLevel: (stone - 1) % 5 + 1,
-                    skill: (stone >= heroObj.getStoneBase() ? heroObj.getSkillLevel() + 1 : 0),
-                    stoneLow: !heroObj.isStoneFull(),
-                    gemWake: heroObj.getGemWake(),
-                    gemLevel: heroObj.getGemLevel(),
-                    gemLow: !heroObj.isGemFull(),
-                });
-            }
-            safe(done)(heroData);
-        }, this);
-    },
-    getPlayerHeroData:function(playerData, done) {
-        this.manualOnePlayer(playerData, (conn, tdone) => {
-            this.readPlayerHeros(conn, (heroData) => {
-                safe(tdone)();
-                safe(done)(heroData);
-            });
-        }, null);
-    },
-    dealWithPlayerHeros:function(playerData, heroIds, operate, done) {
-        this.manualOnePlayer(playerData, (conn, tdone) => {
-            var next = coroutine(function*() {
-                for (var i = 0; i < heroIds.length; ++i) {
-                    var heroId = heroIds[i];
-                    var heroObj = yield conn.getOnlineHero(heroId, next);
-                    if (!heroObj) {
-                        safe(tdone)();
-                        safe(done)([]);
-                    }
-                    yield operate(heroId, heroObj, next);
-                }
-                this.readPlayerHeros(conn, (heroData) => {
-                    safe(tdone)();
-                    safe(done)(heroData);
-                });
-            }, this);
-        }, null);
-    },
-
-    getPlayerBrief:function(playerData) {
-        var accountGameKey = playerData.account + "$" + playerData.server;
-        return this.lastPlayerInfo[accountGameKey];
-    },
-    setPlayerBrief:function(playerData, brief) {
-        var accountGameKey = playerData.account + "$" + playerData.server;
-        this.lastPlayerInfo[accountGameKey] = brief;
-    },
-
-    setAutomationOrder:function(order) {
-        this.automationOrder = order;
-    },
+    // automation
     setPlayerAutomation:function(playerData, autoConfigs) {
         return this.appendRefresh(playerData, "automation", 2, (conn, done) => {
             this.refreshAutomation(conn, autoConfigs, done);
@@ -166,7 +95,26 @@ Base.extends("GameController", {
             this.refreshAutomation(conn, autoConfigs, tdone);
         }, done);
     },
+    refreshAutomation:function(conn, autoConfigs, done) {
+        var next = coroutine(function*() {
+            console.log("refreshAutomation..", conn.getGameInfo().name);
+            for (var i = 0; i < this.automationOrder.length; ++i) {
+                var op = this.automationOrder[i];
+                var config = autoConfigs[op];
+                if (config && !config.disabled) {
+                    //console.log("auto", op, config);
+                    yield conn[op].call(conn, config, next);
+                }
+            }
+            yield conn.speakForAutomationResult(next);
+            safe(done)();
+        }, this);
+    },
+    setAutomationOrder:function(order) {
+        this.automationOrder = order;
+    },
 
+    // targeting
     setPlayerTargeting:function(playerData, targetingConfig) {
         var key = this.appendRefresh(playerData, "targeting", 3, (conn, done, taskItem) => {
             this.refreshTargeting(conn, targetingConfig, key, taskItem, done);
@@ -178,476 +126,45 @@ Base.extends("GameController", {
             this.refreshTargeting(conn, targetingConfig, key, taskItem, done);
         });
     },
-
-    setPlayerDropping:function(playerData, droppingConfig) {
-        var key = this.appendRefresh(playerData, "dropping", 6, (conn, done, taskItem) => {
-            this.refreshDropping(conn, droppingConfig, taskItem, done);
-        });
-        return key;
-    },
-    modifyPlayerDropping:function(key, droppingConfig) {
-        return this.setRefreshFunc(key, (conn, done, taskItem) => {
-            this.refreshDropping(conn, droppingConfig, taskItem, done);
-        });
-    },
-
-    setPlayerListing:function(playerData, listingConfig) {
-        return this.appendRefresh(playerData, "playerlist", 1, (conn, done) => {
-            this.refreshPlayerListing(conn, {
-                unionCount: listingConfig.unionCount,
-                minPower: listingConfig.minPower * 10000,
-                limitPower: listingConfig.limitPower * 10000,
-                limitDay: listingConfig.limitDay,
-            }, done);
-        });
-    },
-    modifyPlayerListing:function(key, listingConfig) {
-        return this.setRefreshFunc(key, (conn, done) => {
-            this.refreshPlayerListing(conn, {
-                unionCount: listingConfig.unionCount,
-                minPower: listingConfig.minPower * 10000,
-                limitPower: listingConfig.limitPower * 10000,
-                limitDay: listingConfig.limitDay,
-            }, done);
-        });
-    },
-    getSortedPlayers:function(count) {
-        var sortedPlayerIds = this.sortedPlayerIds;
-        var allPlayerIds = {};
-        for (var playerId in this.allPlayers) {
-            allPlayerIds[playerId] = true;
-        }
-        for (var i = 0; i < sortedPlayerIds.length; ++i) {
-            var playerId = sortedPlayerIds[i];
-            delete allPlayerIds[playerId];
-        }
-        for (var playerId in allPlayerIds) {
-            sortedPlayerIds.push(playerId);
-        }
-        for (var i = 1; i < sortedPlayerIds.length; ++i) {
-            var player = this.allPlayers[sortedPlayerIds[i]];
-            var prevPlayer = this.allPlayers[sortedPlayerIds[i - 1]];
-            if (player.maxPower > prevPlayer.maxPower) {
-                var toExchange = [];
-                var startIndex = 0;
-                for (var j = i - 1; j >= 0; --j) {
-                    prevPlayer = this.allPlayers[sortedPlayerIds[j]];
-                    if (player.maxPower <= prevPlayer.maxPower) {
-                        startIndex = j + 1;
-                        break;
-                    } else {
-                        toExchange.push(sortedPlayerIds[j]);
-                    }
-                }
-                toExchange.push(sortedPlayerIds[i]);
-                toExchange.push(i - startIndex + 1); // length
-                toExchange.push(startIndex); // start
-                toExchange.reverse();
-                Array.prototype.splice.apply(sortedPlayerIds, toExchange);
-            }
-        }
-        var sortedPlayers = [];
-        count = (count < sortedPlayerIds.length ? count : sortedPlayerIds.length);
-        for (var i = 0; i < count; ++i) {
-            var playerId = sortedPlayerIds[i];
-            var player = this.allPlayers[playerId];
-            var union = (player.unionId ? this.allUnions[player.unionId] : {});
-            var kingwarKey = this.playerToKingwar[playerId];
-            sortedPlayers.push({
-                key: playerId,
-                server: (player.server ? player.server : ""),
-                uName: (union.name ? union.name : ""),
-                uShort: (union.short ? union.short : ""),
-                name: (player.name ? player.name : ""),
-                power: player.maxPower,
-                level: (player.level ? player.level : 0),
-                last: (player.lastLogin ? player.lastLogin.getTime() : 0),
-                kingwar: (kingwarKey ? kingwarKey : 0),
-            });
-        }
-        return sortedPlayers;
-    },
-    savePlayers:function() {
-        var players = {};
-        for (var playerId in this.allPlayers) {
-            var player = this.allPlayers[playerId];
-            players[playerId] = {
-                name: player.name,
-                maxPower: player.maxPower,
-                unionId: player.unionId,
-            };
-        }
-        return players;
-    },
-    restorePlayers:function(allPowerMax) {
-        for (var playerId in allPowerMax) {
-            this.allPlayers[playerId] = allPowerMax[playerId];
-        }
-    },
-    saveUnions:function() {
-        return this.allUnions;
-    },
-    restoreUnions:function(unions) {
-        for (var unionId in unions) {
-            this.allUnions[unionId] = unions[unionId];
-        }
-    },
-
-    setPlayerKingwar:function(playerData, kingwarConfig) {
-        var kingwarKey = kingwarConfig.area * 100 + kingwarConfig.star;
-        return this.appendRefresh(playerData, "kingwar", 1, (conn, done) => {
-            this.refreshKingwar(conn, {
-                kingwarKey: kingwarKey,
-                area: kingwarConfig.area,
-                star: kingwarConfig.star,
-                server:playerData.server,
-
-                refData:this.kingwarRefs[kingwarKey],
-            }, done);
-        });
-    },
-    modifyPlayerKingwar:function(key, kingwarConfig) {
-        var kingwarKey = kingwarConfig.area * 100 + kingwarConfig.star;
-        return this.setRefreshFunc(key, (conn, done) => {
-            this.refreshKingwar(conn, {
-                kingwarKey: kingwarKey,
-                area: kingwarConfig.area,
-                star: kingwarConfig.star,
-
-                refData:this.kingwarRefs[kingwarKey],
-            }, done);
-        });
-    },
-    getKingwar:function() {
-        var areastars = {};
-        for (var kingwarKey in this.kingwarRefs) {
-            var data = this.kingwarRefs[kingwarKey];
-            areastars[kingwarKey] = [];
-            for (var i = 0; i < data.players.length; ++i) {
-                var warPlayer = data.players[i];
-                var extraPlayerData = this.allPlayers[warPlayer.playerId];
-                areastars[kingwarKey].push({
-                    union: warPlayer.union,
-                    power: warPlayer.power,
-                    name: (extraPlayerData && extraPlayerData.name ? extraPlayerData.name : warPlayer.name),
-                    maxPower: (extraPlayerData ? extraPlayerData.maxPower : warPlayer.power),
-                });
-            }
-        }
-        return areastars;
-    },
-    saveKingwar:function() {
-        var kingwarPlayers = {};
-        for (var kingwarKey in this.kingwarRefs) {
-            var data = this.kingwarRefs[kingwarKey];
-            kingwarPlayers[kingwarKey] = [];
-            for (var i = 0; i < data.players.length; ++i) {
-                var warPlayer = data.players[i];
-                kingwarPlayers[kingwarKey].push({
-                    playerId: warPlayer.playerId,
-                    power: warPlayer.power,
-                    union: warPlayer.union,
-                });
-            }
-        }
-        return kingwarPlayers;
-    },
-    restoreKingwar:function(kingwarPlayers) {
-        for (var kingwarKey in kingwarPlayers) {
-            var players = kingwarPlayers[kingwarKey];
-            for (var i = 0; i < players.length; ++i) {
-                var playerData = players[i];
-                this.playerToKingwar[playerData.playerId] = kingwarKey;
-                this.kingwarRefs[kingwarKey].players.push(playerData);
-            }
-        }
-    },
-
-    setPlayerHeroshop:function(playerData, heroshopConfig) {
-        return this.appendRefresh(playerData, "heroshop", 2, (conn, done) => {
-            this.refreshHeroshop(conn, heroshopConfig, done);
-        });
-    },
-    modifyPlayerHeroshop:function(key, heroshopConfig) {
-        return this.setRefreshFunc(key, (conn, done) => {
-            this.refreshHeroshop(conn, heroshopConfig, done);
-        });
-    },
-    refreshHeroshop:function(conn, heroshopConfig, done) {
+    refreshTargeting:function(conn, targetingConfig, selfKey, taskItem, done) {
         var next = coroutine(function*() {
-            console.log("refreshHeroshop..", conn.getGameInfo().name);
-            var server = conn.getServerInfo().desc;
-            if (this.heroshopServer && this.heroshopServer == server) {
-                yield conn.updateHeroShop(heroshopConfig, this.heroshopInfo, next);
+            console.log("refreshTargeting..", conn.getGameInfo().name);
+            var kingwarKey = this.playerToKingwar[targetingConfig.reachPLID];
+            if (kingwarKey && this.emperorKingwars[kingwarKey] && targetingConfig.disableEmperor) {
+                kingwarKey = null;
             }
-            safe(done)();
-        }, this);
-    },
-    initHeroshop:function() {
-        this.heroshopInfo = {};
-        this.heroshopDate = -1;
-        this.heroshopUpdateCallback = null;
-        this.heroshopServer = null;
-    },
-    setHeroshopEvent:function(defaults) {
-        this.unsetEventKeys(this.heroshopTimes);
-        this.heroshopServer = defaults.server;
-        this.heroshopTimes = [];
-        var reset = defaults.reset;
-        this.heroshopTimes.push(this.timingManager.setDailyEvent(reset.hour, reset.minute, reset.second, () => {
-            this.heroshopDate = -1;
-            this.heroshopInfo = {};
-            safe(this.heroshopUpdateCallback)(this.heroshopDate, this.heroshopInfo);
-        }));
-    },
-    setHeroshopInfo:function(date, info, callback) {
-        if (date == new Date().getDate()) {
-            this.heroshopDate = date;
-            this.heroshopInfo = {};
-            for (var key in info) {
-                this.heroshopInfo[key] = info[key];
-            }
-        }
-        this.heroshopUpdateCallback = callback;
-    },
-
-    unionwarlands: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-    setPlayerUnionwar:function(playerData, unionwarConfig) {
-        return this.appendRefresh(playerData, "unionwar", 7, (conn, done) => {
-            this.refreshUnionwar(conn, unionwarConfig, done);
-        });
-    },
-    modifyPlayerUnionwar:function(key, unionwarConfig) {
-        return this.setRefreshFunc(key, (conn, done) => {
-            this.refreshUnionwar(conn, unionwarConfig, done);
-        });
-    },
-    enumUnionwarlands:function(conn, targetLands, deal, done) {
-        var next = coroutine(function*() {
-            var unionwarInfo = yield conn.getUnionWar(next);
-            if (!unionwarInfo.lands) {
-                return safe(done)();
-            }
-            for (var i = 0; i < targetLands.length; ++i) {
-                var landId = targetLands[i];
-                if (unionwarInfo.lands[landId]) {
-                    continue;
-                }
-                var unionwarLandInfo = yield conn.enterUnionWar(landId, next);
-                if (!unionwarLandInfo.mineArray) {
-                    continue;
-                }
-                for (var j = 0; j < unionwarLandInfo.mineArray.length; ++j) {
-                    var mineData = unionwarLandInfo.mineArray[j];
-                    var finish = safe(deal)(mineData, landId);
-                    if (finish) {
-                        return safe(done)();
-                    }
-                }
-            }
-            safe(done)();
-        }, this);
-    },
-    refreshUnionwar:function(conn, unionwarConfig, done) {
-        var next = coroutine(function*() {
-            console.log("refreshUnionwar..", conn.getGameInfo().name);
-            var unionwarInfo = yield conn.getUnionWar(next);
-            if (!unionwarInfo.isOpen) {
-                return safe(done)();
-            }
-            var targetLands = (unionwarConfig.onlyOccupy ? this.unionwarOrder : this.unionwarlands);
-            var playerId = conn.getGameInfo().playerId;
-            var myQuality = 0;
-            yield this.enumUnionwarlands(conn, targetLands, (mineData, landId) => {
-                if (mineData.playerId == playerId) {
-                    conn.log("Found self at union war:", landId, mineData.pos, mineData.quality);
-                    myQuality = mineData.quality;
-                    return true; // finish loop
-                }
-            }, next);
-
-            if (myQuality && unionwarConfig.reverseOrder) {
-                return safe(done)();
-            }
-
-            var randTime = rand(1500);
-            yield setTimeout(next, randTime);
-            var lock = this.unionwarLock;
-            yield lock.lock(next);
-
-            var maxQuality = 0;
-            var maxLand = [];
-            var maxPos = [];
-            yield this.enumUnionwarlands(conn, targetLands, (mineData, landId) => {
-                if (!mineData.playerId && mineData.mineLife > 0) {
-                    var match = false;
-                    if (unionwarConfig.reverseOrder) {
-                        if (maxQuality == 0 || mineData.quality < maxQuality) {
-                            match = true;
+            if (kingwarKey) {
+                console.log("-- kingwar assignment -- find target", kingwarKey, targetingConfig.reachPLID, conn.getGameInfo().name);
+                var areaStar = this.getAreaStar(kingwarKey);
+                var data_join = yield conn.joinKingWar(areaStar.area, areaStar.star, next);
+            } else {
+                if (taskItem){
+                    if (targetingConfig.allowAssign) {
+                        var playerId = conn.getGameInfo().playerId;
+                        var playerItem = this.allPlayers[playerId];
+                        var power = (playerItem ? playerItem.maxPower : conn.getGameInfo().power);
+                        var kingwarKey = yield taskItem.getAssignment({
+                            power: power,
+                            minStar: targetingConfig.minStar,
+                            forceEmperor: targetingConfig.forceEmperor,
+                        }, next);
+                        if (kingwarKey) {
+                            console.log("-- kingwar assignment -- assign target", kingwarKey, Math.floor(power / 10000), conn.getGameInfo().name);
+                            var areaStar = this.getAreaStar(kingwarKey);
+                            var data_join = yield conn.joinKingWar(areaStar.area, areaStar.star, next);
                         }
                     } else {
-                        if (mineData.quality > maxQuality) {
-                            match = true;
-                        }
-                    }
-                    if (match) {
-                        conn.log("Found new available pos:", landId, mineData.pos, mineData.quality);
-                        maxQuality = mineData.quality;
-                        maxLand = [landId];
-                        maxPos = [mineData.pos];
-                    } else if (maxQuality == mineData.quality) {
-                        conn.log("Found same available pos:", landId, mineData.pos, mineData.quality);
-                        maxLand.push(landId);
-                        maxPos.push(mineData.pos);
-                    }
-                }
-            }, next);
-            if (maxQuality > myQuality) {
-                for (var i = 0; i < maxLand.length; ++i) {
-                    var landId = maxLand[i];
-                    var pos = maxPos[i];
-                    var occupyData = yield conn.occupy(landId, pos, next);
-                    if (occupyData.success) {
-                        break;
+                        taskItem.giveup();
                     }
                 }
             }
-
-            lock.unlock();
+            var data_kingwar = yield conn.getKingWarState(next);
+            if (data_kingwar.joined) {
+                this.setRefreshState(selfKey, 4);
+            }
             safe(done)();
         }, this);
     },
-    setUnionwarEvent:function(defaults) {
-        this.unsetEventKeys(this.unionwarTimes);
-        this.unionwarOrder = defaults.normal_order;
-        this.unionwarTimes = [];
-        this.unionwarLock = new Mutex();
-        var doUnionwar = () => {
-            this.refreshAllPlayers((funcObj) => { return funcObj.state == 7; });
-        };
-        for (var i = 0; i < defaults.days.length; ++i) {
-            var day = defaults.days[i];
-            for (var j = 0; j < defaults.moments.length; ++j) {
-                var moment = defaults.moments[j];
-                var unionwarKey = this.timingManager.setWeeklyEvent(day, moment.hour, moment.minute, moment.second, doUnionwar);
-                //console.log("-- setUnionwarEvent --", day, moment.hour, moment.minute, moment.second, unionwarKey);
-                this.unionwarTimes.push(unionwarKey);
-            }
-        }
-    },
-
-    unsetPlayer:function(key) {
-        return this.removeRefresh(key);
-    },
-
-    startPeriodic:function(interval, refreshType, callback) {
-        if (this.periodicUnique) {
-            return;
-        }
-        this.heartbeat.setup(interval * 2, () => {
-            console.log("========================= refreshing loop dead! ===========================");
-            this.cancelPeriodic();
-            this.startPeriodic(interval, null, callback);
-        });
-        console.log("refreshing start!", refreshType);
-        var periodicUnique = { callback: callback };
-        this.periodicUnique = periodicUnique;
-        var next = coroutine(function*() {
-            while(this.periodicUnique === periodicUnique) {
-                this.heartbeat.beat();
-                var startTime = new Date().getTime();
-                this.refreshingState = true;
-                console.log("refreshing loop!", new Date());
-                yield this.refreshAllPlayers((funcObj) => {
-                    if (funcObj.state != 1) {
-                        return false;
-                    }
-                    var matchType = refreshType && refreshType.indexOf(funcObj.refresh) >= 0;
-                    if (!refreshType || matchType) {
-                        return true;
-                    }
-                    return false;
-                }, next);
-                if (this.periodicUnique !== periodicUnique) {
-                    break;
-                }
-                this.refreshingState = false;
-
-                var endTime = new Date().getTime();
-                if (periodicUnique.callback) {
-                    yield periodicUnique.callback(next);
-                    if (this.periodicUnique !== periodicUnique) {
-                        break;
-                    }
-                }
-                var period = (endTime - startTime) / 1000;
-                console.log("taking {0} seconds. waiting {1} seconds...".format(period, interval), new Date());
-                yield setTimeout(next, interval * 1000);
-                refreshType = null;
-            }
-            console.log("refreshing quit!");
-        }, this);
-    },
-    cancelPeriodic:function() {
-        this.heartbeat.cancel();
-        this.periodicUnique = null;
-    },
-    duringPeriodic:function() {
-        return this.refreshingState;
-    },
-
-    startDailyTask:function(dailyTimes) {
-        this.unsetEventKeys(this.dailyTasks);
-        this.dailyTasks = [];
-        var doDailyTask = () => {
-            console.log("daily task start!");
-            this.refreshAllPlayers((funcObj) => {
-                return funcObj.state == 2;
-            }, () => {
-                this.heroshopDate = new Date().getDate();
-                safe(this.heroshopUpdateCallback)(this.heroshopDate, this.heroshopInfo);
-                console.log("daily task end!");
-            }, null, true);
-        };
-        for (var i = 0; i < dailyTimes.length; ++i) {
-            var dailyInfo = dailyTimes[i];
-            var eventKey = this.timingManager.setDailyEvent(dailyInfo.hour, dailyInfo.minute, dailyInfo.second, doDailyTask);
-            this.dailyTasks.push(eventKey);
-        }
-    },
-    cancelDailyTask:function() {
-        if (this.dailyTasks) {
-            this.unsetEventKeys(this.dailyTasks);
-            this.dailyTasks = null;
-        }
-    },
-
-    setRepeatRange:function(startTime, endTime) {
-        this.unsetEventKeys(this.repeatRanges);
-        this.repeatRanges = [];
-        var startAutomationRepeat = () => {
-            console.log("refreshing automation for period start!");
-            this.setRefreshStatesOfType("automation", 1);
-        };
-        var startKey = this.timingManager.setDailyEvent(startTime.hour, startTime.minute, startTime.second, startAutomationRepeat);
-        this.repeatRanges.push(startKey);
-        var endKey = this.timingManager.setDailyEvent(endTime.hour, endTime.minute, endTime.second, () => {
-            console.log("refreshing automation for period end!");
-            this.setRefreshStatesOfType("automation", 2);
-        });
-        this.repeatRanges.push(endKey);
-        var mement = new Date();
-        var nowTimeSec = mement.getTime();
-        mement.setHours(startTime.hour, startTime.minute, startTime.second, 0);
-        var startTimeSec = mement.getTime();
-        mement.setHours(endTime.hour, endTime.minute, endTime.second, 0);
-        var endTimeSec = mement.getTime();
-        if (nowTimeSec - startTimeSec > 5 * 1000 && endTimeSec - nowTimeSec > 10 * 1000) {
-            console.log("repair automation repeating");
-            startAutomationRepeat();
-        }
-    },
-
     ownPowerCoef: 0.9,
     hopePowerCoef: 0.95,
     drawPowerCoef: 1.01,
@@ -912,358 +429,17 @@ Base.extends("GameController", {
         this.targetingTimes.push(targetingKey);
     },
 
-    getDroppingKingwarInfo:function(kingwarKey, defaults) {
-        var playerList = [];
-        var refData = this.kingwarRefs[kingwarKey];
-        var playerCount = (refData.players.length > 16 ? 16 : refData.players.length);
-        for (var i = 0; i < playerCount; ++i) {
-            var player = refData.players[i];
-            var playerId = player.playerId;
-            if (this.whiteList[playerId]) {
-                continue;
-            }
-            var playerItem = this.allPlayers[playerId];
-            var power = (playerItem ? playerItem.maxPower : player.power);
-            playerList.push({
-                playerId: playerId,
-                power: power,
-                isOurs: playerItem && playerItem.unionId == defaults.selfUnion || false,
-            });
-        }
-
-        var playerOrder = [];
-        for (var i = 0; i < playerList.length; ++i) {
-            var player = playerList[i];
-            var insertIndex = playerOrder.length;
-            for (var j = 0; j < playerOrder.length; ++j) {
-                var playerComp = playerOrder[j];
-                var oursToEnemy = player.isOurs && !playerComp.isOurs;
-                var allOurs = player.isOurs && playerComp.isOurs;
-                var allEnemy = !player.isOurs && !playerComp.isOurs;
-                if (oursToEnemy || (allOurs && player.power > playerComp.power) || (allEnemy && player.power < playerComp.power)) {
-                    insertIndex = j;
-                    break;
-                }
-            }
-            playerOrder.splice(insertIndex, 0, player);
-        }
-
-        var playerIndices = {};
-        for (var i = 0; i < playerOrder.length; ++i) {
-            var player = playerOrder[i];
-            playerIndices[player.playerId] = i;
-            console.log("-- dropping order --", kingwarKey, player);
-        }
-
-        return {
-            playerOrder: playerOrder,
-            playerIndices: playerIndices,
-        };
-    },
-    droppingAssignment:function(tasks, kingwarInfos, timings, defaults) {
-        for (var i = 0; i < tasks.length; ++i) {
-            var taskItem = tasks[i];
-            if (!taskItem.isAssigned()) {
-                var kingwarKey = taskItem.getValue();
-                var kingwarInfo = kingwarInfos[kingwarKey];
-                if (!kingwarInfo) {
-                    kingwarInfo = this.getDroppingKingwarInfo(kingwarKey, defaults);
-                    kingwarInfo.helpLock = new Mutex();
-                    kingwarInfo.damageLock = new Mutex();
-                    kingwarInfo.startTime = timings.startTime;
-                    kingwarInfo.forceTime = timings.forceTime;
-                    kingwarInfo.endTime = timings.endTime;
-                    kingwarInfos[kingwarKey] = kingwarInfo;
-                }
-                taskItem.setAssignment(kingwarInfo);
-            }
-        }
-    },
-    timeWithSeconds:function(sec) {
-        var time = new Date();
-        var nsec = Math.floor(sec);
-        time.setSeconds(nsec, (sec - nsec) * 1000);
-        return time;
-    },
-    timeOffset:function(time, sec) {
-        return new Date(time.getTime() + sec * 1000);
-    },
-    setDroppingEvent:function(defaults) {
-        this.unsetEventKeys(this.droppingTimes);
-        this.droppingTimes = [];
-        this.whiteList = {};
-        for (var i = 0; i < defaults.whitelist.length; ++i) {
-            var playerId = defaults.whitelist[i];
-            this.whiteList[playerId] = true;
-        }
-        console.log("white list -", this.whiteList);
-        var doDropping = () => {
-            var next = coroutine(function*() {
-                console.log("dropping started!");
-                var assignTime = this.timeWithSeconds(defaults.assign);
-                var startTime = this.timeWithSeconds(defaults.start);
-                var forceTime = this.timeWithSeconds(defaults.force);
-                var endTime = this.timeWithSeconds(0);
-                endTime = this.timeOffset(endTime, 60);
-                var timings = {
-                    startTime: startTime,
-                    forceTime: forceTime,
-                    endTime: endTime,
-                };
-                var started = false;
-                var kingwarInfos = {};
-                var lastTasks = null;
-                var droppingTaskManager = new TaskManager((tasks, total) => {
-                    lastTasks = tasks;
-                    if (started) {
-                        this.droppingAssignment(tasks, kingwarInfos, timings, defaults);
-                    }
-                });
-                (() => {
-                    var tnext = coroutine(function*() {
-                        while (new Date() < assignTime) {
-                            yield setTimeout(tnext, 60);
-                        }
-                        started = true;
-                        if (lastTasks) {
-                            this.droppingAssignment(lastTasks, kingwarInfos, timings, defaults);
-                        }
-                    }, this);
-                })();
-                yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 6; }, next, droppingTaskManager);
-                console.log("dropping finished!");
-            }, this);
-        };
-        for (var i = 0; i < defaults.times.length; ++i) {
-            var time = defaults.times[i];
-            var droppingKey = this.timingManager.setWeeklyEvent(time.day, time.hour, time.minute, time.second, doDropping);
-            this.droppingTimes.push(droppingKey);
-        }
-    },
-
-    // Private timing helpers
-    unsetEventKeys:function(keyArray) {
-        if (keyArray) {
-            for (var i = 0; i < keyArray.length; ++i) {
-                this.timingManager.unsetEvent(keyArray[i]);
-            }
-        }
-    },
-
-    // Private refresh helpers
-    appendRefresh:function(playerData, refreshType, initState, func) {
-        var accountGameKey = playerData.account + "$" + playerData.server;
-        var refreshInfo = this.refreshData[accountGameKey];
-        refreshInfo = (refreshInfo ? refreshInfo : {
-            account: playerData.account,
-            server: playerData.server,
-            funcs: [],
-            validator: playerData.validator,
-            mutex: playerData.mutex,
+    // dropping
+    setPlayerDropping:function(playerData, droppingConfig) {
+        var key = this.appendRefresh(playerData, "dropping", 6, (conn, done, taskItem) => {
+            this.refreshDropping(conn, droppingConfig, taskItem, done);
         });
-        var funcObj = {
-            func:func,
-            refresh: refreshType,
-            state: initState,
-        };
-        refreshInfo.funcs.push(funcObj);
-        this.refreshData[accountGameKey] = refreshInfo;
-        return {
-            key: accountGameKey,
-            obj: funcObj,
-        };
+        return key;
     },
-    removeRefresh:function(key) {
-        var findInfo = this.findRefresh(key);
-        if (findInfo) {
-            findInfo.refreshInfo.funcs.splice(findInfo.index, 1);
-            if (findInfo.refreshInfo.funcs.length == 0) {
-                delete this.refreshData[key.key];
-            }
-            return true;
-        }
-        return false;
-    },
-    findRefresh:function(key) {
-        var refreshInfo = this.refreshData[key.key];
-        if (refreshInfo && refreshInfo.funcs && refreshInfo.funcs.length > 0) {
-            for (var i = 0; i < refreshInfo.funcs.length; ++i) {
-                if (refreshInfo.funcs[i] === key.obj) {
-                    return {
-                        refreshInfo: refreshInfo,
-                        index: i,
-                    };
-                }
-            }
-        }
-        return null;
-    },
-    setRefreshState:function(key, state) {
-        var findInfo = this.findRefresh(key);
-        if (findInfo) {
-            var funcObj = findInfo.refreshInfo.funcs[findInfo.index];
-            funcObj.state = state;
-        }
-    },
-    setRefreshStatesOfType:function(refreshType, state) {
-        for (var accountGameKey in this.refreshData) {
-            var refreshInfo = this.refreshData[accountGameKey];
-            for (var i = 0; i < refreshInfo.funcs.length; ++i) {
-                var funcObj = refreshInfo.funcs[i];
-                if (funcObj.refresh == refreshType) {
-                    funcObj.state = state;
-                }
-            }
-        }
-    },
-    setRefreshFunc:function(key, func) {
-        var findInfo = this.findRefresh(key);
-        if (findInfo) {
-            var funcObj = findInfo.refreshInfo.funcs[findInfo.index];
-            // must create a new instance in case old one is still being used.
-            funcObj = clone(funcObj);
-            funcObj.func = func;
-            key.obj = funcObj;
-            findInfo.refreshInfo.funcs.splice(findInfo.index, 1, funcObj);
-            return true;
-        }
-        return false;
-    },
-    refreshAllPlayers:function(checkFun, done, taskManager, showWave) {
-        console.log("refresh all player start -", process.memoryUsage());
-        var select = new Select();
-        for (var accountGameKey in this.refreshData) {
-            var refreshInfo = this.refreshData[accountGameKey];
-            var executables = [];
-            for (var i = 0; i < refreshInfo.funcs.length; ++i) {
-                var funcObj = refreshInfo.funcs[i];
-                if (checkFun(funcObj)) {
-                    executables.push(funcObj.func);
-                }
-            }
-
-            if (executables.length > 0) {
-                this.executeOnePlayer(refreshInfo, executables, select.setup(), (taskManager ? taskManager.addTask() : undefined));
-            }
-        }
-        select.all(() => {
-            console.log("refresh all player finish -", process.memoryUsage());
-            if (showWave) {
-                this.showMemoryWave();
-            }
-            safe(done)();
+    modifyPlayerDropping:function(key, droppingConfig) {
+        return this.setRefreshFunc(key, (conn, done, taskItem) => {
+            this.refreshDropping(conn, droppingConfig, taskItem, done);
         });
-    },
-    manualOnePlayer:function(playerData, func, done) {
-        console.log("manual one player start -", process.memoryUsage());
-        this.executeOnePlayer(playerData, [func], (result) => {
-            console.log("manual one player finish -", process.memoryUsage());
-            safe(done)(result);
-        });
-    },
-    executeOnePlayer:function(refreshInfo, executables, done, taskItem) {
-        var next = coroutine(function*() {
-            var token = { finished: false, };
-            yield refreshInfo.mutex.lock(next);
-            var doEnd = (unexpected) => {
-                if (token.finished) {
-                    return;
-                }
-                token.finished = true;
-                if (unexpected && taskItem) {
-                    taskItem.giveup();
-                }
-                refreshInfo.mutex.unlock();
-                safe(done)({
-                    success: !unexpected,
-                });
-            };
-            setTimeout(() => {
-                if (!token.finished) {
-                    console.log("============= one player timeout =============");
-                    doEnd(true);
-                }
-            }, 1000 * 60 * 1.5);
-            var conn = this.accountManager.connectAccount(refreshInfo.account, refreshInfo.validator);
-            if (!conn) {
-                this.errLog("connectAccount", "account:{0}".format(refreshInfo.account));
-                return doEnd(true);
-            }
-            //console.log("start -- player!", refreshInfo.account, refreshInfo.server);
-            var data = yield conn.loginAccount(next);
-            if (token.finished || !data.success) {
-                this.errLog("loginAccount", "account({0}), server({1})".format(refreshInfo.account, refreshInfo.server));
-                return doEnd(true);
-            }
-            var data = yield conn.loginGame(refreshInfo.server, next);
-            if (token.finished || !data.success) {
-                this.errLog("loginGame", "account({0}), server({1})".format(refreshInfo.account, refreshInfo.server));
-                return doEnd(true);
-            }
-            var accountGameKey = refreshInfo.account + "$" + refreshInfo.server;
-            this.lastPlayerInfo[accountGameKey] = {
-                name: conn.getGameInfo().name,
-                power: conn.getGameInfo().power,
-            };
-            for (var i = 0; i < executables.length; ++i) {
-                yield executables[i](conn, next, taskItem);
-                if (token.finished) {
-                    return doEnd(true);
-                }
-            }
-            //console.log("quit -- player!", refreshInfo.account, refreshInfo.server, conn.getGameInfo().name);
-            conn.quit();
-            doEnd();
-        }, this);
-    },
-    showMemoryWave:function() {
-        var next = coroutine(function*() {
-            for (var i = 0; i < 100; ++i) {
-                yield setTimeout(next, 1000);
-                console.log("wave:", i, process.memoryUsage());
-            }
-        }, this);
-    },
-
-    // Private refresh operations
-    refreshTargeting:function(conn, targetingConfig, selfKey, taskItem, done) {
-        var next = coroutine(function*() {
-            console.log("refreshTargeting..", conn.getGameInfo().name);
-            var kingwarKey = this.playerToKingwar[targetingConfig.reachPLID];
-            if (kingwarKey && this.emperorKingwars[kingwarKey] && targetingConfig.disableEmperor) {
-                kingwarKey = null;
-            }
-            if (kingwarKey) {
-                console.log("-- kingwar assignment -- find target", kingwarKey, targetingConfig.reachPLID, conn.getGameInfo().name);
-                var areaStar = this.getAreaStar(kingwarKey);
-                var data_join = yield conn.joinKingWar(areaStar.area, areaStar.star, next);
-            } else {
-                if (taskItem){
-                    if (targetingConfig.allowAssign) {
-                        var playerId = conn.getGameInfo().playerId;
-                        var playerItem = this.allPlayers[playerId];
-                        var power = (playerItem ? playerItem.maxPower : conn.getGameInfo().power);
-                        var kingwarKey = yield taskItem.getAssignment({
-                            power: power,
-                            minStar: targetingConfig.minStar,
-                            forceEmperor: targetingConfig.forceEmperor,
-                        }, next);
-                        if (kingwarKey) {
-                            console.log("-- kingwar assignment -- assign target", kingwarKey, Math.floor(power / 10000), conn.getGameInfo().name);
-                            var areaStar = this.getAreaStar(kingwarKey);
-                            var data_join = yield conn.joinKingWar(areaStar.area, areaStar.star, next);
-                        }
-                    } else {
-                        taskItem.giveup();
-                    }
-                }
-            }
-            var data_kingwar = yield conn.getKingWarState(next);
-            if (data_kingwar.joined) {
-                this.setRefreshState(selfKey, 4);
-            }
-            safe(done)();
-        }, this);
     },
     isCardValid:function(card, playerData) {
         if (card.isGold) {
@@ -1448,90 +624,335 @@ Base.extends("GameController", {
             safe(done)();
         }, this);
     },
-    refreshAutomation:function(conn, autoConfigs, done) {
-        var next = coroutine(function*() {
-            console.log("refreshAutomation..", conn.getGameInfo().name);
-            for (var i = 0; i < this.automationOrder.length; ++i) {
-                var op = this.automationOrder[i];
-                var config = autoConfigs[op];
-                if (config && !config.disabled) {
-                    //console.log("auto", op, config);
-                    yield conn[op].call(conn, config, next);
+    getDroppingKingwarInfo:function(kingwarKey, defaults) {
+        var playerList = [];
+        var refData = this.kingwarRefs[kingwarKey];
+        var playerCount = (refData.players.length > 16 ? 16 : refData.players.length);
+        for (var i = 0; i < playerCount; ++i) {
+            var player = refData.players[i];
+            var playerId = player.playerId;
+            if (this.whiteList[playerId]) {
+                continue;
+            }
+            var playerItem = this.allPlayers[playerId];
+            var power = (playerItem ? playerItem.maxPower : player.power);
+            playerList.push({
+                playerId: playerId,
+                power: power,
+                isOurs: playerItem && playerItem.unionId == defaults.selfUnion || false,
+            });
+        }
+
+        var playerOrder = [];
+        for (var i = 0; i < playerList.length; ++i) {
+            var player = playerList[i];
+            var insertIndex = playerOrder.length;
+            for (var j = 0; j < playerOrder.length; ++j) {
+                var playerComp = playerOrder[j];
+                var oursToEnemy = player.isOurs && !playerComp.isOurs;
+                var allOurs = player.isOurs && playerComp.isOurs;
+                var allEnemy = !player.isOurs && !playerComp.isOurs;
+                if (oursToEnemy || (allOurs && player.power > playerComp.power) || (allEnemy && player.power < playerComp.power)) {
+                    insertIndex = j;
+                    break;
                 }
             }
-            yield conn.speakForAutomationResult(next);
-            safe(done)();
-        }, this);
+            playerOrder.splice(insertIndex, 0, player);
+        }
+
+        var playerIndices = {};
+        for (var i = 0; i < playerOrder.length; ++i) {
+            var player = playerOrder[i];
+            playerIndices[player.playerId] = i;
+            console.log("-- dropping order --", kingwarKey, player);
+        }
+
+        return {
+            playerOrder: playerOrder,
+            playerIndices: playerIndices,
+        };
     },
-    initPlayerListing:function() {
-        this.allUnions = {};
-        this.allPlayers = {};
-        this.sortedPlayerIds = [];
-    },
-    refreshPlayerListing:function(conn, refreshData, done) {
-        var next = coroutine(function*() {
-            //console.log("refreshPlayerListing..", conn.getGameInfo().name);
-            var data = yield conn.getUnionList(next);
-            if (!data.unions) {
-                this.errLog("getUnionList", "none");
-                return safe(done)();
-            }
-            var server = conn.getServerInfo().desc;
-            var limitMilliSeconds = refreshData.limitDay * 24 * 3600 * 1000
-            for (var i = 0; i < data.unions.length; ++i) {
-                var unionItem = data.unions[i];
-                this.allUnions[unionItem.unionId] = {
-                    server: server,
-                    name: unionItem.name,
-                    short: unionItem.short,
-                };
-                if (i < refreshData.unionCount) {
-                    var playersData = yield conn.getUnionPlayers(unionItem.unionId, next);
-                    if (!playersData.players) {
-                        this.errLog("getUnionPlayers", "none");
-                        return safe(done)();
-                    }
-                    var now = new Date().getTime();
-                    for (var j = 0; j < playersData.players.length; ++j) {
-                        var playerItem = playersData.players[j];
-                        var playerData = this.allPlayers[playerItem.playerId];
-                        var lastPower = (playerData ? playerData.maxPower : 0);
-                        var maxPower = (playerItem.power > lastPower ? playerItem.power : lastPower);
-                        if (maxPower <= refreshData.minPower) {
-                            continue;
-                        }
-                        var t = playerItem.lastLogin.getTime();
-                        if (maxPower <= refreshData.limitPower && now - t > limitMilliSeconds) {
-                            continue;
-                        }
-                        this.allPlayers[playerItem.playerId] = {
-                            server: server,
-                            unionId: unionItem.unionId,
-                            name: playerItem.name,
-                            power: playerItem.power,
-                            maxPower: maxPower,
-                            level: playerItem.level,
-                            lastLogin: playerItem.lastLogin,
-                        };
-                    }
+    droppingAssignment:function(tasks, kingwarInfos, timings, defaults) {
+        for (var i = 0; i < tasks.length; ++i) {
+            var taskItem = tasks[i];
+            if (!taskItem.isAssigned()) {
+                var kingwarKey = taskItem.getValue();
+                var kingwarInfo = kingwarInfos[kingwarKey];
+                if (!kingwarInfo) {
+                    kingwarInfo = this.getDroppingKingwarInfo(kingwarKey, defaults);
+                    kingwarInfo.helpLock = new Mutex();
+                    kingwarInfo.damageLock = new Mutex();
+                    kingwarInfo.startTime = timings.startTime;
+                    kingwarInfo.forceTime = timings.forceTime;
+                    kingwarInfo.endTime = timings.endTime;
+                    kingwarInfos[kingwarKey] = kingwarInfo;
                 }
-            }
-            safe(done)();
-        }, this);
-    },
-    initKingwar:function() {
-        this.constantKingwar = false;
-        this.playerToKingwar = {};
-        this.kingwarRefs = {};
-        for (var area = 1; area <= 3; ++area) {
-            for (var star = 1; star <= 10; ++star) {
-                var key = area * 100 + star;
-                this.kingwarRefs[key] = {
-                    constant:false,
-                    players:[],
-                };
+                taskItem.setAssignment(kingwarInfo);
             }
         }
+    },
+    timeWithSeconds:function(sec) {
+        var time = new Date();
+        var nsec = Math.floor(sec);
+        time.setSeconds(nsec, (sec - nsec) * 1000);
+        return time;
+    },
+    timeOffset:function(time, sec) {
+        return new Date(time.getTime() + sec * 1000);
+    },
+    setDroppingEvent:function(defaults) {
+        this.unsetEventKeys(this.droppingTimes);
+        this.droppingTimes = [];
+        this.whiteList = {};
+        for (var i = 0; i < defaults.whitelist.length; ++i) {
+            var playerId = defaults.whitelist[i];
+            this.whiteList[playerId] = true;
+        }
+        console.log("white list -", this.whiteList);
+        var doDropping = () => {
+            var next = coroutine(function*() {
+                console.log("dropping started!");
+                var assignTime = this.timeWithSeconds(defaults.assign);
+                var startTime = this.timeWithSeconds(defaults.start);
+                var forceTime = this.timeWithSeconds(defaults.force);
+                var endTime = this.timeWithSeconds(0);
+                endTime = this.timeOffset(endTime, 60);
+                var timings = {
+                    startTime: startTime,
+                    forceTime: forceTime,
+                    endTime: endTime,
+                };
+                var started = false;
+                var kingwarInfos = {};
+                var lastTasks = null;
+                var droppingTaskManager = new TaskManager((tasks, total) => {
+                    lastTasks = tasks;
+                    if (started) {
+                        this.droppingAssignment(tasks, kingwarInfos, timings, defaults);
+                    }
+                });
+                (() => {
+                    var tnext = coroutine(function*() {
+                        while (new Date() < assignTime) {
+                            yield setTimeout(tnext, 60);
+                        }
+                        started = true;
+                        if (lastTasks) {
+                            this.droppingAssignment(lastTasks, kingwarInfos, timings, defaults);
+                        }
+                    }, this);
+                })();
+                yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 6; }, next, droppingTaskManager);
+                console.log("dropping finished!");
+            }, this);
+        };
+        for (var i = 0; i < defaults.times.length; ++i) {
+            var time = defaults.times[i];
+            var droppingKey = this.timingManager.setWeeklyEvent(time.day, time.hour, time.minute, time.second, doDropping);
+            this.droppingTimes.push(droppingKey);
+        }
+    },
+
+    // hero shop
+    setPlayerHeroshop:function(playerData, heroshopConfig) {
+        return this.appendRefresh(playerData, "heroshop", 2, (conn, done) => {
+            this.refreshHeroshop(conn, heroshopConfig, done);
+        });
+    },
+    modifyPlayerHeroshop:function(key, heroshopConfig) {
+        return this.setRefreshFunc(key, (conn, done) => {
+            this.refreshHeroshop(conn, heroshopConfig, done);
+        });
+    },
+    refreshHeroshop:function(conn, heroshopConfig, done) {
+        var next = coroutine(function*() {
+            console.log("refreshHeroshop..", conn.getGameInfo().name);
+            var server = conn.getServerInfo().desc;
+            if (this.heroshopServer && this.heroshopServer == server) {
+                yield conn.updateHeroShop(heroshopConfig, this.heroshopInfo, next);
+            }
+            safe(done)();
+        }, this);
+    },
+    initHeroshop:function() {
+        this.heroshopInfo = {};
+        this.heroshopDate = -1;
+        this.heroshopUpdateCallback = null;
+        this.heroshopServer = null;
+    },
+    setHeroshopEvent:function(defaults) {
+        this.unsetEventKeys(this.heroshopTimes);
+        this.heroshopServer = defaults.server;
+        this.heroshopTimes = [];
+        var reset = defaults.reset;
+        this.heroshopTimes.push(this.timingManager.setDailyEvent(reset.hour, reset.minute, reset.second, () => {
+            this.heroshopDate = -1;
+            this.heroshopInfo = {};
+            safe(this.heroshopUpdateCallback)(this.heroshopDate, this.heroshopInfo);
+        }));
+    },
+    setHeroshopInfo:function(date, info, callback) {
+        if (date == new Date().getDate()) {
+            this.heroshopDate = date;
+            this.heroshopInfo = {};
+            for (var key in info) {
+                this.heroshopInfo[key] = info[key];
+            }
+        }
+        this.heroshopUpdateCallback = callback;
+    },
+
+    // union war
+    unionwarlands: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    setPlayerUnionwar:function(playerData, unionwarConfig) {
+        return this.appendRefresh(playerData, "unionwar", 7, (conn, done) => {
+            this.refreshUnionwar(conn, unionwarConfig, done);
+        });
+    },
+    modifyPlayerUnionwar:function(key, unionwarConfig) {
+        return this.setRefreshFunc(key, (conn, done) => {
+            this.refreshUnionwar(conn, unionwarConfig, done);
+        });
+    },
+    refreshUnionwar:function(conn, unionwarConfig, done) {
+        var next = coroutine(function*() {
+            console.log("refreshUnionwar..", conn.getGameInfo().name);
+            var unionwarInfo = yield conn.getUnionWar(next);
+            if (!unionwarInfo.isOpen) {
+                return safe(done)();
+            }
+            var targetLands = (unionwarConfig.onlyOccupy ? this.unionwarOrder : this.unionwarlands);
+            var playerId = conn.getGameInfo().playerId;
+            var myQuality = 0;
+            yield this.enumUnionwarlands(conn, targetLands, (mineData, landId) => {
+                if (mineData.playerId == playerId) {
+                    conn.log("Found self at union war:", landId, mineData.pos, mineData.quality);
+                    myQuality = mineData.quality;
+                    return true; // finish loop
+                }
+            }, next);
+
+            if (myQuality && unionwarConfig.reverseOrder) {
+                return safe(done)();
+            }
+
+            var randTime = rand(1500);
+            yield setTimeout(next, randTime);
+            var lock = this.unionwarLock;
+            yield lock.lock(next);
+
+            var maxQuality = 0;
+            var maxLand = [];
+            var maxPos = [];
+            yield this.enumUnionwarlands(conn, targetLands, (mineData, landId) => {
+                if (!mineData.playerId && mineData.mineLife > 0) {
+                    var match = false;
+                    if (unionwarConfig.reverseOrder) {
+                        if (maxQuality == 0 || mineData.quality < maxQuality) {
+                            match = true;
+                        }
+                    } else {
+                        if (mineData.quality > maxQuality) {
+                            match = true;
+                        }
+                    }
+                    if (match) {
+                        conn.log("Found new available pos:", landId, mineData.pos, mineData.quality);
+                        maxQuality = mineData.quality;
+                        maxLand = [landId];
+                        maxPos = [mineData.pos];
+                    } else if (maxQuality == mineData.quality) {
+                        conn.log("Found same available pos:", landId, mineData.pos, mineData.quality);
+                        maxLand.push(landId);
+                        maxPos.push(mineData.pos);
+                    }
+                }
+            }, next);
+            if (maxQuality > myQuality) {
+                for (var i = 0; i < maxLand.length; ++i) {
+                    var landId = maxLand[i];
+                    var pos = maxPos[i];
+                    var occupyData = yield conn.occupy(landId, pos, next);
+                    if (occupyData.success) {
+                        break;
+                    }
+                }
+            }
+
+            lock.unlock();
+            safe(done)();
+        }, this);
+    },
+    enumUnionwarlands:function(conn, targetLands, deal, done) {
+        var next = coroutine(function*() {
+            var unionwarInfo = yield conn.getUnionWar(next);
+            if (!unionwarInfo.lands) {
+                return safe(done)();
+            }
+            for (var i = 0; i < targetLands.length; ++i) {
+                var landId = targetLands[i];
+                if (unionwarInfo.lands[landId]) {
+                    continue;
+                }
+                var unionwarLandInfo = yield conn.enterUnionWar(landId, next);
+                if (!unionwarLandInfo.mineArray) {
+                    continue;
+                }
+                for (var j = 0; j < unionwarLandInfo.mineArray.length; ++j) {
+                    var mineData = unionwarLandInfo.mineArray[j];
+                    var finish = safe(deal)(mineData, landId);
+                    if (finish) {
+                        return safe(done)();
+                    }
+                }
+            }
+            safe(done)();
+        }, this);
+    },
+    setUnionwarEvent:function(defaults) {
+        this.unsetEventKeys(this.unionwarTimes);
+        this.unionwarOrder = defaults.normal_order;
+        this.unionwarTimes = [];
+        this.unionwarLock = new Mutex();
+        var doUnionwar = () => {
+            this.refreshAllPlayers((funcObj) => { return funcObj.state == 7; });
+        };
+        for (var i = 0; i < defaults.days.length; ++i) {
+            var day = defaults.days[i];
+            for (var j = 0; j < defaults.moments.length; ++j) {
+                var moment = defaults.moments[j];
+                var unionwarKey = this.timingManager.setWeeklyEvent(day, moment.hour, moment.minute, moment.second, doUnionwar);
+                //console.log("-- setUnionwarEvent --", day, moment.hour, moment.minute, moment.second, unionwarKey);
+                this.unionwarTimes.push(unionwarKey);
+            }
+        }
+    },
+
+    // check info kingwar
+    setPlayerKingwar:function(playerData, kingwarConfig) {
+        var kingwarKey = kingwarConfig.area * 100 + kingwarConfig.star;
+        return this.appendRefresh(playerData, "kingwar", 1, (conn, done) => {
+            this.refreshKingwar(conn, {
+                kingwarKey: kingwarKey,
+                area: kingwarConfig.area,
+                star: kingwarConfig.star,
+                server:playerData.server,
+
+                refData:this.kingwarRefs[kingwarKey],
+            }, done);
+        });
+    },
+    modifyPlayerKingwar:function(key, kingwarConfig) {
+        var kingwarKey = kingwarConfig.area * 100 + kingwarConfig.star;
+        return this.setRefreshFunc(key, (conn, done) => {
+            this.refreshKingwar(conn, {
+                kingwarKey: kingwarKey,
+                area: kingwarConfig.area,
+                star: kingwarConfig.star,
+
+                refData:this.kingwarRefs[kingwarKey],
+            }, done);
+        });
     },
     updateKingwarPlayers:function(kingwarKey, data) {
         var refData = this.kingwarRefs[kingwarKey];
@@ -1593,6 +1014,592 @@ Base.extends("GameController", {
             this.updateKingwarPlayers(realKey, data);
             safe(done)();
         }, this);
+    },
+    getKingwar:function() {
+        var areastars = {};
+        for (var kingwarKey in this.kingwarRefs) {
+            var data = this.kingwarRefs[kingwarKey];
+            areastars[kingwarKey] = [];
+            for (var i = 0; i < data.players.length; ++i) {
+                var warPlayer = data.players[i];
+                var extraPlayerData = this.allPlayers[warPlayer.playerId];
+                areastars[kingwarKey].push({
+                    union: warPlayer.union,
+                    power: warPlayer.power,
+                    name: (extraPlayerData && extraPlayerData.name ? extraPlayerData.name : warPlayer.name),
+                    maxPower: (extraPlayerData ? extraPlayerData.maxPower : warPlayer.power),
+                });
+            }
+        }
+        return areastars;
+    },
+    saveKingwar:function() {
+        var kingwarPlayers = {};
+        for (var kingwarKey in this.kingwarRefs) {
+            var data = this.kingwarRefs[kingwarKey];
+            kingwarPlayers[kingwarKey] = [];
+            for (var i = 0; i < data.players.length; ++i) {
+                var warPlayer = data.players[i];
+                kingwarPlayers[kingwarKey].push({
+                    playerId: warPlayer.playerId,
+                    power: warPlayer.power,
+                    union: warPlayer.union,
+                });
+            }
+        }
+        return kingwarPlayers;
+    },
+    restoreKingwar:function(kingwarPlayers) {
+        for (var kingwarKey in kingwarPlayers) {
+            var players = kingwarPlayers[kingwarKey];
+            for (var i = 0; i < players.length; ++i) {
+                var playerData = players[i];
+                this.playerToKingwar[playerData.playerId] = kingwarKey;
+                this.kingwarRefs[kingwarKey].players.push(playerData);
+            }
+        }
+    },
+
+    // check info listing
+    setPlayerListing:function(playerData, listingConfig) {
+        return this.appendRefresh(playerData, "playerlist", 1, (conn, done) => {
+            this.refreshPlayerListing(conn, {
+                unionCount: listingConfig.unionCount,
+                minPower: listingConfig.minPower * 10000,
+                limitPower: listingConfig.limitPower * 10000,
+                limitDay: listingConfig.limitDay,
+            }, done);
+        });
+    },
+    modifyPlayerListing:function(key, listingConfig) {
+        return this.setRefreshFunc(key, (conn, done) => {
+            this.refreshPlayerListing(conn, {
+                unionCount: listingConfig.unionCount,
+                minPower: listingConfig.minPower * 10000,
+                limitPower: listingConfig.limitPower * 10000,
+                limitDay: listingConfig.limitDay,
+            }, done);
+        });
+    },
+    refreshPlayerListing:function(conn, refreshData, done) {
+        var next = coroutine(function*() {
+            //console.log("refreshPlayerListing..", conn.getGameInfo().name);
+            var data = yield conn.getUnionList(next);
+            if (!data.unions) {
+                this.errLog("getUnionList", "none");
+                return safe(done)();
+            }
+            var server = conn.getServerInfo().desc;
+            var limitMilliSeconds = refreshData.limitDay * 24 * 3600 * 1000
+            for (var i = 0; i < data.unions.length; ++i) {
+                var unionItem = data.unions[i];
+                this.allUnions[unionItem.unionId] = {
+                    server: server,
+                    name: unionItem.name,
+                    short: unionItem.short,
+                };
+                if (i < refreshData.unionCount) {
+                    var playersData = yield conn.getUnionPlayers(unionItem.unionId, next);
+                    if (!playersData.players) {
+                        this.errLog("getUnionPlayers", "none");
+                        return safe(done)();
+                    }
+                    var now = new Date().getTime();
+                    for (var j = 0; j < playersData.players.length; ++j) {
+                        var playerItem = playersData.players[j];
+                        var playerData = this.allPlayers[playerItem.playerId];
+                        var lastPower = (playerData ? playerData.maxPower : 0);
+                        var maxPower = (playerItem.power > lastPower ? playerItem.power : lastPower);
+                        if (maxPower <= refreshData.minPower) {
+                            continue;
+                        }
+                        var t = playerItem.lastLogin.getTime();
+                        if (maxPower <= refreshData.limitPower && now - t > limitMilliSeconds) {
+                            continue;
+                        }
+                        this.allPlayers[playerItem.playerId] = {
+                            server: server,
+                            unionId: unionItem.unionId,
+                            name: playerItem.name,
+                            power: playerItem.power,
+                            maxPower: maxPower,
+                            level: playerItem.level,
+                            lastLogin: playerItem.lastLogin,
+                        };
+                    }
+                }
+            }
+            safe(done)();
+        }, this);
+    },
+    getSortedPlayers:function(count) {
+        var sortedPlayerIds = this.sortedPlayerIds;
+        var allPlayerIds = {};
+        for (var playerId in this.allPlayers) {
+            allPlayerIds[playerId] = true;
+        }
+        for (var i = 0; i < sortedPlayerIds.length; ++i) {
+            var playerId = sortedPlayerIds[i];
+            delete allPlayerIds[playerId];
+        }
+        for (var playerId in allPlayerIds) {
+            sortedPlayerIds.push(playerId);
+        }
+        for (var i = 1; i < sortedPlayerIds.length; ++i) {
+            var player = this.allPlayers[sortedPlayerIds[i]];
+            var prevPlayer = this.allPlayers[sortedPlayerIds[i - 1]];
+            if (player.maxPower > prevPlayer.maxPower) {
+                var toExchange = [];
+                var startIndex = 0;
+                for (var j = i - 1; j >= 0; --j) {
+                    prevPlayer = this.allPlayers[sortedPlayerIds[j]];
+                    if (player.maxPower <= prevPlayer.maxPower) {
+                        startIndex = j + 1;
+                        break;
+                    } else {
+                        toExchange.push(sortedPlayerIds[j]);
+                    }
+                }
+                toExchange.push(sortedPlayerIds[i]);
+                toExchange.push(i - startIndex + 1); // length
+                toExchange.push(startIndex); // start
+                toExchange.reverse();
+                Array.prototype.splice.apply(sortedPlayerIds, toExchange);
+            }
+        }
+        var sortedPlayers = [];
+        count = (count < sortedPlayerIds.length ? count : sortedPlayerIds.length);
+        for (var i = 0; i < count; ++i) {
+            var playerId = sortedPlayerIds[i];
+            var player = this.allPlayers[playerId];
+            var union = (player.unionId ? this.allUnions[player.unionId] : {});
+            var kingwarKey = this.playerToKingwar[playerId];
+            sortedPlayers.push({
+                key: playerId,
+                server: (player.server ? player.server : ""),
+                uName: (union.name ? union.name : ""),
+                uShort: (union.short ? union.short : ""),
+                name: (player.name ? player.name : ""),
+                power: player.maxPower,
+                level: (player.level ? player.level : 0),
+                last: (player.lastLogin ? player.lastLogin.getTime() : 0),
+                kingwar: (kingwarKey ? kingwarKey : 0),
+            });
+        }
+        return sortedPlayers;
+    },
+    savePlayers:function() {
+        var players = {};
+        for (var playerId in this.allPlayers) {
+            var player = this.allPlayers[playerId];
+            players[playerId] = {
+                name: player.name,
+                maxPower: player.maxPower,
+                unionId: player.unionId,
+            };
+        }
+        return players;
+    },
+    restorePlayers:function(allPowerMax) {
+        for (var playerId in allPowerMax) {
+            this.allPlayers[playerId] = allPowerMax[playerId];
+        }
+    },
+    saveUnions:function() {
+        return this.allUnions;
+    },
+    restoreUnions:function(unions) {
+        for (var unionId in unions) {
+            this.allUnions[unionId] = unions[unionId];
+        }
+    },
+
+    // control heros
+    readPlayerHeros:function(conn, done) {
+        var next = coroutine(function*() {
+            var heroData = [];
+            var heroIds = yield conn.getOnlineHeroIds(next);
+            for (var i = 0; i < heroIds.length; ++i) {
+                var heroId = heroIds[i];
+                var heroObj = yield conn.getOnlineHero(heroId, next);
+                if (!heroObj) {
+                    return safe(done)([]);
+                }
+                var stone = heroObj.getStoneLevel();
+                heroData.push({
+                    heroId: heroId,
+                    color: heroObj.getColor(),
+                    name: heroObj.getName(),
+                    pos: heroObj.getPos(),
+                    upgrade: heroObj.getUpgrade(),
+                    food: heroObj.getFood(),
+                    foodLow: !heroObj.isFoodFull(),
+                    stone: stone,
+                    stoneColor: Math.floor((stone - 1) / 5) + 1,
+                    stoneLevel: (stone - 1) % 5 + 1,
+                    skill: (stone >= heroObj.getStoneBase() ? heroObj.getSkillLevel() + 1 : 0),
+                    stoneLow: !heroObj.isStoneFull(),
+                    gemWake: heroObj.getGemWake(),
+                    gemLevel: heroObj.getGemLevel(),
+                    gemLow: !heroObj.isGemFull(),
+                });
+            }
+            safe(done)(heroData);
+        }, this);
+    },
+    getPlayerHeroData:function(playerData, done) {
+        this.manualOnePlayer(playerData, (conn, tdone) => {
+            this.readPlayerHeros(conn, (heroData) => {
+                safe(tdone)();
+                safe(done)(heroData);
+            });
+        }, null);
+    },
+    dealWithPlayerHeros:function(playerData, heroIds, operate, done) {
+        this.manualOnePlayer(playerData, (conn, tdone) => {
+            var next = coroutine(function*() {
+                for (var i = 0; i < heroIds.length; ++i) {
+                    var heroId = heroIds[i];
+                    var heroObj = yield conn.getOnlineHero(heroId, next);
+                    if (!heroObj) {
+                        safe(tdone)();
+                        safe(done)([]);
+                    }
+                    yield operate(heroId, heroObj, next);
+                }
+                this.readPlayerHeros(conn, (heroData) => {
+                    safe(tdone)();
+                    safe(done)(heroData);
+                });
+            }, this);
+        }, null);
+    },
+
+    // unset player
+    unsetPlayer:function(key) {
+        return this.removeRefresh(key);
+    },
+
+    // periodic
+    startPeriodic:function(interval, refreshType, callback) {
+        if (this.periodicUnique) {
+            return;
+        }
+        this.heartbeat.setup(interval * 2, () => {
+            console.log("========================= refreshing loop dead! ===========================");
+            this.cancelPeriodic();
+            this.startPeriodic(interval, null, callback);
+        });
+        console.log("refreshing start!", refreshType);
+        var periodicUnique = { callback: callback };
+        this.periodicUnique = periodicUnique;
+        var next = coroutine(function*() {
+            while(this.periodicUnique === periodicUnique) {
+                this.heartbeat.beat();
+                var startTime = new Date().getTime();
+                this.refreshingState = true;
+                console.log("refreshing loop!", new Date());
+                var refreshChecker = (funcObj) => {
+                    if (funcObj.state != 1) {
+                        return false;
+                    }
+                    var matchType = refreshType && refreshType.indexOf(funcObj.refresh) >= 0;
+                    if (!refreshType || matchType) {
+                        return true;
+                    }
+                    return false;
+                };
+                yield this.refreshAllPlayers(refreshChecker, next);
+                if (this.periodicUnique !== periodicUnique) {
+                    break;
+                }
+                this.refreshingState = false;
+
+                var endTime = new Date().getTime();
+                if (periodicUnique.callback) {
+                    yield periodicUnique.callback(next);
+                    if (this.periodicUnique !== periodicUnique) {
+                        break;
+                    }
+                }
+                var period = (endTime - startTime) / 1000;
+                console.log("taking {0} seconds. waiting {1} seconds...".format(period, interval), new Date());
+                yield setTimeout(next, interval * 1000);
+                refreshType = null;
+            }
+            console.log("refreshing quit!");
+        }, this);
+    },
+    cancelPeriodic:function() {
+        this.heartbeat.cancel();
+        this.periodicUnique = null;
+    },
+    duringPeriodic:function() {
+        return this.refreshingState;
+    },
+
+    // daily task
+    startDailyTask:function(dailyTimes) {
+        this.unsetEventKeys(this.dailyTasks);
+        this.dailyTasks = [];
+        var doDailyTask = () => {
+            console.log("daily task start!");
+            this.refreshAllPlayers((funcObj) => {
+                return funcObj.state == 2;
+            }, () => {
+                this.heroshopDate = new Date().getDate();
+                safe(this.heroshopUpdateCallback)(this.heroshopDate, this.heroshopInfo);
+                console.log("daily task end!");
+            }, null, true);
+        };
+        for (var i = 0; i < dailyTimes.length; ++i) {
+            var dailyInfo = dailyTimes[i];
+            var eventKey = this.timingManager.setDailyEvent(dailyInfo.hour, dailyInfo.minute, dailyInfo.second, doDailyTask);
+            this.dailyTasks.push(eventKey);
+        }
+    },
+    cancelDailyTask:function() {
+        if (this.dailyTasks) {
+            this.unsetEventKeys(this.dailyTasks);
+            this.dailyTasks = null;
+        }
+    },
+
+    setRepeatRange:function(startTime, endTime) {
+        this.unsetEventKeys(this.repeatRanges);
+        this.repeatRanges = [];
+        var startAutomationRepeat = () => {
+            console.log("refreshing automation for period start!");
+            this.setRefreshStatesOfType("automation", 1);
+        };
+        var startKey = this.timingManager.setDailyEvent(startTime.hour, startTime.minute, startTime.second, startAutomationRepeat);
+        this.repeatRanges.push(startKey);
+        var endKey = this.timingManager.setDailyEvent(endTime.hour, endTime.minute, endTime.second, () => {
+            console.log("refreshing automation for period end!");
+            this.setRefreshStatesOfType("automation", 2);
+        });
+        this.repeatRanges.push(endKey);
+        var mement = new Date();
+        var nowTimeSec = mement.getTime();
+        mement.setHours(startTime.hour, startTime.minute, startTime.second, 0);
+        var startTimeSec = mement.getTime();
+        mement.setHours(endTime.hour, endTime.minute, endTime.second, 0);
+        var endTimeSec = mement.getTime();
+        if (nowTimeSec - startTimeSec > 5 * 1000 && endTimeSec - nowTimeSec > 10 * 1000) {
+            console.log("repair automation repeating");
+            startAutomationRepeat();
+        }
+    },
+
+    // refresh helper
+    unsetEventKeys:function(keyArray) {
+        if (keyArray) {
+            for (var i = 0; i < keyArray.length; ++i) {
+                this.timingManager.unsetEvent(keyArray[i]);
+            }
+        }
+    },
+    appendRefresh:function(playerData, refreshType, initState, func) {
+        var accountGameKey = playerData.account + "$" + playerData.server;
+        var refreshInfo = this.refreshData[accountGameKey];
+        refreshInfo = (refreshInfo ? refreshInfo : {
+            account: playerData.account,
+            server: playerData.server,
+            funcs: [],
+            validator: playerData.validator,
+            mutex: playerData.mutex,
+        });
+        var funcObj = {
+            func:func,
+            refresh: refreshType,
+            state: initState,
+        };
+        refreshInfo.funcs.push(funcObj);
+        this.refreshData[accountGameKey] = refreshInfo;
+        return {
+            key: accountGameKey,
+            obj: funcObj,
+        };
+    },
+    removeRefresh:function(key) {
+        var findInfo = this.findRefresh(key);
+        if (findInfo) {
+            findInfo.refreshInfo.funcs.splice(findInfo.index, 1);
+            if (findInfo.refreshInfo.funcs.length == 0) {
+                delete this.refreshData[key.key];
+            }
+            return true;
+        }
+        return false;
+    },
+    findRefresh:function(key) {
+        var refreshInfo = this.refreshData[key.key];
+        if (refreshInfo && refreshInfo.funcs && refreshInfo.funcs.length > 0) {
+            for (var i = 0; i < refreshInfo.funcs.length; ++i) {
+                if (refreshInfo.funcs[i] === key.obj) {
+                    return {
+                        refreshInfo: refreshInfo,
+                        index: i,
+                    };
+                }
+            }
+        }
+        return null;
+    },
+    setRefreshState:function(key, state) {
+        var findInfo = this.findRefresh(key);
+        if (findInfo) {
+            var funcObj = findInfo.refreshInfo.funcs[findInfo.index];
+            funcObj.state = state;
+        }
+    },
+    setRefreshStatesOfType:function(refreshType, state) {
+        for (var accountGameKey in this.refreshData) {
+            var refreshInfo = this.refreshData[accountGameKey];
+            for (var i = 0; i < refreshInfo.funcs.length; ++i) {
+                var funcObj = refreshInfo.funcs[i];
+                if (funcObj.refresh == refreshType) {
+                    funcObj.state = state;
+                }
+            }
+        }
+    },
+    setRefreshFunc:function(key, func) {
+        var findInfo = this.findRefresh(key);
+        if (findInfo) {
+            var funcObj = findInfo.refreshInfo.funcs[findInfo.index];
+            // must create a new instance in case old one is still being used.
+            funcObj = clone(funcObj);
+            funcObj.func = func;
+            key.obj = funcObj;
+            findInfo.refreshInfo.funcs.splice(findInfo.index, 1, funcObj);
+            return true;
+        }
+        return false;
+    },
+    refreshAllPlayers:function(checkFun, done, taskManager, showWave) {
+        console.log("refresh all player start -", process.memoryUsage());
+        var select = new Select();
+        for (var accountGameKey in this.refreshData) {
+            var refreshInfo = this.refreshData[accountGameKey];
+            var executables = [];
+            for (var i = 0; i < refreshInfo.funcs.length; ++i) {
+                var funcObj = refreshInfo.funcs[i];
+                if (checkFun(funcObj)) {
+                    executables.push(funcObj.func);
+                }
+            }
+
+            if (executables.length > 0) {
+                this.executeOnePlayer(refreshInfo, executables, select.setup(), (taskManager ? taskManager.addTask() : undefined));
+            }
+        }
+        select.all(() => {
+            console.log("refresh all player finish -", process.memoryUsage());
+            if (showWave) {
+                this.showMemoryWave();
+            }
+            safe(done)();
+        });
+    },
+    manualOnePlayer:function(playerData, func, done) {
+        console.log("manual one player start -", process.memoryUsage());
+        this.executeOnePlayer(playerData, [func], (result) => {
+            console.log("manual one player finish -", process.memoryUsage());
+            safe(done)(result);
+        });
+    },
+    executeOnePlayer:function(refreshInfo, executables, done, taskItem) {
+        var next = coroutine(function*() {
+            var token = { finished: false, };
+            yield refreshInfo.mutex.lock(next);
+            var doEnd = (unexpected) => {
+                if (token.finished) {
+                    return;
+                }
+                token.finished = true;
+                if (unexpected && taskItem) {
+                    taskItem.giveup();
+                }
+                refreshInfo.mutex.unlock();
+                safe(done)({
+                    success: !unexpected,
+                });
+            };
+            setTimeout(() => {
+                if (!token.finished) {
+                    console.log("============= one player timeout =============");
+                    doEnd(true);
+                }
+            }, 1000 * 60 * 1.5);
+            var conn = this.accountManager.connectAccount(refreshInfo.account, refreshInfo.validator);
+            if (!conn) {
+                this.errLog("connectAccount", "account:{0}".format(refreshInfo.account));
+                return doEnd(true);
+            }
+            //console.log("start -- player!", refreshInfo.account, refreshInfo.server);
+            var data = yield conn.loginAccount(next);
+            if (token.finished || !data.success) {
+                this.errLog("loginAccount", "account({0}), server({1})".format(refreshInfo.account, refreshInfo.server));
+                return doEnd(true);
+            }
+            var data = yield conn.loginGame(refreshInfo.server, next);
+            if (token.finished || !data.success) {
+                this.errLog("loginGame", "account({0}), server({1})".format(refreshInfo.account, refreshInfo.server));
+                return doEnd(true);
+            }
+            var accountGameKey = refreshInfo.account + "$" + refreshInfo.server;
+            this.lastPlayerInfo[accountGameKey] = {
+                name: conn.getGameInfo().name,
+                power: conn.getGameInfo().power,
+            };
+            for (var i = 0; i < executables.length; ++i) {
+                yield executables[i](conn, next, taskItem);
+                if (token.finished) {
+                    return doEnd(true);
+                }
+            }
+            //console.log("quit -- player!", refreshInfo.account, refreshInfo.server, conn.getGameInfo().name);
+            conn.quit();
+            doEnd();
+        }, this);
+    },
+    showMemoryWave:function() {
+        var next = coroutine(function*() {
+            for (var i = 0; i < 100; ++i) {
+                yield setTimeout(next, 1000);
+                console.log("wave:", i, process.memoryUsage());
+            }
+        }, this);
+    },
+
+    getPlayerBrief:function(playerData) {
+        var accountGameKey = playerData.account + "$" + playerData.server;
+        return this.lastPlayerInfo[accountGameKey];
+    },
+    setPlayerBrief:function(playerData, brief) {
+        var accountGameKey = playerData.account + "$" + playerData.server;
+        this.lastPlayerInfo[accountGameKey] = brief;
+    },
+
+    initPlayerListing:function() {
+        this.allUnions = {};
+        this.allPlayers = {};
+        this.sortedPlayerIds = [];
+    },
+    initKingwar:function() {
+        this.constantKingwar = false;
+        this.playerToKingwar = {};
+        this.kingwarRefs = {};
+        for (var area = 1; area <= 3; ++area) {
+            for (var star = 1; star <= 10; ++star) {
+                var key = area * 100 + star;
+                this.kingwarRefs[key] = {
+                    constant:false,
+                    players:[],
+                };
+            }
+        }
     },
     errLog:function(action, state) {
         console.log("Failed to get task '{0}', detail:'{1}'".format(action, state));
