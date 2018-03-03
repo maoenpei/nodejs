@@ -878,7 +878,7 @@ Base.extends("GameController", {
             var occupyOrders = [];
             yield this.enumUnionwarlands(conn, targetLands, (isMine, mineData, landId) => {
                 if (!isMine) { return; }
-                if (mineData.unionId == unionData.unionId) { return; }
+                if (mineData.unionId && mineData.unionId == unionData.unionId) { return; }
                 if (!betterChoice(mineData.quality, myOccupy.quality)) { return; }
                 conn.log("unionId -", unionData.unionId, mineData.unionId);
                 var occupyItem = {landId:landId, pos:mineData.pos};
