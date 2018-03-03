@@ -874,12 +874,13 @@ Base.extends("GameController", {
             var lock = this.unionwarLock;
             yield lock.lock(next);
 
+            var unionData = yield conn.getUnion(next);
             var occupyOrders = [];
             yield this.enumUnionwarlands(conn, targetLands, (isMine, mineData, landId) => {
                 if (!isMine) { return; }
-                if (mineData.unionId == conn.getGameInfo().unionId) { return; }
+                if (mineData.unionId == unionData.unionId) { return; }
                 if (!betterChoice(mineData.quality, myOccupy.quality)) { return; }
-                conn.log("unionId -", conn.getGameInfo().unionId, mineData.unionId);
+                conn.log("unionId -", unionData.unionId, mineData.unionId);
                 var occupyItem = {landId:landId, pos:mineData.pos};
                 var isEmpty = !mineData.playerId;
                 var canFight = true;
