@@ -844,6 +844,7 @@ Base.extends("GameController", {
                     return true; // finish loop
                 }
             }, next);
+            conn.log("myOccupy", myOccupy);
 
             if (isWeekend) {
                 if (conn.getGameInfo().unionWarDouble < 100) {
@@ -867,6 +868,7 @@ Base.extends("GameController", {
                 return safe(done)();
             }
 
+            conn.log("start to occupy");
             var randTime = rand(1500);
             yield setTimeout(next, randTime);
             var lock = this.unionwarLock;
@@ -919,6 +921,7 @@ Base.extends("GameController", {
                     occupy: [occupyItem],
                 });
             }, next);
+            conn.log("occupy result", occupyOrders.length);
 
             var backOccupy = false;
             for (var i = 0; i < occupyOrders.length; ++i) {
