@@ -49,6 +49,9 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         this.randKey2PlayerId = {};
         this.playerId2RandKey = {};
 
+        this.randKey2UnionId = {};
+        this.unionId2RandKey = {};
+
         httpServer.registerCommand("listheros", this);
         httpServer.registerCommand("operatehero", this);
         httpServer.registerCommand("addaccount", this);
@@ -106,6 +109,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             this.controller.restorePlayers(allPowerMax);
             var allUnions = $StateManager.getState(GAME_UNIONS_CONFIG);
             this.unionMd5 = this.getTag(allUnions);
+            this.updateUnionIdKeys();
             this.controller.restoreUnions(allUnions);
             var allKingwars = $StateManager.getState(GAME_KINGWAR_CONFIG);
             this.kingwarMd5 = this.getTag(allKingwars);
@@ -251,6 +255,17 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             }
         }
     },
+    updateUnionIdKeys:function() {
+        var allUnions = $StateManager.getState(GAME_UNIONS_CONFIG);
+        for (var unionId in allUnions) {
+            if (!this.unionId2RandKey[unionId]) {
+                var randKey = rkey();
+                while (this.randKey2UnionId[randKey]) { randKey = rkey(); }
+                this.unionId2RandKey[unionId] = randKey;
+                this.randKey2UnionId[randKey] = unionId;
+            }
+        }
+    },
     doRefresh:function(refreshType) {
         var invokeNoConflictions = () => {
             if (this.onRefreshEnd.length > 0) {
@@ -284,6 +299,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                     for (var unionId in unions) {
                         allUnions[unionId] = unions[unionId];
                     }
+                    this.updateUnionIdKeys();
                     yield $StateManager.commitState(GAME_UNIONS_CONFIG, next);
                 }
                 // Save kingwars
@@ -641,6 +657,8 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                     var tail = key.length > 4 && key.substr(key.length - 4);
                     if (tail == "PLID") {
                         result[key] = this.playerId2RandKey[setting[key]];
+                    } if (tail == "UNID") {
+                        result[key] = this.unionId2RandKey[setting[key]];
                     } else {
                         result[key] = setting[key];
                     }
@@ -770,8 +788,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             enabled: this.getSettingBool(unionwar.enabled),
             onlyOccupy: this.getSettingBool(unionwar.onlyOccupy),
             reverseOrder: this.getSettingBool(unionwar.reverseOrder),
+            goodUNID: this.randKey2UnionId[unionwar.goodUNID] || "",
+            badUNID: this.randKey2UnionId[unionwar.badUNID] || "",
         };
-        if (!unionwarConfig.enabled) {
+        if (!unionwarConfig.enabled && !unionwarConfig.goodUNID && !unionwarConfig.badUNID) {
             unionwarConfig = undefined;
         }
         if (this.compareSetting(unionwarConfig, settingStates.unionwar[playerKey])) {
@@ -1438,10 +1458,25 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                     });
                 }
             }
+            var unions = [];
+            var allUnions = $StateManager.getState(GAME_UNIONS_CONFIG);
+            for (var unionId in allUnions) {
+                var unionItem = allUnions[unionId];
+                var rawKey = this.unionId2RandKey[unionId];
+                if (rawKey) {
+                    unions.push({
+                        key: rawKey,
+                        server: unionItem.server,
+                        name: unionItem.name,
+                        short: unionItem.short,
+                    });
+                }
+            }
 
             responder.respondJson({
                 accounts: accounts,
                 players: players,
+                unions: unions,
             }, done);
         }, this);
     },

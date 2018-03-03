@@ -546,10 +546,12 @@ var displayAutomationModel = {
             {name: "maxReduce", desc: "该折扣率以下自动预留", type: "number", limit: [50, 60], default:55},
             {name: "refresh", desc: "刷新次数", type: "number", limit: [0, 8]},
         ]},
-        {name: "unionwar", desc: "领地战(周日除外)", props:[
+        {name: "unionwar", desc: "领地战", props:[
             {name: "enabled", desc: "启用领地战", type: "check"},
             {name: "onlyOccupy", desc: "只进入有占领需要的领地", type: "check"},
             {name: "reverseOrder", desc: "从低到高占领(给小号用)", type: "check"},
+            {name: "goodUNID", desc: "好卡目标", type: "unions", isStr: true},
+            {name: "badUNID", desc: "坏卡目标", type: "unions", isStr: true},
         ]},
         {name: "kingwar", desc: "帝国战当眼", props:[
             {name: "area", desc: "赛区", type: "number", limit: [0, 3], alias: ["无", "黄鹿", "玫瑰", "咸鱼"]},
@@ -567,6 +569,7 @@ displayAutomationModel.get = function(callback) {
     requestPost("listautomation", {}, function(json) {
         $this.accounts = json.accounts;
         $this.players = json.players;
+        $this.unions = json.unions;
         callback(json);
     });
 }
@@ -581,10 +584,9 @@ displayAutomationModel.getAllPlayers = function() {
     return players;
 }
 displayAutomationModel.getPlayerSelections = function() {
-    if (!this.selectablePlayers)
-    {
+    if (!this.selectablePlayers) {
         this.selectablePlayers = [
-            {value: "", desc: "无目标"}
+            {value: "", desc: "无目标"},
         ];
         for (var i = 0; i < this.players.length; ++i) {
             var player = this.players[i];
@@ -595,6 +597,21 @@ displayAutomationModel.getPlayerSelections = function() {
         }
     }
     return this.selectablePlayers;
+}
+displayAutomationModel.getUnionSelections = function() {
+    if (!this.selectableUnions) {
+        this.selectableUnions = [
+            {value: "", desc: "无目标"},
+        ];
+        for (var i = 0; i < this.unions.length; ++i) {
+            var union = this.unions[i];
+            this.selectableUnions.push({
+                value: union.key,
+                desc: union.server + "." + union.short + "." + union.name,
+            });
+        }
+    }
+    return this.selectableUnions;
 }
 displayAutomationModel.getKingwarStars = function() {
     if (!this.allStars) {
@@ -1274,6 +1291,7 @@ function displayAutomation() {
 
             var propertyExtra ={
                 players: displayAutomationModel.getPlayerSelections(),
+                unions: displayAutomationModel.getUnionSelections(),
                 stars: displayAutomationModel.getKingwarStars(),
             };
             divAutomationContent.html("");

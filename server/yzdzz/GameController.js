@@ -826,13 +826,15 @@ Base.extends("GameController", {
             var playerId = conn.getGameInfo().playerId;
             var myOccupy = {quality:0};
             var hasSpeed = false;
+            var cardInfo = null;
             yield this.enumUnionwarlands(conn, targetLands, (isMine, mineData, landId) => {
                 if (!isMine) {
                     hasSpeed = mineData.hasSpeed;
+                    cardInfo = mineData.card;
+                    if (!unionwarConfig.enabled) {
+                        return true;
+                    }
                     return;
-                }
-                if (!unionwarConfig.enabled) {
-                    return true;
                 }
                 if (mineData.playerId == playerId) {
                     myOccupy = {
@@ -852,8 +854,13 @@ Base.extends("GameController", {
                 if (!hasSpeed) {
                     yield conn.setSpeed(true, next);
                 }
-                // if unionwarConfig.goodtarget
-                // if unionwarConfig.badtarget
+                if (cardInfo && cardInfo.ready) {
+                    if (cardInfo.isgood && unionwarConfig.goodUNID) {
+                        yield conn.useCard(unionwarConfig.goodUNID, next);
+                    } else if (!cardInfo.isgood && unionwarConfig.badUNID) {
+                        yield conn.useCard(unionwarConfig.badUNID, next);
+                    }
+                }
             }
 
             if (!unionwarConfig.enabled) {
@@ -1180,12 +1187,8 @@ Base.extends("GameController", {
             var limitMilliSeconds = refreshData.limitDay * 24 * 3600 * 1000
             for (var i = 0; i < data.unions.length; ++i) {
                 var unionItem = data.unions[i];
-                this.allUnions[unionItem.unionId] = {
-                    server: server,
-                    name: unionItem.name,
-                    short: unionItem.short,
-                };
                 if (i < refreshData.unionCount) {
+                    var hasValidPlayer = false;
                     var playersData = yield conn.getUnionPlayers(unionItem.unionId, next);
                     if (!playersData.players) {
                         this.errLog("getUnionPlayers", "none");
@@ -1204,6 +1207,7 @@ Base.extends("GameController", {
                         if (maxPower <= refreshData.limitPower && now - t > limitMilliSeconds) {
                             continue;
                         }
+                        hasValidPlayer = true;
                         this.allPlayers[playerItem.playerId] = {
                             server: server,
                             unionId: unionItem.unionId,
@@ -1212,6 +1216,13 @@ Base.extends("GameController", {
                             maxPower: maxPower,
                             level: playerItem.level,
                             lastLogin: playerItem.lastLogin,
+                        };
+                    }
+                    if (hasValidPlayer) {
+                        this.allUnions[unionItem.unionId] = {
+                            server: server,
+                            name: unionItem.name,
+                            short: unionItem.short,
                         };
                     }
                 }
