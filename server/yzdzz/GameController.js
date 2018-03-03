@@ -835,7 +835,6 @@ Base.extends("GameController", {
                     return true;
                 }
                 if (mineData.playerId == playerId) {
-                    conn.log("Found self at union war:", landId, mineData.pos, mineData.quality);
                     myOccupy = {
                         quality: mineData.quality,
                         landId: landId,
@@ -861,6 +860,9 @@ Base.extends("GameController", {
                 return safe(done)();
             }
             var isReverse = !isWeekend && unionwarConfig.reverseOrder;
+            if (isReverse) {
+                myOccupy.quality = 10;
+            }
             var betterChoice = (pos, nowPos) => {
                 return (isReverse ? pos < nowPos : pos > nowPos);
             }
@@ -868,11 +870,11 @@ Base.extends("GameController", {
                 return safe(done)();
             }
 
-            conn.log("start to occupy");
             var randTime = rand(1500);
             yield setTimeout(next, randTime);
             var lock = this.unionwarLock;
             yield lock.lock(next);
+            conn.log("start to occupy");
 
             var unionData = yield conn.getUnion(next);
             var occupyOrders = [];
@@ -880,8 +882,11 @@ Base.extends("GameController", {
                 if (!isMine) { return; }
                 if (mineData.unionId && mineData.unionId == unionData.unionId) { return; }
                 if (!betterChoice(mineData.quality, myOccupy.quality)) { return; }
-                conn.log("unionId -", unionData.unionId, mineData.unionId);
-                var occupyItem = {landId:landId, pos:mineData.pos};
+                var occupyItem = {
+                    landId:landId,
+                    pos:mineData.pos,
+                    playerId:mineData.playerId,
+                };
                 var isEmpty = !mineData.playerId;
                 var canFight = true;
                 if (mineData.playerId) {
@@ -916,6 +921,7 @@ Base.extends("GameController", {
                         break;
                     }
                 }
+                conn.log("insert occupy:", insertPos, mineData.quality, isEmpty, canFight);
                 occupyOrders.splice(insertPos, 0, {
                     quality: mineData.quality,
                     isEmpty: isEmpty,
@@ -930,11 +936,13 @@ Base.extends("GameController", {
                 var occupyBlock = occupyOrders[i];
                 var occupyItem = occupyBlock.occupy.random();
                 if (occupyBlock.isEmpty) {
+                    conn.log("== occupy ==", "index:", i, "landId:", occupyItem.landId, "pos:", occupyItem.pos);
                     var occupyData = yield conn.occupy(occupyItem.landId, occupyItem.pos, next);
                     if (occupyData.success) {
                         break;
                     }
                 } else if (!backOccupy) {
+                    conn.log("== fire ==", "index:", i, "landId:", occupyItem.landId, "pos:", occupyItem.pos, "playerId:", occupyItem.playerId);
                     var fireData = yield conn.fire(occupyItem.landId, occupyItem.pos, next);
                     if (fireData.success) {
                         backOccupy = true;
@@ -947,6 +955,7 @@ Base.extends("GameController", {
                 }
             }
             if (backOccupy && myOccupy.landId && myOccupy.pos) {
+                conn.log("== back ==", "landId:", myOccupy.landId, "pos:", myOccupy.pos);
                 var occupyData = yield conn.occupy(myOccupy.landId, myOccupy.pos, next);
             }
 

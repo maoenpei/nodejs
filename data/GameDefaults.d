@@ -125,26 +125,8 @@
         "days":[2, 4, 6]
         ,"moments":[
             {"hour":20,"minute":0,"second":55}
-            ,{"hour":20,"minute":9,"second":55}
-            ,{"hour":20,"minute":10,"second":55}
-            ,{"hour":20,"minute":11,"second":55}
-            ,{"hour":20,"minute":12,"second":55}
-            ,{"hour":20,"minute":13,"second":55}
-            ,{"hour":20,"minute":14,"second":55}
             ,{"hour":20,"minute":15,"second":55}
-            ,{"hour":20,"minute":16,"second":55}
-            ,{"hour":20,"minute":17,"second":55}
-            ,{"hour":20,"minute":18,"second":55}
-            ,{"hour":20,"minute":19,"second":55}
-            ,{"hour":20,"minute":20,"second":55}
-            ,{"hour":20,"minute":21,"second":55}
-            ,{"hour":20,"minute":22,"second":55}
             ,{"hour":20,"minute":23,"second":55}
-            ,{"hour":20,"minute":24,"second":55}
-            ,{"hour":20,"minute":25,"second":55}
-            ,{"hour":20,"minute":26,"second":55}
-            ,{"hour":20,"minute":27,"second":55}
-            ,{"hour":20,"minute":28,"second":55}
         ]
         ,"normal_order":[4,3,2,1]
         ,"fighting":[
