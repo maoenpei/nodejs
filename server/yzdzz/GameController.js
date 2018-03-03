@@ -831,7 +831,7 @@ Base.extends("GameController", {
                     hasSpeed = mineData.hasSpeed;
                     return;
                 }
-                if (!unionwarConfig.enable) {
+                if (!unionwarConfig.enabled) {
                     return true;
                 }
                 if (mineData.playerId == playerId) {
@@ -844,7 +844,7 @@ Base.extends("GameController", {
                     return true; // finish loop
                 }
             }, next);
-            conn.log("myOccupy", myOccupy);
+            conn.log("myOccupy", myOccupy, unionwarConfig);
 
             if (isWeekend) {
                 if (conn.getGameInfo().unionWarDouble < 100) {
@@ -857,7 +857,7 @@ Base.extends("GameController", {
                 // if unionwarConfig.badtarget
             }
 
-            if (!unionwarConfig.enable) {
+            if (!unionwarConfig.enabled) {
                 return safe(done)();
             }
             var isReverse = !isWeekend && unionwarConfig.reverseOrder;
