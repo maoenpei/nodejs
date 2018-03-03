@@ -821,18 +821,49 @@ Base.extends("GameController", {
             if (!unionwarInfo.isOpen) {
                 return safe(done)();
             }
+            var isWeekend = new Date().getDay() == 0;
             var targetLands = (unionwarConfig.onlyOccupy ? this.unionwarOrder : this.unionwarlands);
             var playerId = conn.getGameInfo().playerId;
-            var myQuality = 0;
-            yield this.enumUnionwarlands(conn, targetLands, (mineData, landId) => {
+            var myOccupy = {quality:0};
+            var hasSpeed = false;
+            yield this.enumUnionwarlands(conn, targetLands, (isMine, mineData, landId) => {
+                if (!isMine) {
+                    hasSpeed = mineData.hasSpeed;
+                    return;
+                }
+                if (!unionwarConfig.enable) {
+                    return true;
+                }
                 if (mineData.playerId == playerId) {
                     conn.log("Found self at union war:", landId, mineData.pos, mineData.quality);
-                    myQuality = mineData.quality;
+                    myOccupy = {
+                        quality: mineData.quality,
+                        landId: landId,
+                        pos: mineData.pos,
+                    };
                     return true; // finish loop
                 }
             }, next);
 
-            if (myQuality && unionwarConfig.reverseOrder) {
+            if (isWeekend) {
+                if (conn.getGameInfo().unionWarDouble < 100) {
+                    yield conn.buySpeed(300, next);
+                }
+                if (!hasSpeed) {
+                    yield conn.setSpeed(true, next);
+                }
+                // if unionwarConfig.goodtarget
+                // if unionwarConfig.badtarget
+            }
+
+            if (!unionwarConfig.enable) {
+                return safe(done)();
+            }
+            var isReverse = !isWeekend && unionwarConfig.reverseOrder;
+            var betterChoice = (pos, nowPos) => {
+                return (isReverse ? pos < nowPos : pos > nowPos);
+            }
+            if (myOccupy.quality && isReverse) {
                 return safe(done)();
             }
 
@@ -841,42 +872,77 @@ Base.extends("GameController", {
             var lock = this.unionwarLock;
             yield lock.lock(next);
 
-            var maxQuality = 0;
-            var maxLand = [];
-            var maxPos = [];
-            yield this.enumUnionwarlands(conn, targetLands, (mineData, landId) => {
-                if (!mineData.playerId && mineData.mineLife > 0) {
-                    var match = false;
-                    if (unionwarConfig.reverseOrder) {
-                        if (maxQuality == 0 || mineData.quality < maxQuality) {
-                            match = true;
-                        }
-                    } else {
-                        if (mineData.quality > maxQuality) {
-                            match = true;
-                        }
-                    }
-                    if (match) {
-                        conn.log("Found new available pos:", landId, mineData.pos, mineData.quality);
-                        maxQuality = mineData.quality;
-                        maxLand = [landId];
-                        maxPos = [mineData.pos];
-                    } else if (maxQuality == mineData.quality) {
-                        conn.log("Found same available pos:", landId, mineData.pos, mineData.quality);
-                        maxLand.push(landId);
-                        maxPos.push(mineData.pos);
+            var occupyOrders = [];
+            yield this.enumUnionwarlands(conn, targetLands, (isMine, mineData, landId) => {
+                if (!isMine) { return; }
+                if (mineData.unionId == conn.getGameInfo().unionId) { return; }
+                if (!betterChoice(mineData.quality, myOccupy.quality)) { return; }
+                var occupyItem = {landId:landId, pos:mineData.pos};
+                var isEmpty = !!mineData.playerId;
+                var canFight = true;
+                if (mineData.playerId) {
+                    var playerItem = this.allPlayers[mineData.playerId];
+                    if (playerItem) {
+                        canFight = conn.getGameInfo().power + 200000 > playerItem.maxPower;
                     }
                 }
-            }, next);
-            if (maxQuality > myQuality) {
-                for (var i = 0; i < maxLand.length; ++i) {
-                    var landId = maxLand[i];
-                    var pos = maxPos[i];
-                    var occupyData = yield conn.occupy(landId, pos, next);
-                    if (occupyData.success) {
+                var insertPos = 0;
+                for (insertPos = 0; insertPos < occupyOrders.length; ++insertPos) {
+                    var occupyBlock = occupyOrders[insertPos];
+                    if (!canFight && occupyBlock.canFight) {
+                        continue;
+                    }
+                    if (!canFight && !occupyBlock.canFight) {
+                        occupyBlock.occupy.push(occupyItem);
+                        return;
+                    }
+                    if (canFight && !occupyBlock.canFight) {
+                        break;
+                    }
+                    // Check same
+                    if (mineData.quality == occupyBlock.quality) {
+                        if (isEmpty == occupyBlock.isEmpty) {
+                            occupyBlock.occupy.push(occupyItem);
+                            return;
+                        }
+                        if (isEmpty) {
+                            break;
+                        }
+                    } else if (betterChoice(mineData.quality, occupyBlock.quality)) {
                         break;
                     }
                 }
+                occupyOrders.splice(insertPos, 0, {
+                    quality: mineData.quality,
+                    isEmpty: isEmpty,
+                    canFight: canFight,
+                    occupy: [occupyItem],
+                });
+            }, next);
+
+            var backOccupy = false;
+            for (var i = 0; i < occupyOrders.length; ++i) {
+                var occupyBlock = occupyOrders[i];
+                var occupyItem = occupyBlock.occupy.random();
+                if (occupyBlock.isEmpty) {
+                    var occupyData = yield conn.occupy(occupyItem.landId, occupyItem.pos, next);
+                    if (occupyData.success) {
+                        break;
+                    }
+                } else if (!backOccupy) {
+                    var fireData = yield conn.fire(occupyItem.landId, occupyItem.pos, next);
+                    if (fireData.success) {
+                        backOccupy = true;
+                    }
+                    var occupyData = yield conn.occupy(occupyItem.landId, occupyItem.pos, next);
+                    if (occupyData.success) {
+                        backOccupy = false;
+                        break;
+                    }
+                }
+            }
+            if (backOccupy && myOccupy.landId && myOccupy.pos) {
+                var occupyData = yield conn.occupy(myOccupy.landId, myOccupy.pos, next);
             }
 
             lock.unlock();
@@ -898,9 +964,16 @@ Base.extends("GameController", {
                 if (!unionwarLandInfo.mineArray) {
                     continue;
                 }
+                var finish = safe(deal)(false, unionwarLandInfo, landId);
+                if (finish) {
+                    return safe(done)();
+                }
                 for (var j = 0; j < unionwarLandInfo.mineArray.length; ++j) {
                     var mineData = unionwarLandInfo.mineArray[j];
-                    var finish = safe(deal)(mineData, landId);
+                    if (mineData.mineLife == 0) {
+                        continue;
+                    }
+                    var finish = safe(deal)(true, mineData, landId);
                     if (finish) {
                         return safe(done)();
                     }

@@ -122,17 +122,15 @@
         ,"reset":{"hour":0,"minute":0,"second":0}
     }
     ,"unionwar":{
-        "selfUnion":"b275705814a85d98"
+        "days":[2, 4, 6]
         ,"moments":[
             {"hour":20,"minute":0,"second":55}
             ,{"hour":20,"minute":15,"second":55}
             ,{"hour":20,"minute":23,"second":55}
         ]
-        ,"days":[2, 4, 6]
-        ,"normal_order":[4,3,1,2]
+        ,"normal_order":[4,3,2,1]
         ,"fighting":[
             {"day":0,"hour":19,"minute":59,"second":55}
         ]
-        ,"fighting_order":[7,3,2,1]
     }
 }
