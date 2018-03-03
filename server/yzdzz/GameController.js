@@ -879,6 +879,7 @@ Base.extends("GameController", {
                 if (!isMine) { return; }
                 if (mineData.unionId == conn.getGameInfo().unionId) { return; }
                 if (!betterChoice(mineData.quality, myOccupy.quality)) { return; }
+                conn.log("unionId -", conn.getGameInfo().unionId, mineData.unionId);
                 var occupyItem = {landId:landId, pos:mineData.pos};
                 var isEmpty = !mineData.playerId;
                 var canFight = true;
