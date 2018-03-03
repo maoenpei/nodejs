@@ -3034,7 +3034,7 @@ Base.extends("GameConnection", {
                 // this.validator.checkDaily("autoDaily30Merge")
                 var equipStone = this.getItemCount("equip_compose_4_extra");
                 var equipMetal = this.getItemCount("equip_compose_4_any");
-                if (config.mergeTask && this.gameInfo.level > 260 && this.gameInfo.serverDay > 45 && equipMetal >= 300 && !this.gameInfo.hasMagicGirl && true) {
+                if (config.mergeTask && this.gameInfo.level > 260 && this.gameInfo.serverDay > 45 && equipMetal >= 300) {
                     // check for current counts
                     var data = yield this.sendMsg("ActSplendid", "getinfo", null, next);
                     if (data && data.list) {
@@ -3047,6 +3047,7 @@ Base.extends("GameConnection", {
                             }
                         }
                         if (equipMerge && equipMerge.box) {
+                            this.log("30 times equip hasMagicGirl - ", this.gameInfo.hasMagicGirl);
                             var equipCounts = {};
                             for (var type = 1; type <= 3; ++type) {
                                 var name = this.equipTitles[type];

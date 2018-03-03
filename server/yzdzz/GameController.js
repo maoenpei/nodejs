@@ -1416,13 +1416,15 @@ Base.extends("GameController", {
         this.unsetEventKeys(this.dailyTasks);
         this.dailyTasks = [];
         var doDailyTask = () => {
-            console.log("daily task start!");
+            var now = new Date();
+            console.log("daily task start!", "{0}:{1}".format(now.getHours(), now.getMinutes()));
             this.refreshAllPlayers((funcObj) => {
                 return funcObj.state == 2;
             }, () => {
-                this.heroshopDate = new Date().getDate();
+                var now = new Date();
+                this.heroshopDate = now.getDate();
                 safe(this.heroshopUpdateCallback)(this.heroshopDate, this.heroshopInfo);
-                console.log("daily task end!");
+                console.log("daily task end!", "{0}:{1}".format(now.getHours(), now.getMinutes()));
             }, null, true);
         };
         for (var i = 0; i < dailyTimes.length; ++i) {
