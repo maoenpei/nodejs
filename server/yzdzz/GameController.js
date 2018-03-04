@@ -1308,7 +1308,7 @@ Base.extends("GameController", {
         for (var i = 0; i < count; ++i) {
             var playerId = sortedPlayerIds[i];
             var player = this.allPlayers[playerId];
-            var union = (player.unionId ? this.allUnions[player.unionId] : {});
+            var union = (player.unionId ? this.allUnions[player.unionId] || {} : {});
             var kingwarKey = this.playerToKingwar[playerId];
             sortedPlayers.push({
                 key: playerId,
