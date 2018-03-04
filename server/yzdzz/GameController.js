@@ -858,8 +858,10 @@ Base.extends("GameController", {
                 }
                 if (cardInfo && cardInfo.ready) {
                     if (cardInfo.isgood && unionwarConfig.goodUNID) {
+                        conn.log("drop good card to", unionwarConfig.goodUNID);
                         yield conn.useCard(unionwarConfig.goodUNID, next);
                     } else if (!cardInfo.isgood && unionwarConfig.badUNID) {
+                        conn.log("drop bad card to", unionwarConfig.badUNID);
                         yield conn.useCard(unionwarConfig.badUNID, next);
                     }
                 }
