@@ -14,10 +14,10 @@ var process = require("process");
 // 1: 定期执行(kingwar/playerlist/automation)
 // 2: 执行每日任务(automation/heroshop)
 // 3: 执行极限加入(targeting)
-// 4: 极限加入已完成(targeting)
+// 4: 不执行任何操作(targeting/playerlist/kingwar)
 // 5: 执行极限刷新(kingwar)
 // 6: 极限丢卡(dropping)
-// 7: 平时领地站(unionwar)
+// 7: 领地站(unionwar)
 
 Base.extends("AccountManager", {
     _constructor:function() {
@@ -400,6 +400,7 @@ Base.extends("GameController", {
         var time = defaults.time;
         var targetingKey = this.timingManager.setWeeklyEvent(time.day, time.hour, time.minute, time.second, () => {
             this.setRefreshStatesOfType("kingwar", 5);
+            this.setRefreshStatesOfType("playerlist", 4);
             var forceTime = new Date();
             forceTime.setSeconds(defaults.forceSec, 0);
             var next = coroutine(function*() {
@@ -423,6 +424,7 @@ Base.extends("GameController", {
                 }
                 console.log("-- kingwar assignment -- finished!");
                 this.setRefreshStatesOfType("kingwar", 1);
+                this.setRefreshStatesOfType("playerlist", 1);
                 this.setRefreshStatesOfType("targeting", 3);
             }, this);
         });
@@ -1018,6 +1020,40 @@ Base.extends("GameController", {
                 var unionwarKey = this.timingManager.setWeeklyEvent(day, moment.hour, moment.minute, moment.second, doUnionwar);
                 //console.log("-- setUnionwarEvent --", day, moment.hour, moment.minute, moment.second, unionwarKey);
                 this.unionwarTimes.push(unionwarKey);
+            }
+        }
+        var fightStart = defaults.fighting_start;
+        var fightEnd = defaults.fighting_end;
+        var startWeekendUnionwar = () => {
+            var next = coroutine(function*() {
+                var now = new Date();
+                now.setHours(fightEnd.hour, fightEnd.minute, fightEnd.second, 0);
+                var endTime = now.getTime();
+                this.setRefreshStatesOfType("kingwar", 4);
+                this.setRefreshStatesOfType("playerlist", 4);
+
+                while (new Date().getTime() < endTime) {
+                    var now = new Date();
+                    console.log("unionwar fighting - ", "{0}:{1}".format(now.getHours(), now.getMinutes()));
+                    yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 7; }, next);
+                    console.log("unionwar fought - ", "{0}:{1}".format(now.getHours(), now.getMinutes()));
+                    yield setTimeout(next, defaults.fighting_period * 1000);
+                }
+
+                this.setRefreshStatesOfType("kingwar", 1);
+                this.setRefreshStatesOfType("playerlist", 1);
+            }, this);
+        };
+        this.unionwarTimes.push(this.timingManager.setWeeklyEvent(0, fightStart.hour, fightStart.minute, fightStart.second, startWeekendUnionwar));
+        var now = new Date();
+        if (now.getDay() == 0) {
+            var currTime = now.getTime();
+            now.setHours(fightStart.hour, fightStart.minute, fightStart.second, 0);
+            var startTime = now.getTime();
+            now.setHours(fightEnd.hour, fightEnd.minute, fightEnd.second, 0);
+            var endTime = now.getTime();
+            if (currTime > startTime && currTime < endTime) {
+                startWeekendUnionwar();
             }
         }
     },

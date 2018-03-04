@@ -129,8 +129,8 @@
             ,{"hour":20,"minute":23,"second":55}
         ]
         ,"normal_order":[4,3,2,1]
-        ,"fighting":[
-            {"day":0,"hour":19,"minute":59,"second":55}
-        ]
+        ,"fighting_start": {"hour":20,"minute":0,"second":1}
+        ,"fighting_end": {"hour":20,"minute":29,"second":58}
+        ,"fighting_period": 6
     }
 }
