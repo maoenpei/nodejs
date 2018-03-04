@@ -444,8 +444,8 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     startRefreshUnionwar:function(playerKey, unionwarConfig) {
         var playerData = this.players[playerKey];
-        if (!unionwarConfig || !unionwarConfig.enabled) {
-            return this.stopRefreshHeroshop(playerKey);
+        if (!unionwarConfig || (!unionwarConfig.enabled && !unionwarConfig.goodUNID && !unionwarConfig.badUNID)) {
+            return this.stopRefreshUnionwar(playerKey);
         }
         console.log("startRefreshUnionwar", playerKey);
         if (playerData.refreshUnionwarKey) {
