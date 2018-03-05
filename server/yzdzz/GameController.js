@@ -829,7 +829,7 @@ Base.extends("GameController", {
             var myOccupy = {quality:0};
             var hasSpeed = false;
             var cardInfo = null;
-            yield this.enumUnionwarlands(conn, targetLands, (isMine, mineData, landId) => {
+            var hasLands = yield this.enumUnionwarlands(conn, targetLands, (isMine, mineData, landId) => {
                 if (!isMine) {
                     hasSpeed = mineData.hasSpeed;
                     cardInfo = mineData.card;
@@ -847,6 +847,9 @@ Base.extends("GameController", {
                     return true; // finish loop
                 }
             }, next);
+            if (!hasLands) {
+                return safe(done)();
+            }
             conn.log("myOccupy", myOccupy, unionwarConfig);
 
             if (isWeekend) {
@@ -856,14 +859,14 @@ Base.extends("GameController", {
                 if (!hasSpeed) {
                     yield conn.setSpeed(true, next);
                 }
-                if (cardInfo && cardInfo.ready) {
-                    if (cardInfo.isgood && unionwarConfig.goodUNID) {
-                        conn.log("drop good card to", unionwarConfig.goodUNID);
-                        yield conn.useCard(unionwarConfig.goodUNID, next);
-                    } else if (!cardInfo.isgood && unionwarConfig.badUNID) {
-                        conn.log("drop bad card to", unionwarConfig.badUNID);
-                        yield conn.useCard(unionwarConfig.badUNID, next);
-                    }
+            }
+            if (cardInfo && cardInfo.ready) {
+                if (cardInfo.isgood && unionwarConfig.goodUNID) {
+                    conn.log("drop good card to", unionwarConfig.goodUNID);
+                    yield conn.useCard(unionwarConfig.goodUNID, next);
+                } else if (!cardInfo.isgood && unionwarConfig.badUNID) {
+                    conn.log("drop bad card to", unionwarConfig.badUNID);
+                    yield conn.useCard(unionwarConfig.badUNID, next);
                 }
             }
 
@@ -978,8 +981,9 @@ Base.extends("GameController", {
         var next = coroutine(function*() {
             var unionwarInfo = yield conn.getUnionWar(next);
             if (!unionwarInfo.lands) {
-                return safe(done)();
+                return safe(done)(false);
             }
+            var hasLands = false;
             for (var i = 0; i < targetLands.length; ++i) {
                 var landId = targetLands[i];
                 if (unionwarInfo.lands[landId]) {
@@ -989,9 +993,10 @@ Base.extends("GameController", {
                 if (!unionwarLandInfo.mineArray) {
                     continue;
                 }
+                hasLands = true;
                 var finish = safe(deal)(false, unionwarLandInfo, landId);
                 if (finish) {
-                    return safe(done)();
+                    return safe(done)(hasLands);
                 }
                 for (var j = 0; j < unionwarLandInfo.mineArray.length; ++j) {
                     var mineData = unionwarLandInfo.mineArray[j];
@@ -1000,11 +1005,11 @@ Base.extends("GameController", {
                     }
                     var finish = safe(deal)(true, mineData, landId);
                     if (finish) {
-                        return safe(done)();
+                        return safe(done)(hasLands);
                     }
                 }
             }
-            safe(done)();
+            safe(done)(hasLands);
         }, this);
     },
     setUnionwarEvent:function(defaults) {
