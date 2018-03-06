@@ -863,10 +863,12 @@ Base.extends("GameController", {
             if (cardInfo && cardInfo.ready) {
                 if (cardInfo.isgood && unionwarConfig.goodUNID) {
                     conn.log("drop good card to", unionwarConfig.goodUNID);
-                    yield conn.useCard(unionwarConfig.goodUNID, next);
+                    var useData = yield conn.useCard(unionwarConfig.goodUNID, next);
+                    conn.log("drop result", useData.success);
                 } else if (!cardInfo.isgood && unionwarConfig.badUNID) {
                     conn.log("drop bad card to", unionwarConfig.badUNID);
-                    yield conn.useCard(unionwarConfig.badUNID, next);
+                    var useData = yield conn.useCard(unionwarConfig.badUNID, next);
+                    conn.log("drop result", useData.success);
                 }
             }
 
@@ -880,7 +882,7 @@ Base.extends("GameController", {
             var betterChoice = (pos, nowPos) => {
                 return (isReverse ? pos < nowPos : pos > nowPos);
             }
-            if (myOccupy.quality && isReverse) {
+            if ((myOccupy.quality > 0 && myOccupy.quality < 10) && isReverse) {
                 return safe(done)();
             }
 
