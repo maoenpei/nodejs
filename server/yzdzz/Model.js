@@ -657,7 +657,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                     var tail = key.length > 4 && key.substr(key.length - 4);
                     if (tail == "PLID") {
                         result[key] = this.playerId2RandKey[setting[key]];
-                    } if (tail == "UNID") {
+                    } else if (tail == "UNID") {
                         result[key] = this.unionId2RandKey[setting[key]];
                     } else {
                         result[key] = setting[key];
