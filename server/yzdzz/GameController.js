@@ -137,6 +137,9 @@ Base.extends("GameController", {
                 console.log("-- kingwar assignment -- find target", kingwarKey, targetingConfig.reachPLID, conn.getGameInfo().name);
                 var areaStar = this.getAreaStar(kingwarKey);
                 var data_join = yield conn.joinKingWar(areaStar.area, areaStar.star, next);
+                if (taskItem) {
+                    taskItem.giveup();
+                }
             } else {
                 if (taskItem){
                     if (targetingConfig.allowAssign) {
@@ -240,7 +243,11 @@ Base.extends("GameController", {
     getTasksOrder:function(tasks) {
         var tasksOrder = [];
         for (var i = 0; i < tasks.length; ++i) {
-            var data = tasks[i].getValue();
+            var taskItem = tasks[i];
+            if (taskItem.isAssigned()) {
+                continue;
+            }
+            var data = taskItem.getValue();
             var insertIndex = tasksOrder.length;
             for (var j = 0; j < tasksOrder.length; ++j) {
                 if (data.power > tasksOrder[j].power) {
@@ -252,7 +259,7 @@ Base.extends("GameController", {
                 power: data.power,
                 minStar: data.minStar,
                 forceEmperor: data.forceEmperor,
-                task: tasks[i],
+                task: taskItem,
             });
         }
         for (var i = 0; i < tasksOrder.length; ++i) {
@@ -402,25 +409,43 @@ Base.extends("GameController", {
             this.setRefreshStatesOfType("kingwar", 5);
             this.setRefreshStatesOfType("playerlist", 4);
             var forceTime = new Date();
-            forceTime.setSeconds(defaults.forceSec, 0);
+            forceTime.setSeconds(defaults.forceSec, 700);
+            var startTime = new Date();
+            startTime.setSeconds(defaults.startSec, 0);
             var next = coroutine(function*() {
                 var forceTargeting = false;
                 console.log("-- kingwar assignment -- try find target");
                 while(!this.constantKingwar && !forceTargeting) {
+                    console.log("-- kingwar assignment -- loop");
                     yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 3; }, next);
                     yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 5; }, next);
-                    forceTargeting = (new Date() > forceTime);
+                    yield setTimeout(next, 55);
+                    forceTargeting = (new Date() > startTime);
                 }
                 console.log("-- kingwar assignment -- try auto assign");
                 if (!this.constantKingwar)
                 {
+                    var started = false;
+                    var lastTasks = null;
                     var targetingTaskManager = new TaskManager((tasks, total) => {
-                        if (tasks.length == total) {
+                        lastTasks = tasks;
+                        console.log("-- kingwar assignment -- tasks ready", tasks.length, total);
+                        if (started || tasks.length == total) {
                             this.targetingAssignment(tasks, defaults);
                         }
                     });
+                    (() => {
+                        var tnext = coroutine(function*() {
+                            while (new Date() < forceTime) {
+                                yield setTimeout(tnext, 60);
+                            }
+                            started = true;
+                            if (lastTasks) {
+                                this.targetingAssignment(tasks, defaults);
+                            }
+                        }, this);
+                    })();
                     yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 3; }, next, targetingTaskManager);
-                    yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 5; }, next);
                 }
                 console.log("-- kingwar assignment -- finished!");
                 this.setRefreshStatesOfType("kingwar", 1);
@@ -1624,6 +1649,7 @@ Base.extends("GameController", {
     },
     refreshAllPlayers:function(checkFun, done, taskManager, showWave) {
         console.log("refresh all player start -", process.memoryUsage());
+        var allPlayersCount = 0;
         var select = new Select();
         for (var accountGameKey in this.refreshData) {
             var refreshInfo = this.refreshData[accountGameKey];
@@ -1635,12 +1661,13 @@ Base.extends("GameController", {
                 }
             }
 
+            allPlayersCount = executables.length;
             if (executables.length > 0) {
                 this.executeOnePlayer(refreshInfo, executables, select.setup(), (taskManager ? taskManager.addTask() : undefined));
             }
         }
         select.all(() => {
-            console.log("refresh all player finish -", process.memoryUsage());
+            console.log("refresh all player finish -", allPlayersCount, process.memoryUsage());
             if (showWave) {
                 this.showMemoryWave();
             }
