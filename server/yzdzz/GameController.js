@@ -134,12 +134,12 @@ Base.extends("GameController", {
                 kingwarKey = null;
             }
             if (kingwarKey) {
-                console.log("-- kingwar assignment -- find target", kingwarKey, targetingConfig.reachPLID, conn.getGameInfo().name);
-                var areaStar = this.getAreaStar(kingwarKey);
-                var data_join = yield conn.joinKingWar(areaStar.area, areaStar.star, next);
                 if (taskItem) {
                     taskItem.giveup();
                 }
+                console.log("-- kingwar assignment -- find target", kingwarKey, targetingConfig.reachPLID, conn.getGameInfo().name);
+                var areaStar = this.getAreaStar(kingwarKey);
+                var data_join = yield conn.joinKingWar(areaStar.area, areaStar.star, next);
             } else {
                 if (taskItem){
                     if (targetingConfig.allowAssign) {
@@ -409,7 +409,7 @@ Base.extends("GameController", {
             this.setRefreshStatesOfType("kingwar", 5);
             this.setRefreshStatesOfType("playerlist", 4);
             var forceTime = new Date();
-            forceTime.setSeconds(defaults.forceSec, 700);
+            forceTime.setSeconds(defaults.forceSec, 0);
             var startTime = new Date();
             startTime.setSeconds(defaults.startSec, 0);
             var next = coroutine(function*() {
@@ -431,6 +431,9 @@ Base.extends("GameController", {
                         lastTasks = tasks;
                         console.log("-- kingwar assignment -- tasks ready", tasks.length, total);
                         if (started || tasks.length == total) {
+                            if (tasks.length == total) {
+                                lastTasks = null;
+                            }
                             this.targetingAssignment(tasks, defaults);
                         }
                     });
@@ -440,6 +443,7 @@ Base.extends("GameController", {
                                 yield setTimeout(tnext, 60);
                             }
                             started = true;
+                            console.log("-- kingwar assignment -- force time!", (lastTasks ? lastTasks.length : 0));
                             if (lastTasks) {
                                 this.targetingAssignment(tasks, defaults);
                             }
