@@ -4,6 +4,10 @@ var assert = require("assert");
 
 Database = {};
 
+Database.goddessMaxLevel = function() {
+    return 150;
+}
+
 Database.cardInfo = function(card) {
     return {
         isBenefit: card == 1 || card == 4 || card == 6,

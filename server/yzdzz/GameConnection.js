@@ -2528,11 +2528,12 @@ Base.extends("GameConnection", {
                             var goddess = data_goddess.list[i];
                             goddessData[goddess.id] = goddess;
                         }
-                        var donateOrder = [1, 4, 2, 5, 6, 3];
+                        var donateOrder = [1, 4, 5, 2, 6, 3];
                         for (var i = 0; i < donateOrder.length; ++i) {
                             var id = donateOrder[i];
                             var goddess = goddessData[id];
-                            if (goddess.level < 120) {
+                            if (goddess.level < Database.goddessMaxLevel()) {
+                                this.log("donate for goddess", id);
                                 if (donateNum == 10) {
                                     var data_donate = yield this.sendMsg("League", "donate", {id:id, type:2}, next);
                                 } else {
