@@ -102,9 +102,9 @@
     }
     ,"targeting":{
         "selfUnion":"b275705814a85d98"
-        ,"time":{"day":2,"hour":23,"minute":59,"second":53}
-        ,"startSec":55
-        ,"forceSec":57
+        ,"time":{"day":2,"hour":23,"minute":59,"second":51}
+        ,"startSec":53
+        ,"forceSec":58
     }
     ,"dropping":{
         "selfUnion":"b275705814a85d98"
