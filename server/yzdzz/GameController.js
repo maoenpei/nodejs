@@ -216,6 +216,9 @@ Base.extends("GameController", {
         }
     },
     getKingwarOrder:function(defaults) {
+        if (this.uniqueKingwarOrder) {
+            return this.uniqueKingwarOrder;
+        }
         var kingwarOrder = [];
         for (var kingwarKey in this.kingwarRefs) {
             var refData = this.kingwarRefs[kingwarKey];
@@ -238,6 +241,7 @@ Base.extends("GameController", {
             var brief = kingwarOrder[i];
             console.log("-- kingwar assignment -- brief", brief);
         }
+        this.uniqueKingwarOrder = kingwarOrder;
         return kingwarOrder;
     },
     getTasksOrder:function(tasks) {
@@ -429,7 +433,7 @@ Base.extends("GameController", {
                     var lastTasks = null;
                     var targetingTaskManager = new TaskManager((tasks, total) => {
                         lastTasks = tasks;
-                        console.log("-- kingwar assignment -- tasks ready", tasks.length, total);
+                        console.log("-- kingwar assignment -- tasks ready", tasks.length, total, started);
                         if (started || tasks.length == total) {
                             if (tasks.length == total) {
                                 lastTasks = null;
@@ -450,6 +454,7 @@ Base.extends("GameController", {
                         }, this);
                     })();
                     yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 3; }, next, targetingTaskManager);
+                    this.uniqueKingwarOrder = null;
                 }
                 console.log("-- kingwar assignment -- finished!");
                 this.setRefreshStatesOfType("kingwar", 1);
