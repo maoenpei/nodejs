@@ -443,9 +443,9 @@ Base.extends("GameController", {
                                 yield setTimeout(tnext, 60);
                             }
                             started = true;
-                            console.log("-- kingwar assignment -- force time!", (lastTasks ? lastTasks.length : 0));
+                            console.log("-- kingwar assignment -- force time!", lastTasks, (lastTasks ? lastTasks.length : 0));
                             if (lastTasks) {
-                                this.targetingAssignment(tasks, defaults);
+                                this.targetingAssignment(lastTasks, defaults);
                             }
                         }, this);
                     })();
