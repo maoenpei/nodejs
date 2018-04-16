@@ -572,6 +572,10 @@ input[type='checkbox']{
 
 .user_detail_item{
     background-color: #bbbbbb;
+    color: #055;
+}
+.user_detail_item_title{
+    color: #ff0;
 }
 .div_requirement_item{
     padding-left: 2rem;

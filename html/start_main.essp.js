@@ -637,7 +637,7 @@ displayAutomationModel.getValidServers = function(account) {
         if (!usedServers[server]) {
             servers.push({
                 name: server,
-                desc: server + "服",
+                desc: server.substr(1) + "服",
             });
         }
     }
@@ -899,6 +899,24 @@ displayAutomationModel.saveSetting = function(player, callback) {
     });
 }
 
+function displayServerSelector(divContainer, servers, selectedCallback) {
+    var selectServersTemplate = templates.read(".hd_select_servers");
+    divContainer.html(selectServersTemplate({servers:servers}));
+    var divSelectServerMask = divContainer.find(".div_select_server_mask");
+    divSelectServerMask.find(".div_auto_add_cancel").click(function() {
+        divSelectServerMask.hide();
+    });
+    divSelectServerMask.find(".div_auto_add_confirm").click(function() {
+        var selectPlayerServers = divSelectServerMask.find(".select_player_servers");
+        var server = selectPlayerServers.val();
+        divSelectServerMask.hide();
+        selectedCallback(server);
+    });
+    return function() {
+        divSelectServerMask.show();
+    };
+}
+
 function displayAutomation() {
     var divContentPanel = $(".div_content_panel");
     var waitingTemplate = templates.read(".hd_display_loading");
@@ -951,29 +969,14 @@ function displayAutomation() {
             }
         });
 
-        // add players
-        var divPlayerAddMask = divContentPanel.find(".div_automation_player_add_mask");
-        var divPlayerServers = divPlayerAddMask.find(".div_auto_choose_server");
-        divPlayerAddMask.find(".div_auto_add_cancel").click(function() {
-            divPlayerAddMask.hide();
-        });
-        divPlayerAddMask.find(".div_auto_add_confirm").click(function() {
-            var selectPlayerServers = divPlayerAddMask.find(".select_player_servers");
-            var server = selectPlayerServers.val();
-            divPlayerAddMask.hide();
-            displayAutomationModel.addPlayer(server, function() {
-                displayPlayers();
-            });
-        });
-
         // display contents
         var divSubtitleBar = divContentPanel.find(".div_automation_sub_title_bar");
         var subTitleBarLineText = "<div class=\"div_automation_sub_title_line\"></div>";
         var divAutomationContent = divContentPanel.find(".div_automation_content");
+        var divAutoPlayerAddContainer = divContentPanel.find(".div_automation_player_add_container");
         var autoNavigateTemplate = templates.read(".hd_automation_navigate_item");
         var autoItemTemplate = templates.read(".hd_automation_item");
         var autoConfigPropTemplate = templates.read(".hd_automation_config_item");
-        var autoPlayerServersTemplate = templates.read(".hd_automation_player_servers");
 
         var allCommands = [displayAccounts, displayPlayers, displayCatalog, displayDetail];
         var displayCommands = function(rightCommand, leftCommand) {
@@ -1106,9 +1109,13 @@ function displayAutomation() {
 
             var lastAccount = displayAutomationModel.getLastAccount();
             var servers = displayAutomationModel.getValidServers(lastAccount);
+            var showServers = displayServerSelector(divAutoPlayerAddContainer, servers, function(server) {
+                displayAutomationModel.addPlayer(server, function() {
+                    displayPlayers();
+                });
+            });
             var addOption = (servers.length == 0 ? null : {name:"添加角色", func:function() {
-                divPlayerServers.html(autoPlayerServersTemplate({servers:servers}));
-                divPlayerAddMask.show();
+                showServers();
             }});
             displayCommands(addOption, {name:"修改密码", func: function() {
                 inputAccountPassword.val("");
@@ -2145,9 +2152,13 @@ displayUsersModel.get = function(callback) {
             $this.reqs = json.reqs;
             $this.canAuthorize = json.canAuthorize;
             $this.users = json.users;
+            $this.servers = [{name:"s96", desc:"96服"}];
             callback($this.users);
         }
     });
+}
+displayUsersModel.allServers = function() {
+    return this.servers;
 }
 displayUsersModel.promote = function(serial, level, callback) {
     requestPost("promote", {target:serial, auth:level}, function(json) {
@@ -2237,6 +2248,13 @@ displayUsersModel.delReq = function(serial, val, callback) {
         }
     });
 }
+displayUsersModel.addServerForUser = function(serial, server, callback) {
+    requestPost("userserver", {}, function(json) {
+        if (json.success) {
+            callback();
+        }
+    });
+}
 
 function displayUsers() {
     var divContentPanel = $(".div_content_panel");
@@ -2250,7 +2268,6 @@ function displayUsers() {
         var userItemBlocks = [];
         var associateBlockInfo = null;
         var userItemTemplate = templates.read(".hd_user_item");
-        var userDetailTemplate = templates.read(".hd_user_detail");
         for (var i = 0; i < usersData.length; ++i) {
             (function() {
                 var userInfo = usersData[i];
@@ -2327,13 +2344,15 @@ function displayUsers() {
                             window.location.reload();
                         }
                     };
-                    divUserSetting.click(function() {
+                    var userDetailTemplate = templates.read(".hd_user_detail");
+                    var refreshUserDetail = (function() {
                         var reqs = displayUsersModel.getReqs(userInfo);
                         divContentPanel.html(userDetailTemplate({
                             name:userInfo.name,
                             auths:displayUsersModel.getAuths(),
                             reqs:reqs,
                         }));
+                        // 权限级别
                         var selectAuthLevel = divContentPanel.find(".div_user_select_auth_level");
                         selectAuthLevel.val(userInfo.auth);
                         selectAuthLevel.change(function() {
@@ -2347,6 +2366,7 @@ function displayUsers() {
                             }
                             selectAuthLevel.val(userInfo.auth);
                         });
+                        // 权限细节
                         var checkRequirements = divContentPanel.find(".input_check_user_requirement");
                         for (var i = 0; i < reqs.length; ++i) {
                             (function() {
@@ -2367,7 +2387,17 @@ function displayUsers() {
                                 });
                             })();
                         }
+                        // 可选服务器
+                        var selectServersContainer = divContentPanel.find(".div_user_select_servers_container");
+                        var servers = displayUsersModel.allServers();
+                        var showServers = displayServerSelector(selectServersContainer, servers, function(server) {
+                            displayUsersModel.addServerForUser(userInfo.serial, server, function() {
+                                alert("添加服务器成功");
+                            });
+                        });
+                        divContentPanel.find(".div_user_select_servers_add").click(showServers);
                     });
+                    divUserSetting.click(refreshUserDetail);
                 } else if (!authorized) {
                     var divNewUser = divUserItemBlock.find(".div_user_auth_new");
                     divNewUser.click(function() {

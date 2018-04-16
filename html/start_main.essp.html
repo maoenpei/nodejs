@@ -47,22 +47,24 @@
             </div>
         </div>
     </div>
-    <div class="div_automation_player_add_mask common_mask" style="display: none;">
+    <div class="div_automation_player_add_container"></div>
+</script>
+<script type="text/x-handlebars-template" class="hd_select_servers">
+    <div class="div_select_server_mask common_mask" style="display: none;">
         <div class="common_mask_content">
-            <div class="div_auto_choose_server div_auto_add_field"></div>
+            <div class="div_auto_add_field">
+                <select class="select_player_servers">
+                    {{#each servers}}
+                    <option value="{{name}}">{{desc}}</option>
+                    {{/each}}
+                </select>
+            </div>
             <div class="div_auto_add_field">
                 <div class="div_auto_add_cancel visit_label">取消</div>
                 <div class="div_auto_add_confirm visit_label">确定</div>
             </div>
         </div>
     </div>
-</script>
-<script type="text/x-handlebars-template" class="hd_automation_player_servers">
-        <select class="select_player_servers">
-            {{#each servers}}
-            <option value="{{name}}">{{desc}}</option>
-            {{/each}}
-        </select>
 </script>
 <script type="text/x-handlebars-template" class="hd_automation_navigate_item">
     <div class="div_auto_navigate_item">
@@ -308,6 +310,7 @@
                 {{name}}
             </div>
             <div class="common_item_divider user_detail_item">
+                <div class="user_detail_item_title">权限级别</div>
                 <select class="div_user_select_auth_level">
                     {{#each auths}}
                     <option value="{{val}}">{{name}}</option>
@@ -315,12 +318,18 @@
                 </select>
             </div>
             <div class="common_item_divider user_detail_item">
+                <div class="user_detail_item_title">权限细节</div>
                 {{#each reqs}}
                 <div class="div_requirement_item">
                     <input type="checkbox" class="input_check_user_requirement" {{#if enabled}}checked{{/if}}>
                     <div class="div_requirement_label">{{name}}</div>
                 </div>
                 {{/each}}
+            </div>
+            <div class="common_item_divider user_detail_item">
+                <div class="user_detail_item_title">可选服务器<div class="visit_label div_user_select_servers_add">添加</div></div>
+                <div><div class="visit_label">删除</div>s95服</div>
+                <div class="div_user_select_servers_container"></div>
             </div>
         </div>
 </script>
