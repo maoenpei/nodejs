@@ -12,19 +12,17 @@ var assert = require("assert");
 var crypto = require("crypto");
 
 // Models
-Base.extends("$HttpModel", {
-    _constructor:function() {
-        this.models = [];
-        this.modelBase = Base.inherit({
-            initialize:function(done) {
-                later(done);
-            },
-            getTag:function(obj) {
-                var toMd5 = JSON.stringify(obj) + "PAUMS01233323";
-                return crypto.createHash("md5WithRSAEncryption").update(toMd5).digest("hex");
-            },
-        });
-    },
+Base.extends("HttpModel", {
+    models: [],
+    modelBase: Base.inherit({
+        initialize:function(done) {
+            later(done);
+        },
+        getTag:function(obj) {
+            var toMd5 = JSON.stringify(obj) + "PAUMS01233323";
+            return crypto.createHash("md5WithRSAEncryption").update(toMd5).digest("hex");
+        },
+    }),
     addClass:function(name, proto) {
         var childClass = this.modelBase.inherit(proto);
         this.models.push({

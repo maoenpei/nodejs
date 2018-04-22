@@ -62,11 +62,8 @@ Base.extends = function(name, proto) {
 	var childClass = baseClass.inherit(proto);
 	proto.__class = name;
 	proto.__classes = name + "$" + baseProto.__classes;
-	if (name.charAt(0) == "$") {
-		Global[name] = new childClass();
-	} else {
-		Global[name] = childClass;
-	}
+	Global["$" + name] = proto;
+	Global[name] = childClass;
 	return childClass;
 }
 

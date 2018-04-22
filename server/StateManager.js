@@ -3,12 +3,10 @@ require("./Base");
 require("./FileManager");
 var assert = require("assert");
 
-Base.extends("$StateManager", {
-    _constructor:function() {
-        this.fileStates = {};
-        this.canSave = {};
-        this.savingStates = {};
-    },
+Base.extends("StateManager", {
+    fileStates: {},
+    canSave: {},
+    savingStates: {},
     openState:function(fileName, done) {
         assert(!this.fileStates[fileName] && !this.canSave[fileName]);
         var path = "/data/" + fileName;

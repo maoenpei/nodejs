@@ -2,10 +2,8 @@
 require("./StateSwitcher");
 require("./FileManager");
 
-StateSwitcher.extends("$FileCacher", {
-    _constructor:function() {
-        this.cachedFiles = {};
-    },
+StateSwitcher.extends("FileCacher", {
+    cachedFiles:{},
     visitFile:function(path, done) {
         var data = this.cachedFiles[path];
         if (data) {

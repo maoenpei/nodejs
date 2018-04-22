@@ -41,10 +41,8 @@ Base.extends("TemplateOutput", {
     },
 });
 
-StateSwitcher.extends("$TemplateParser", {
-    _constructor:function() {
-        this.parsedTemplates = {};
-    },
+StateSwitcher.extends("TemplateParser", {
+    parsedTemplates: {},
     ready:function(path, done) {
         var parser = this.parsedTemplates[path];
         if (parser) {

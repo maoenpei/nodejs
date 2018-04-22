@@ -26,10 +26,8 @@ Base.extends("Login", {
     },
 });
 
-Base.extends("$LoginManager", {
-    _constructor:function() {
-        this.loginData = {};
-    },
+Base.extends("LoginManager", {
+    loginData: {},
     login:function(serial) {
         var token = null;
         do {

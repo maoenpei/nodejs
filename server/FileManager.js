@@ -3,10 +3,7 @@ require("./Base");
 var fs = require("fs");
 var readline = require("readline");
 
-Base.extends("$FileManager", {
-    _constructor:function() {
-    },
-
+Base.extends("FileManager", {
     visitFile:function(path, done) {
         var filepath = this.RootDirectory + path;
         fs.readFile(filepath, (err, data) => {
