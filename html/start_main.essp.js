@@ -341,6 +341,7 @@ function clickRefresh() {
 
 var playerCommon = {
     areaNames:{
+        "0":"皇帝",
         "1":"黄鹿",
         "2":"玫瑰",
         "3":"咸鱼",
@@ -409,6 +410,12 @@ playerCommon.duration = function(lasttime) {
     }
 
     return {color:color, desc:desc, quit:quit};
+}
+playerCommon.serverItem = function(server) {
+    return {
+        name: server,
+        desc: server.substr(1) + "服",
+    };
 }
 
 var displayAutomationModel = {
@@ -635,10 +642,7 @@ displayAutomationModel.getValidServers = function(account) {
     for (var i = 0; i < this.servers.length; ++i) {
         var server = this.servers[i];
         if (!usedServers[server]) {
-            servers.push({
-                name: server,
-                desc: server.substr(1) + "服",
-            });
+            servers.push(playerCommon.serverItem(server));
         }
     }
     return servers;
@@ -2152,13 +2156,24 @@ displayUsersModel.get = function(callback) {
             $this.reqs = json.reqs;
             $this.canAuthorize = json.canAuthorize;
             $this.users = json.users;
-            $this.servers = [{name:"s96", desc:"96服"}];
+            $this.servers = json.servers;
             callback($this.users);
         }
     });
 }
-displayUsersModel.allServers = function() {
-    return this.servers;
+displayUsersModel.availableServersForUser = function(userInfo) {
+    var currSevs = {};
+    for (var i = 0; i < userInfo.sev.length; ++i) {
+        currSevs[userInfo.sev[i]] = true;
+    }
+    var validServers = [];
+    for (var i = 0; i < this.servers.length; ++i) {
+        var server = this.servers[i];
+        if (!currSevs[server]) {
+            validServers.push(playerCommon.serverItem(server));
+        }
+    }
+    return validServers;
 }
 displayUsersModel.promote = function(serial, level, callback) {
     requestPost("promote", {target:serial, auth:level}, function(json) {
@@ -2234,6 +2249,14 @@ displayUsersModel.getReqs = function(userInfo) {
     addRequirements(this.reqs, 0);
     return reqinfo;
 }
+displayUsersModel.getSevs = function(userInfo) {
+    var sevinfo = [];
+    for (var i = 0; i < userInfo.sev.length; ++i) {
+        var server = userInfo.sev[i];
+        sevinfo.push(playerCommon.serverItem(server));
+    }
+    return sevinfo;
+}
 displayUsersModel.addReq = function(serial, val, callback) {
     requestPost("requirement", {target:serial, val:val, add:true}, function(json) {
         if (json.success) {
@@ -2249,7 +2272,14 @@ displayUsersModel.delReq = function(serial, val, callback) {
     });
 }
 displayUsersModel.addServerForUser = function(serial, server, callback) {
-    requestPost("userserver", {}, function(json) {
+    requestPost("userserver", {target:serial, sev:server, add:true}, function(json) {
+        if (json.success) {
+            callback();
+        }
+    });
+}
+displayUsersModel.delServerForUser = function(serial, server, callback) {
+    requestPost("userserver", {target:serial, sev:server, add:false}, function(json) {
         if (json.success) {
             callback();
         }
@@ -2339,18 +2369,21 @@ function displayUsers() {
                         }
                     });
                     var divUserSetting = divUserItemBlock.find(".div_user_setting_detail");
-                    var updateChange = function() {
-                        if (isSelf) {
+                    var refreshUserDetail;
+                    var updateChange = function(selfRef) {
+                        if (isSelf && selfRef) {
                             window.location.reload();
                         }
                     };
                     var userDetailTemplate = templates.read(".hd_user_detail");
-                    var refreshUserDetail = (function() {
+                    refreshUserDetail = (function() {
                         var reqs = displayUsersModel.getReqs(userInfo);
+                        var sevs = displayUsersModel.getSevs(userInfo);
                         divContentPanel.html(userDetailTemplate({
                             name:userInfo.name,
                             auths:displayUsersModel.getAuths(),
                             reqs:reqs,
+                            sevs:sevs,
                         }));
                         // 权限级别
                         var selectAuthLevel = divContentPanel.find(".div_user_select_auth_level");
@@ -2361,7 +2394,7 @@ function displayUsers() {
                                 displayUsersModel.promote(userInfo.serial, level, function() {
                                     alert("修改权限 - 成功");
                                     selectAuthLevel.val(level);
-                                    updateChange();
+                                    updateChange(true);
                                 });
                             }
                             selectAuthLevel.val(userInfo.auth);
@@ -2376,12 +2409,12 @@ function displayUsers() {
                                     if (checkBlock.is(":checked")) {
                                         displayUsersModel.addReq(userInfo.serial, item.val, function() {
                                             alert("添加权限 - 成功");
-                                            updateChange();
+                                            updateChange(true);
                                         });
                                     } else {
                                         displayUsersModel.delReq(userInfo.serial, item.val, function() {
                                             alert("删除权限 - 成功");
-                                            updateChange();
+                                            updateChange(true);
                                         });
                                     }
                                 });
@@ -2389,12 +2422,26 @@ function displayUsers() {
                         }
                         // 可选服务器
                         var selectServersContainer = divContentPanel.find(".div_user_select_servers_container");
-                        var servers = displayUsersModel.allServers();
+                        var servers = displayUsersModel.availableServersForUser(userInfo);
                         var showServers = displayServerSelector(selectServersContainer, servers, function(server) {
                             displayUsersModel.addServerForUser(userInfo.serial, server, function() {
                                 alert("添加服务器成功");
+                                updateChange(false);
                             });
                         });
+                        var divServerDels = divContentPanel.find(".div_user_detail_server_del");
+                        for (var i = 0; i < sevs.length; ++i) {
+                            (function() {
+                                var item = sevs[i];
+                                var divBlock = $(divServerDels[i]);
+                                divBlock.click(function() {
+                                    displayUsersModel.delServerForUser(userInfo.serial, item.name, function() {
+                                        alert("删除服务器成功");
+                                        updateChange(false);
+                                    });
+                                });
+                            })();
+                        }
                         divContentPanel.find(".div_user_select_servers_add").click(showServers);
                     });
                     divUserSetting.click(refreshUserDetail);

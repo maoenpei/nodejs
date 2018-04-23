@@ -490,6 +490,9 @@ Base.extends("GameConnection", {
     },
 
     // Connection
+    getAllServers:function() {
+        return cachedServers;
+    },
     quit:function() {
         if (this.sock) {
             if (this.validator) {

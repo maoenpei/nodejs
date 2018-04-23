@@ -1754,6 +1754,7 @@ Base.extends("GameController", {
         }, this);
     },
 
+    // misc
     getPlayerBrief:function(playerData) {
         var accountGameKey = playerData.account + "$" + playerData.server;
         return this.lastPlayerInfo[accountGameKey];
@@ -1761,6 +1762,19 @@ Base.extends("GameController", {
     setPlayerBrief:function(playerData, brief) {
         var accountGameKey = playerData.account + "$" + playerData.server;
         this.lastPlayerInfo[accountGameKey] = brief;
+    },
+    getAllServerDesc:function() {
+        var servers = $GameConnection.getAllServers();
+        var descs = [];
+        for (var desc in servers) {
+            if (desc.substr(0, 1) == "s") {
+                descs.push(desc);
+            }
+        }
+        descs.sort((a, b) => {
+            return Number(a.substr(1)) - Number(b.substr(1));
+        });
+        return descs;
     },
 
     initPlayerListing:function() {

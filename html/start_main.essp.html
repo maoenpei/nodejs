@@ -328,7 +328,9 @@
             </div>
             <div class="common_item_divider user_detail_item">
                 <div class="user_detail_item_title">可选服务器<div class="visit_label div_user_select_servers_add">添加</div></div>
-                <div><div class="visit_label">删除</div>s95服</div>
+                {{#each sevs}}
+                <div><div class="div_user_detail_server_del visit_label">删除</div>{{desc}}</div>
+                {{/each}}
                 <div class="div_user_select_servers_container"></div>
             </div>
         </div>

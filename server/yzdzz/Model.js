@@ -81,6 +81,9 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 added:(userData) => { this.onUserAdded(userData); },
                 deleting:(userData) => { this.onUserDeleting(userData); },
             });
+            this.userModel.setServerListing(() => {
+                return this.controller.getAllServerDesc();
+            });
         }
 
         var next = coroutine(function*() {

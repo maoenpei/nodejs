@@ -20,6 +20,7 @@ $HttpModel.addClass("USER_CLASS", {
         httpServer.registerCommand("authorize", this);
         httpServer.registerCommand("apply", this);
         httpServer.registerCommand("requirement", this);
+        httpServer.registerCommand("userserver", this);
         httpServer.registerCommand("listself", this);
         httpServer.registerCommand("question", this);
     },
@@ -29,6 +30,13 @@ $HttpModel.addClass("USER_CLASS", {
             yield $StateManager.openState(BREAKIN_CONFIG, next);
             safe(done)();
         }, this);
+    },
+
+    setServerListing:function(serverListingFunc) {
+        this.serverListingFunc = serverListingFunc;
+    },
+    listServers:function() {
+        return safe(this.serverListingFunc)() || [];
     },
 
     listenUserModification:function(listener) {
@@ -52,6 +60,12 @@ $HttpModel.addClass("USER_CLASS", {
                 listener[type](userData);
             }
         }
+    },
+    invokeUserAdd:function(userData) {
+        this.invokeUserListener("added", userData);
+    },
+    invokeUserDelete:function(userData) {
+        this.invokeUserListener("deleting", userData);
     },
 
     createUser:function() {
@@ -107,17 +121,20 @@ $HttpModel.addClass("USER_CLASS", {
                             serial:serial,
                             auth:userData.auth,
                             req:userData.req || {},
+                            sev:userData.sev || [],
                         });
                     }
                 }
             }
 
+            var allServers = this.listServers();
             var canAuthorize = (AuthorizeOnlySuperAdmin ? session.authorized(4) : true);
             responder.respondJson({
                 canAuthorize: canAuthorize,
                 auths: session.availableAuths(),
                 reqs: session.availableRequirements(),
                 users: allUsers,
+                servers: allServers,
             }, done);
         }, this);
     },
@@ -212,7 +229,7 @@ $HttpModel.addClass("USER_CLASS", {
                         userKey: targetKeyData.userKey,
                     };
                 } else {
-                    this.invokeUserListener("deleting", targetUserData);
+                    this.invokeUserDelete(targetUserData);
                     delete userStates.users[targetKeyData.userKey];
                 }
                 delete targetKeyData.userKey;
@@ -282,7 +299,7 @@ $HttpModel.addClass("USER_CLASS", {
                 nextUserKey = this.createUser();
                 var nextUserData = userStates.users[nextUserKey];
                 nextUserData.auth = 1;
-                this.invokeUserListener("added", nextUserData);
+                this.invokeUserAdd(nextUserData);
             } else {
                 if (AuthorizeOnlySuperAdmin && !session.authorized(4)) {
                     responder.addError("Admin level not enough.");
@@ -369,6 +386,11 @@ $HttpModel.addClass("USER_CLASS", {
             var reqName = json.val;
             var isAdd = json.add;
             var targetKeyData = userStates.keys[targetSerial];
+            if (!targetKeyData) {
+                responder.addError("No such user.");
+                return responder.respondJson({}, done);
+            }
+
             var reqRelation = session.getRequirementRelation(reqName);
             if (!reqRelation) {
                 responder.addError("Not valid requirement name.");
@@ -392,6 +414,58 @@ $HttpModel.addClass("USER_CLASS", {
                 remoteReq(reqRelation);
             }
             userStates.users[userKey].req = req;
+            yield $StateManager.commitState(USER_CONFIG, next);
+
+            responder.respondJson({
+                success: true,
+            }, done);
+        }, this);
+    },
+    userserver:function(requestor, responder, session, done) {
+        var next = coroutine(function*() {
+            if (!(yield session.checkConnection({POST:true, USER:3, AUTH:3}, next))) {
+                return;
+            }
+
+            var userStates = $StateManager.getState(USER_CONFIG);
+            var json = yield requestor.visitBodyJson(next);
+            if (!json || !json.target || !json.sev) {
+                responder.addError("Parameter data not correct.");
+                return responder.respondJson({}, done);
+            }
+
+            var targetSerial = json.target;
+            var server = json.sev;
+            var isAdd = json.add;
+            var targetKeyData = userStates.keys[targetSerial];
+            if (!targetKeyData) {
+                responder.addError("No such user.");
+                return responder.respondJson({}, done);
+            }
+
+            var userKey = targetKeyData.userKey;
+            var sev = userStates.users[userKey].sev || [];
+            var sevIndex = -1;
+            for (var i = 0; i < sev.length; ++i) {
+                if (server == sev[i]) {
+                    sevIndex = i;
+                    break;
+                }
+            }
+            if (isAdd) {
+                if (sevIndex >= 0) {
+                    responder.addError("Server already added.");
+                    return responder.respondJson({}, done);
+                }
+                sev.push(server);
+            } else {
+                if (sevIndex < 0) {
+                    responder.addError("Server not exist.");
+                    return responder.respondJson({}, done);
+                }
+                sev.splice(sevIndex, 1);
+            }
+            userStates.users[userKey].sev = sev;
             yield $StateManager.commitState(USER_CONFIG, next);
 
             responder.respondJson({
