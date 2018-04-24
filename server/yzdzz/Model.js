@@ -1476,10 +1476,12 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 }
             }
 
+            var servers = (session.authorized(4) ? this.controller.getAllServerDesc() : userData.sev) || [];
             responder.respondJson({
                 accounts: accounts,
                 players: players,
                 unions: unions,
+                servers: servers,
             }, done);
         }, this);
     },

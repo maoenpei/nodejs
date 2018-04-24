@@ -419,7 +419,6 @@ playerCommon.serverItem = function(server) {
 }
 
 var displayAutomationModel = {
-    servers: ["s96", "s95", "s94", "s93", ],
     levels: ["账号"],
     configProps: [
         {name: "autoSpecial", desc: "全局设置", props: [
@@ -577,6 +576,7 @@ displayAutomationModel.get = function(callback) {
         $this.accounts = json.accounts;
         $this.players = json.players;
         $this.unions = json.unions;
+        $this.servers = json.servers;
         callback(json);
     });
 }
