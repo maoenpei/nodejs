@@ -96,6 +96,7 @@ Base.extends("Session", {
                             this.responder.addError("Admin level not enough.");
                             return this.responder.respondJson({}, doErr);
                         }
+                        this.userName = keyData.name;
                         this.userKey = keyData.userKey;
                     }
                 }
@@ -121,6 +122,9 @@ Base.extends("Session", {
         var userStates = $StateManager.getState(USER_CONFIG);
         var userData = userStates.users[this.userKey];
         return this.checkRequirement(userData, auth, req);
+    },
+    getUserName:function() {
+        return this.userName;
     },
     getUserData:function() {
         var userStates = $StateManager.getState(USER_CONFIG);

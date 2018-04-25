@@ -2549,6 +2549,9 @@ function displaySelf() {
         var divSelfPanel = divContentPanel.find(".div_self_panel");
         //divSelfPanel.html(JSON.stringify(detail, null, 2));
 
+        if (detail.name) {
+            $(selfItemTemplate({type:"备注名称", value:detail.name})).appendTo(divSelfPanel);
+        }
         $(selfItemTemplate({type:"权限级别", value:displaySelfModel.getAuthName()})).appendTo(divSelfPanel);
         $(selfItemTemplate({type:"权限细节", value:displaySelfModel.getReqNames()})).appendTo(divSelfPanel);
         if (detail.accounts) {

@@ -479,7 +479,8 @@ $HttpModel.addClass("USER_CLASS", {
                 return;
             }
 
-            var detail = session.getUserData();
+            var detail = clone(session.getUserData());
+            detail.name = session.getUserName();
             responder.respondJson({
                 detail: detail,
                 auths: session.availableAuths(),
