@@ -1145,46 +1145,67 @@ Base.extends("GameController", {
     refreshKingwar:function(conn, refreshData, done) {
         var next = coroutine(function*() {
             //console.log("refreshKingwar..", conn.getGameInfo().name);
-            var area = refreshData.area;
-            var star = refreshData.star;
-            var server = conn.getServerInfo().desc;
-
-            var data = yield conn.getKingWarState(next);
-            var constant = !data.allowJoin;
-            if (this.constantKingwar && !constant) {
-                this.constantKingwar = false;
-                this.playerToKingwar = {};
-            } else if (!this.constantKingwar && constant) {
-                this.constantKingwar = true;
-            }
-            if (!data.joined && data.allowJoin) {
-                var data_join = yield conn.joinKingWar(area, star, next);
-                if (!data_join.success) {
-                    this.errLog("joinKingWar", "server({2}) area({0}), star({1})".format(area, star, server));
+            if (refreshData.area == 4) {
+                var data = yield conn.getEmperorRace(next);
+                if (!data || !data.players) {
                     return safe(done)();
                 }
-            }
-            if (!data.joined && !data.allowJoin) {
-                return safe(done)();
-            }
-            if (refreshData.refData.constant && constant) {
-                return safe(done)();
-            }
-            var data = yield conn.getKingWarPlayers(next);
-            if (!data.players) {
-                this.errLog("getKingWarPlayers", "server({2}) area({0}), star({1})".format(area, star, server));
-                return safe(done)();
-            }
+                var refData = this.kingwarRefs[401];
+                var players = [];
+                for (var i = 0; i < data.players.length; ++i) {
+                    var playerData = data.players[i];
+                    if (playerData.playerId) {
+                        players.push({
+                            playerId: playerData.playerId,
+                            union: playerData.union,
+                            name: playerData.name,
+                            power: 0,
+                        });
+                    }
+                }
+                refData.players = players;
+            } else {
+                var area = refreshData.area;
+                var star = refreshData.star;
+                var server = conn.getServerInfo().desc;
 
-            var realKey = data.areaId * 100 + data.starId;
-            var realData = this.kingwarRefs[realKey];
-            refreshData.refData = realData;
-            if (realKey != refreshData.kingwarKey) {
-                this.errLog("mismatch", "kingwar search key({0}) doesn't equal to result key({1})".format(refreshData.kingwarKey, realKey));
-            }
+                var data = yield conn.getKingWarState(next);
+                var constant = !data.allowJoin;
+                if (this.constantKingwar && !constant) {
+                    this.constantKingwar = false;
+                    this.playerToKingwar = {};
+                } else if (!this.constantKingwar && constant) {
+                    this.constantKingwar = true;
+                }
+                if (!data.joined && data.allowJoin) {
+                    var data_join = yield conn.joinKingWar(area, star, next);
+                    if (!data_join.success) {
+                        this.errLog("joinKingWar", "server({2}) area({0}), star({1})".format(area, star, server));
+                        return safe(done)();
+                    }
+                }
+                if (!data.joined && !data.allowJoin) {
+                    return safe(done)();
+                }
+                if (refreshData.refData.constant && constant) {
+                    return safe(done)();
+                }
+                var data = yield conn.getKingWarPlayers(next);
+                if (!data.players) {
+                    this.errLog("getKingWarPlayers", "server({2}) area({0}), star({1})".format(area, star, server));
+                    return safe(done)();
+                }
 
-            realData.constant = constant;
-            this.updateKingwarPlayers(realKey, data);
+                var realKey = data.areaId * 100 + data.starId;
+                var realData = this.kingwarRefs[realKey];
+                refreshData.refData = realData;
+                if (realKey != refreshData.kingwarKey) {
+                    this.errLog("mismatch", "kingwar search key({0}) doesn't equal to result key({1})".format(refreshData.kingwarKey, realKey));
+                }
+
+                realData.constant = constant;
+                this.updateKingwarPlayers(realKey, data);
+            }
             safe(done)();
         }, this);
     },
@@ -1786,6 +1807,7 @@ Base.extends("GameController", {
         this.constantKingwar = false;
         this.playerToKingwar = {};
         this.kingwarRefs = {};
+        this.kingwarRefs[401] = {players:[]};
         for (var area = 1; area <= 3; ++area) {
             for (var star = 1; star <= 10; ++star) {
                 var key = area * 100 + star;

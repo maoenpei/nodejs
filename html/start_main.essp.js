@@ -341,10 +341,10 @@ function clickRefresh() {
 
 var playerCommon = {
     areaNames:{
-        "0":"皇帝",
         "1":"黄鹿",
         "2":"玫瑰",
         "3":"咸鱼",
+        "4":"皇帝",
     },
     pamK: 24, // 24 hours to half reduce
 };
@@ -357,6 +357,9 @@ playerCommon.areaColor = function(area) {
 playerCommon.areastarName = function(areastarKey) {
     var area = Math.floor(areastarKey / 100);
     var star = areastarKey % 100;
+    if (area == 4) {
+        return "皇帝战";
+    }
     if (area < 1 || area > 3 || star < 1 || star > 10) {
         return "";
     }
@@ -2022,17 +2025,65 @@ function displayKingWar() {
         var areastarTemplate = templates.read(".hd_kingwar_areastar");
         var navigateAreaTemplate = templates.read(".hd_navigate_area_item");
         var navigateStarTemplate = templates.read(".hd_navigate_star_item");
+        var displayAreaStarBlock = function(areaId, star) {
+            var key = areaId * 100 + star;
+            var areastarData = data.areastars[key];
+            var areastar = {
+                area:areaId,
+                star:star,
+                name:playerCommon.areastarName(key),
+            };
+            var divAreaStarBlock = $(areastarTemplate(areastar));
+            divAreaStarBlock.appendTo(divAreaStarList);
+            divAreaStarBlock.find(".div_areastar_title_text").addClass(playerCommon.areaColor(areaId));
+
+            var playersContainer = divAreaStarBlock.find(".div_areastar_players_breaf");
+            areastar.container = playersContainer;
+            areastar.block = divAreaStarBlock;
+            areastarInfo[key] = areastar;
+            if (areastarData && areastarData.length > 0) {
+                playersContainer.html("正在加载...");
+                for (var i = 0; i < areastarData.length; ++i) {
+                    var player = areastarData[i];
+                    var power = (player.power > 0 ? Math.floor(player.power / 10000) + "万" : "---");
+                    if (player.showMax) {
+                        power = "(" + Math.floor(player.maxPower / 10000) + "万)" + power;
+                    }
+                    playerInfo.push({
+                        first: i == 0,
+                        inlist: i < 16,
+                        union: player.union,
+                        name: player.name,
+                        power: power,
+                        belongTo: areastar,
+                    });
+                }
+            } else {
+                playersContainer.html("无");
+            }
+        };
+        var addNavAreaBlock = function(areaId, onClick) {
+            // nav area
+            var divNavAreaBlock = $(navigateAreaTemplate({
+                name: playerCommon.areaName(areaId)
+            }));
+            divNavAreaBlock.appendTo(divNavAreaList);
+            divNavAreaBlock.addClass(playerCommon.areaColor(areaId));
+            divNavAreaBlock.click(onClick);
+        }
+        var scrollToAreaStarBlock = function(areastar) {
+            var targetBlock = areastar.block;
+            var top = targetBlock.position().top;
+            $("html,body").animate({"scrollTop":top});
+        };
+        displayAreaStarBlock(4, 1);
+        addNavAreaBlock(4, function() {
+            scrollToAreaStarBlock(areastarInfo[401]);
+        });
         for (var area = 1; area <= 3; area++) {
             (function() {
                 var areaId = area;
-                var areaName = playerCommon.areaName(areaId);
-                var areaColor = playerCommon.areaColor(areaId);
-
-                // nav area
-                var divNavAreaBlock = $(navigateAreaTemplate({name:areaName}));
-                divNavAreaBlock.appendTo(divNavAreaList);
-                divNavAreaBlock.addClass(areaColor);
-                divNavAreaBlock.click(function() {
+                addNavAreaBlock(areaId, function() {
                     if (navAreaId == areaId) {
                         navAreaId = 0;
                         divNavAreaStarMask.hide();
@@ -2059,7 +2110,7 @@ function displayKingWar() {
                             }
                             var divNavStarBlock = $(navigateStarTemplate(navStarInfo));
                             divNavStarBlock.appendTo(divNavStarList);
-                            divNavStarBlock.find(".div_navigate_star_name").addClass(areaColor);
+                            divNavStarBlock.find(".div_navigate_star_name").addClass(playerCommon.areaColor(areaId));
                             if (players.length > 0) {
                                 var divPowerDisplays = divNavStarBlock.find(".div_navigate_star_power");
                                 for (var i = 0; i < players.length; ++i) {
@@ -2073,50 +2124,14 @@ function displayKingWar() {
                                 divNavStarBlock.find(".div_navigate_star_max").html("无");
                             }
                             divNavStarBlock.click(function() {
-                                var targetBlock = areastar.block;
-                                var top = targetBlock.position().top;
-                                $("html,body").animate({"scrollTop":top});
+                                scrollToAreaStarBlock(areastar);
                             });
                         })();
                     }
                 });
 
                 for (var star = 10; star >= 1; star--) {
-                    var key = areaId * 100 + star;
-                    var areastarData = data.areastars[key];
-                    var areastar = {
-                        area:areaId,
-                        star:star,
-                        name:areaName + star + "星",
-                    };
-                    var divAreaStarBlock = $(areastarTemplate(areastar));
-                    divAreaStarBlock.appendTo(divAreaStarList);
-                    divAreaStarBlock.find(".div_areastar_title_text").addClass(areaColor);
-
-                    var playersContainer = divAreaStarBlock.find(".div_areastar_players_breaf");
-                    areastar.container = playersContainer;
-                    areastar.block = divAreaStarBlock;
-                    areastarInfo[key] = areastar;
-                    if (areastarData && areastarData.length > 0) {
-                        playersContainer.html("正在加载...");
-                        for (var i = 0; i < areastarData.length; ++i) {
-                            var player = areastarData[i];
-                            var power = Math.floor(player.power / 10000) + "万";
-                            if (player.showMax) {
-                                power = "(" + Math.floor(player.maxPower / 10000) + "万)" + power;
-                            }
-                            playerInfo.push({
-                                first: i == 0,
-                                inlist: i < 16,
-                                union: player.union,
-                                name: player.name,
-                                power: power,
-                                belongTo: areastar,
-                            });
-                        }
-                    } else {
-                        playersContainer.html("无");
-                    }
+                    displayAreaStarBlock(areaId, star);
                 }
             })();
         }

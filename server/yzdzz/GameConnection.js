@@ -1410,20 +1410,38 @@ Base.extends("GameConnection", {
             });
         }, this);
     },
+    summarizeRaceInfo:function(data) {
+        var players = [];
+        if (data.list) {
+            for (var i = 0; i < data.list.length; ++i) {
+                var item = data.list[i];
+                players.push({
+                    playerId: item.uid,
+                    name: item.role_name || "",
+                    union: (item.server ? item.server + "." + item.union_short : ""),
+                    good: (item.good ? item.good : 0),
+                    bad: (item.bad ? item.bad : 0),
+                });
+            }
+        }
+        var cards = [];
+        if (data.cards) {
+            for (var i = 0; i < data.cards.length; ++i) {
+                var card = data.cards[i];
+                cards.push(Database.cardInfo(card));
+            }
+        }
+        return {
+            cards: cards,
+            rawCards: data.cards,
+            players: players,
+        };
+    },
     getKingWarRace:function(done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("KingWar", "getRaceInfo", null, next);
             if (!data || !data.list) {
                 return safe(done)({});
-            }
-            var players = [];
-            for (var i = 0; i < data.list.length; ++i) {
-                var item = data.list[i];
-                players.push({
-                    playerId: item.uid,
-                    good: (item.good ? item.good : 0),
-                    bad: (item.bad ? item.bad : 0),
-                });
             }
             if (this.testMode) {
                 if (!this.testKingwarCards) {
@@ -1434,20 +1452,10 @@ Base.extends("GameConnection", {
                 }
                 data.cards = clone(this.testKingwarCards);
             }
-            var cards = [];
-            if (data.cards) {
-                for (var i = 0; i < data.cards.length; ++i) {
-                    var card = data.cards[i];
-                    cards.push(Database.cardInfo(card));
-                }
-            }
-            return safe(done)({
-                area: data.areaid,
-                star: data.star,
-                cards: cards,
-                rawCards: data.cards,
-                players: players,
-            });
+            var raceInfo = this.summarizeRaceInfo(data);
+            raceInfo.area = data.areaid;
+            raceInfo.star = data.star;
+            return safe(done)(raceInfo);
         }, this);
     },
     useKingWarCard:function(playerId, done) {
@@ -1474,6 +1482,31 @@ Base.extends("GameConnection", {
                     bad: data.bad,
                 });
             }
+        }, this);
+    },
+    getEmperorRace:function(done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next);
+            if (!data || (data.step != 0 && !data.list)) {
+                return safe(done)({});
+            }
+            var raceInfo = this.summarizeRaceInfo(data);
+            raceInfo.area = 4;
+            raceInfo.star = 1;
+            return safe(done)(raceInfo);
+        }, this);
+    },
+    useEmperorCard:function(playerId, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("KingWar", "card", {type:2, uid:playerId}, next);
+            if (!data || !data.list) {
+                return safe(done)({});
+            }
+            return safe(done)({
+                success: true,
+                good: data.good,
+                bad: data.bad,
+            });
         }, this);
     },
     getRankPlayers:function(done) {
@@ -3510,7 +3543,7 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("RoleMerge", "composeInfo", null, next); // 打造幸运条
             //var data = yield this.sendMsg("RoleMerge", "info", null, next); // 勇者刷新状态
 
-            //var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next); //皇帝战
+            var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next); //皇帝战
             //var data = yield this.sendMsg("RoleMerge", "decompose", {type:0,value:"1,2,3,4",op:1}, next); // 分解
 
             //var data = yield this.sendMsg("RoleHero", "getHeros", null, next); // 勇者阵容
