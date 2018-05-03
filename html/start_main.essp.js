@@ -563,7 +563,7 @@ var displayAutomationModel = {
             {name: "badUNID", desc: "坏卡目标", type: "unions", isStr: true},
         ]},
         {name: "kingwar", desc: "帝国战当眼", props:[
-            {name: "area", desc: "赛区", type: "number", limit: [0, 3], alias: ["无", "黄鹿", "玫瑰", "咸鱼"]},
+            {name: "area", desc: "赛区", type: "number", limit: [0, 4], alias: ["无", "黄鹿", "玫瑰", "咸鱼", "皇帝"]},
             {name: "star", desc: "星级", type: "stars", default:1},
         ]},
         {name: "listing", desc: "列出玩家信息", props:[
