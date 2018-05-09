@@ -116,27 +116,25 @@ Base.extends("GameController", {
 
     // targeting
     setPlayerTargeting:function(playerData, targetingConfig) {
-        var key = this.appendRefresh(playerData, "targeting", 3, (conn, done, taskItem) => {
-            this.refreshTargeting(conn, targetingConfig, key, taskItem, done);
+        var key = this.appendRefresh(playerData, "targeting", 3, (conn, done, extra) => {
+            this.refreshTargeting(conn, targetingConfig, key, extra, done);
         });
         return key;
     },
     modifyPlayerTargeting:function(key, targetingConfig) {
-        return this.setRefreshFunc(key, (conn, done, taskItem) => {
-            this.refreshTargeting(conn, targetingConfig, key, taskItem, done);
+        return this.setRefreshFunc(key, (conn, done, extra) => {
+            this.refreshTargeting(conn, targetingConfig, key, extra, done);
         });
     },
-    refreshTargeting:function(conn, targetingConfig, selfKey, taskItem, done) {
+    refreshTargeting:function(conn, targetingConfig, selfKey, extra, done) {
         var next = coroutine(function*() {
             console.log("refreshTargeting..", conn.getGameInfo().name);
+            var taskItem = extra && extra.taskItem;
             var kingwarKey = this.playerToKingwar[targetingConfig.reachPLID];
             if (kingwarKey && this.emperorKingwars[kingwarKey] && targetingConfig.disableEmperor) {
                 kingwarKey = null;
             }
             if (kingwarKey) {
-                if (taskItem) {
-                    taskItem.giveup();
-                }
                 console.log("-- kingwar assignment -- find target", kingwarKey, targetingConfig.reachPLID, conn.getGameInfo().name);
                 var areaStar = this.getAreaStar(kingwarKey);
                 var data_join = yield conn.joinKingWar(areaStar.area, areaStar.star, next);
@@ -156,8 +154,6 @@ Base.extends("GameController", {
                             var areaStar = this.getAreaStar(kingwarKey);
                             var data_join = yield conn.joinKingWar(areaStar.area, areaStar.star, next);
                         }
-                    } else {
-                        taskItem.giveup();
                     }
                 }
             }
@@ -453,7 +449,9 @@ Base.extends("GameController", {
                             }
                         }, this);
                     })();
-                    yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 3; }, next, targetingTaskManager);
+                    yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 3; }, next, {
+                        taskManager: targetingTaskManager,
+                    });
                     this.uniqueKingwarOrder = null;
                 }
                 console.log("-- kingwar assignment -- finished!");
@@ -467,14 +465,14 @@ Base.extends("GameController", {
 
     // dropping
     setPlayerDropping:function(playerData, droppingConfig) {
-        var key = this.appendRefresh(playerData, "dropping", 6, (conn, done, taskItem) => {
-            this.refreshDropping(conn, droppingConfig, taskItem, done);
+        var key = this.appendRefresh(playerData, "dropping", 6, (conn, done, extra) => {
+            this.refreshDropping(conn, droppingConfig, extra, done);
         });
         return key;
     },
     modifyPlayerDropping:function(key, droppingConfig) {
-        return this.setRefreshFunc(key, (conn, done, taskItem) => {
-            this.refreshDropping(conn, droppingConfig, taskItem, done);
+        return this.setRefreshFunc(key, (conn, done, extra) => {
+            this.refreshDropping(conn, droppingConfig, extra, done);
         });
     },
     isCardValid:function(card, playerData) {
@@ -595,13 +593,13 @@ Base.extends("GameController", {
         }
         return null;
     },
-    refreshDropping:function(conn, droppingConfig, taskItem, done) {
+    refreshDropping:function(conn, droppingConfig, extra, done) {
         var next = coroutine(function*() {
             console.log("refreshDropping..", conn.getGameInfo().name);
+            var taskItem = extra && extra.taskItem;
             var raceInfo = yield conn.getKingWarRace(next);
             if (!raceInfo.cards || raceInfo.cards.length == 0 || raceInfo.area == 0 || raceInfo.star == 0) {
                 console.log("dropping with no cards!", conn.getGameInfo().name);
-                taskItem.giveup();
             } else {
                 console.log("hasCards", raceInfo.rawCards, conn.getGameInfo().name);
                 var cards = raceInfo.cards;
@@ -778,7 +776,9 @@ Base.extends("GameController", {
                         }
                     }, this);
                 })();
-                yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 6; }, next, droppingTaskManager);
+                yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 6; }, next, {
+                    taskManager: droppingTaskManager,
+                });
                 console.log("dropping finished!");
             }, this);
         };
@@ -923,7 +923,9 @@ Base.extends("GameController", {
             var randTime = rand(1500);
             yield setTimeout(next, randTime);
             var lock = this.unionwarLock;
-            yield lock.lock(next);
+            if (lock) {
+                yield lock.lock(next);
+            }
             conn.log("start to occupy");
 
             var unionData = yield conn.getUnion(next);
@@ -1009,7 +1011,9 @@ Base.extends("GameController", {
                 var occupyData = yield conn.occupy(myOccupy.landId, myOccupy.pos, next);
             }
 
-            lock.unlock();
+            if (lock) {
+                lock.unlock();
+            }
             safe(done)();
         }, this);
     },
@@ -1052,9 +1056,11 @@ Base.extends("GameController", {
         this.unsetEventKeys(this.unionwarTimes);
         this.unionwarOrder = defaults.normal_order;
         this.unionwarTimes = [];
-        this.unionwarLock = new Mutex();
         var doUnionwar = () => {
-            this.refreshAllPlayers((funcObj) => { return funcObj.state == 7; });
+            this.unionwarLock = new Mutex();
+            this.refreshAllPlayers((funcObj) => { return funcObj.state == 7; }, () => {
+                this.unionwarLock = null;
+            });
         };
         for (var i = 0; i < defaults.days.length; ++i) {
             var day = defaults.days[i];
@@ -1069,6 +1075,7 @@ Base.extends("GameController", {
         var fightEnd = defaults.fighting_end;
         var startWeekendUnionwar = () => {
             var next = coroutine(function*() {
+                this.unionwarLock = new Mutex();
                 var now = new Date();
                 now.setHours(fightEnd.hour, fightEnd.minute, fightEnd.second, 0);
                 var endTime = now.getTime();
@@ -1079,12 +1086,14 @@ Base.extends("GameController", {
                     var now = new Date();
                     console.log("unionwar fighting - ", "{0}:{1}".format(now.getHours(), now.getMinutes()));
                     yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 7; }, next);
+                    var now = new Date();
                     console.log("unionwar fought - ", "{0}:{1}".format(now.getHours(), now.getMinutes()));
                     yield setTimeout(next, defaults.fighting_period * 1000);
                 }
 
                 this.setRefreshStatesOfType("kingwar", 1);
                 this.setRefreshStatesOfType("playerlist", 1);
+                this.unionwarLock = null;
             }, this);
         };
         this.unionwarTimes.push(this.timingManager.setWeeklyEvent(0, fightStart.hour, fightStart.minute, fightStart.second, startWeekendUnionwar));
@@ -1550,7 +1559,7 @@ Base.extends("GameController", {
                 this.heroshopDate = now.getDate();
                 safe(this.heroshopUpdateCallback)(this.heroshopDate, this.heroshopInfo);
                 console.log("daily task end!", "{0}:{1}".format(now.getHours(), now.getMinutes()));
-            }, null, true);
+            }, { showWave:true });
         };
         for (var i = 0; i < dailyTimes.length; ++i) {
             var dailyInfo = dailyTimes[i];
@@ -1677,7 +1686,8 @@ Base.extends("GameController", {
         }
         return false;
     },
-    refreshAllPlayers:function(checkFun, done, taskManager, showWave) {
+    refreshAllPlayers:function(checkFun, done, extra) {
+        // extra: [taskManager, showWave, param]
         console.log("refresh all player start -", process.memoryUsage());
         var allPlayersCount = 0;
         var select = new Select();
@@ -1693,12 +1703,15 @@ Base.extends("GameController", {
 
             allPlayersCount = executables.length;
             if (executables.length > 0) {
-                this.executeOnePlayer(refreshInfo, executables, select.setup(), (taskManager ? taskManager.addTask() : undefined));
+                this.executeOnePlayer(refreshInfo, executables, select.setup(), {
+                    taskItem: (extra && extra.taskManager ? extra.taskManager.addTask() : null),
+                    param: extra && extra.param,
+                });
             }
         }
         select.all(() => {
             console.log("refresh all player finish -", allPlayersCount, process.memoryUsage());
-            if (showWave) {
+            if (extra && extra.showWave) {
                 this.showMemoryWave();
             }
             safe(done)();
@@ -1711,19 +1724,26 @@ Base.extends("GameController", {
             safe(done)(result);
         });
     },
-    executeOnePlayer:function(refreshInfo, executables, done, taskItem) {
+    executeOnePlayer:function(refreshInfo, executables, done, extra) {
+        // extra: [taskItem, param]
         var next = coroutine(function*() {
+            var taskItem = extra && extra.taskItem;
             var token = { finished: false, };
+            var conn = null;
             yield refreshInfo.mutex.lock(next);
             var doEnd = (unexpected) => {
                 if (token.finished) {
                     return;
                 }
                 token.finished = true;
-                if (unexpected && taskItem) {
-                    taskItem.giveup();
+                if (taskItem) {
+                    taskItem.giveupFinally();
                 }
                 refreshInfo.mutex.unlock();
+                if (conn) {
+                    //console.log("quit -- player!", refreshInfo.account, refreshInfo.server, conn.getGameInfo().name);
+                    conn.quit();
+                }
                 safe(done)({
                     success: !unexpected,
                 });
@@ -1734,7 +1754,7 @@ Base.extends("GameController", {
                     doEnd(true);
                 }
             }, 1000 * 60 * 1.5);
-            var conn = this.accountManager.connectAccount(refreshInfo.account, refreshInfo.validator);
+            conn = this.accountManager.connectAccount(refreshInfo.account, refreshInfo.validator);
             if (!conn) {
                 this.errLog("connectAccount", "account:{0}".format(refreshInfo.account));
                 return doEnd(true);
@@ -1756,13 +1776,11 @@ Base.extends("GameController", {
                 power: conn.getGameInfo().power,
             };
             for (var i = 0; i < executables.length; ++i) {
-                yield executables[i](conn, next, taskItem);
+                yield executables[i](conn, next, extra);
                 if (token.finished) {
                     return doEnd(true);
                 }
             }
-            //console.log("quit -- player!", refreshInfo.account, refreshInfo.server, conn.getGameInfo().name);
-            conn.quit();
             doEnd();
         }, this);
     },

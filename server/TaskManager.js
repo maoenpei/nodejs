@@ -15,6 +15,15 @@ Base.extends("Task", {
     giveup:function() {
         this.manager.giveupAssignment(this.flag);
     },
+    giveupFinally:function() {
+        if (this.assigned) {
+            return;
+        }
+        if (this.finish) {
+            console.log("========================= request to get assignment but not assigned! ===========================", this.finish);
+        }
+        this.giveup();
+    },
     getValue:function() {
         return this.value;
     },
