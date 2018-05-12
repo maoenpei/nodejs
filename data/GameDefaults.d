@@ -110,9 +110,12 @@
         "selfUnion":"b275705814a85d98"
         ,"whitelist":["b26c110ddaa85c83"]
         ,"times":[
-            {"day":3,"hour":11,"minute":59,"second":50}
-            ,{"day":3,"hour":17,"minute":59,"second":50}
-            ,{"day":3,"hour":19,"minute":59,"second":50}
+            {"day":3,"hour":11,"minute":59,"second":50,"emporer":false}
+            ,{"day":3,"hour":17,"minute":59,"second":50,"emporer":false}
+            ,{"day":3,"hour":19,"minute":59,"second":50,"emporer":false}
+            ,{"day":4,"hour":11,"minute":59,"second":50,"emporer":true}
+            ,{"day":4,"hour":17,"minute":59,"second":50,"emporer":true}
+            ,{"day":4,"hour":19,"minute":59,"second":50,"emporer":true}
         ]
         ,"assign":53
         ,"start":58.5

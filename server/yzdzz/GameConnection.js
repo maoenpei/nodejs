@@ -1490,6 +1490,15 @@ Base.extends("GameConnection", {
             if (!data || (data.step != 0 && !data.list)) {
                 return safe(done)({});
             }
+            if (this.testMode) {
+                if (!this.testKingwarCards) {
+                    this.testKingwarCards = [];
+                    for (var i = 0; i < 3; ++i) {
+                        this.testKingwarCards[i] = rand(6) + 1;
+                    }
+                }
+                data.cards = clone(this.testKingwarCards);
+            }
             var raceInfo = this.summarizeRaceInfo(data);
             raceInfo.area = 4;
             raceInfo.star = 1;
@@ -1498,15 +1507,28 @@ Base.extends("GameConnection", {
     },
     useEmperorCard:function(playerId, done) {
         var next = coroutine(function*() {
-            var data = yield this.sendMsg("KingWar", "card", {type:2, uid:playerId}, next);
-            if (!data || !data.list) {
-                return safe(done)({});
+            if (this.testMode) {
+                if (!this.testKingwarCards || this.testKingwarCards.length == 0) {
+                    return safe(done)({});
+                }
+                this.testKingwarCards.splice(0, 1);
+                yield setTimeout(next, 100);
+                return safe(done)({
+                    success: true,
+                    good: 1,
+                    bad: 1,
+                });
+            } else {
+                var data = yield this.sendMsg("KingWar", "card", {type:2, uid:playerId}, next);
+                if (!data || !data.list) {
+                    return safe(done)({});
+                }
+                return safe(done)({
+                    success: true,
+                    good: data.good,
+                    bad: data.bad,
+                });
             }
-            return safe(done)({
-                success: true,
-                good: data.good,
-                bad: data.bad,
-            });
         }, this);
     },
     getRankPlayers:function(done) {

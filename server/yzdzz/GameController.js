@@ -597,7 +597,17 @@ Base.extends("GameController", {
         var next = coroutine(function*() {
             console.log("refreshDropping..", conn.getGameInfo().name);
             var taskItem = extra && extra.taskItem;
-            var raceInfo = yield conn.getKingWarRace(next);
+            var droppingType = extra && extra.param;
+            var GetRaceInfo;
+            var DropCardTo;
+            if (droppingType == "EMPEROR_WAR") {
+                GetRaceInfo = (ldone) => { conn.getEmperorRace(ldone); };
+                DropCardTo = (playerId, ldone) => { conn.useEmperorCard(playerId, ldone); };
+            } else {
+                GetRaceInfo = (ldone) => { conn.getKingWarRace(ldone); };
+                DropCardTo = (playerId, ldone) => { conn.useKingWarCard(playerId, ldone); };
+            }
+            var raceInfo = yield GetRaceInfo(next);
             if (!raceInfo.cards || raceInfo.cards.length == 0 || raceInfo.area == 0 || raceInfo.star == 0) {
                 console.log("dropping with no cards!", conn.getGameInfo().name);
             } else {
@@ -614,7 +624,7 @@ Base.extends("GameController", {
                     var isForce = false;
                     while (cards.length > 0) {
                         while (cards.length > 0 && conn.getServerTime() <= waitingTime) {
-                            var refreshRace = yield conn.getKingWarRace(next);
+                            var refreshRace = yield GetRaceInfo(next);
                             if (!refreshRace.cards || refreshRace.cards.length == 0 || !this.compareCards(cards, refreshRace.cards)) {
                                 console.log("dropping break", this.rawCardsOf(cards), refreshRace.rawCards, conn.getGameInfo().name);
                                 isForce = true;
@@ -630,7 +640,7 @@ Base.extends("GameController", {
                                     yield playerLock.lock(next);
                                 }
                                 console.log("drop card", refreshRace.rawCards, "to", playerData, conn.getGameInfo().name);
-                                var useData = yield conn.useKingWarCard(playerData.playerId, next);
+                                var useData = yield DropCardTo(playerData.playerId, next);
                                 if (playerLock) {
                                     playerLock.unlock();
                                 }
@@ -743,7 +753,7 @@ Base.extends("GameController", {
             this.whiteList[playerId] = true;
         }
         console.log("white list -", this.whiteList);
-        var doDropping = () => {
+        var doDropping = (droppingType) => {
             var next = coroutine(function*() {
                 console.log("dropping started!");
                 var assignTime = this.timeWithSeconds(defaults.assign);
@@ -778,14 +788,19 @@ Base.extends("GameController", {
                 })();
                 yield this.refreshAllPlayers((funcObj) => { return funcObj.state == 6; }, next, {
                     taskManager: droppingTaskManager,
+                    param: droppingType,
                 });
                 console.log("dropping finished!");
             }, this);
         };
         for (var i = 0; i < defaults.times.length; ++i) {
-            var time = defaults.times[i];
-            var droppingKey = this.timingManager.setWeeklyEvent(time.day, time.hour, time.minute, time.second, doDropping);
-            this.droppingTimes.push(droppingKey);
+            (() => {
+                var time = defaults.times[i];
+                var droppingKey = this.timingManager.setWeeklyEvent(time.day, time.hour, time.minute, time.second, () => {
+                    doDropping((time.emporer ? "EMPEROR_WAR" : "KINGWAR"));
+                });
+                this.droppingTimes.push(droppingKey);
+            })();
         }
     },
 
