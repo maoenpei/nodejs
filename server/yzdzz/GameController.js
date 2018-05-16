@@ -217,6 +217,9 @@ Base.extends("GameController", {
         }
         var kingwarOrder = [];
         for (var kingwarKey in this.kingwarRefs) {
+            if (kingwarKey == 401) {
+                continue;
+            }
             var refData = this.kingwarRefs[kingwarKey];
             var brief = this.getKingwarBrief(refData, defaults);
             brief.mutual = this.getMutualLevel(brief.ourMax, brief.otherMax);
