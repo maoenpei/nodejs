@@ -1520,7 +1520,7 @@ Base.extends("GameConnection", {
                 });
             } else {
                 var data = yield this.sendMsg("KingWar", "card", {type:2, uid:playerId}, next);
-                if (!data || !data.list) {
+                if (!data) {
                     return safe(done)({});
                 }
                 return safe(done)({

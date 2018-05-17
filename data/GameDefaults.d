@@ -113,8 +113,6 @@
             {"day":3,"hour":11,"minute":59,"second":50,"emporer":false}
             ,{"day":3,"hour":17,"minute":59,"second":50,"emporer":false}
             ,{"day":3,"hour":19,"minute":59,"second":50,"emporer":false}
-            ,{"day":4,"hour":11,"minute":59,"second":50,"emporer":true}
-            ,{"day":4,"hour":17,"minute":59,"second":50,"emporer":true}
             ,{"day":4,"hour":19,"minute":59,"second":50,"emporer":true}
         ]
         ,"assign":53
