@@ -618,15 +618,17 @@ Base.extends("GameController", {
                 var cards = raceInfo.cards;
                 var kingwarKey = raceInfo.area * 100 + raceInfo.star;
                 var kingwarInfo = yield taskItem.getAssignment(kingwarKey, next);
+                var playerId = conn.getGameInfo().playerId;
                 //console.log("dropping with Info", kingwarInfo, conn.getGameInfo().name);
-                if (kingwarInfo.playerOrder.length > 2) {
+                if (kingwarInfo.playerOrder.length > 2 && kingwarInfo.playerExisting[playerId]) {
                     while (conn.getServerTime() < kingwarInfo.startTime) {
                         yield setTimeout(next, 60);
                     }
                     var waitingTime = kingwarInfo.forceTime;
                     var isForce = false;
-                    while (cards.length > 0) {
-                        while (cards.length > 0 && conn.getServerTime() <= waitingTime) {
+                    var failCount = 0;
+                    while (cards.length > 0 && failCount < 3) {
+                        while (cards.length > 0 && conn.getServerTime() <= waitingTime && failCount < 3) {
                             var refreshRace = yield GetRaceInfo(next);
                             if (!refreshRace.cards || refreshRace.cards.length == 0 || !this.compareCards(cards, refreshRace.cards)) {
                                 console.log("dropping break", this.rawCardsOf(cards), refreshRace.rawCards, conn.getGameInfo().name);
@@ -648,10 +650,12 @@ Base.extends("GameController", {
                                     playerLock.unlock();
                                 }
                                 if (useData.success) {
+                                    failCount = 0;
                                     var t = conn.getServerTime();
                                     console.log("drop success", refreshRace.rawCards, playerData.playerId, "good:{0}, bad:{1},".format(useData.good, useData.bad), conn.getGameInfo().name, t.getSeconds(), t.getMilliseconds());
                                     cards.splice(0, 1);
                                 } else {
+                                    failCount++;
                                     console.log("drop failed", conn.getGameInfo().name);
                                 }
                             }
@@ -674,10 +678,12 @@ Base.extends("GameController", {
     getDroppingKingwarInfo:function(kingwarKey, defaults) {
         var playerList = [];
         var refData = this.kingwarRefs[kingwarKey];
+        var playerExisting = {};
         var playerCount = (refData.players.length > 16 ? 16 : refData.players.length);
         for (var i = 0; i < playerCount; ++i) {
             var player = refData.players[i];
             var playerId = player.playerId;
+            playerExisting[playerId] = true;
             if (this.whiteList[playerId]) {
                 continue;
             }
@@ -717,6 +723,7 @@ Base.extends("GameController", {
         return {
             playerOrder: playerOrder,
             playerIndices: playerIndices,
+            playerExisting: playerExisting,
         };
     },
     droppingAssignment:function(tasks, kingwarInfos, timings, defaults) {

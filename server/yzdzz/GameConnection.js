@@ -3566,6 +3566,7 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("RoleMerge", "info", null, next); // 勇者刷新状态
 
             var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next); //皇帝战
+            //var data = yield this.sendMsg("KingWar", "getRaceInfo", null, next); //皇帝战
             //var data = yield this.sendMsg("RoleMerge", "decompose", {type:0,value:"1,2,3,4",op:1}, next); // 分解
 
             //var data = yield this.sendMsg("RoleHero", "getHeros", null, next); // 勇者阵容
