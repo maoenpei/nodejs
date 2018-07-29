@@ -22,7 +22,7 @@ console.log("argv root: '" + urlRoot + "'");
 
 var ip;
 if (isHost) {
-    ip = "192.168.1.3";
+    ip = "192.168.1.5";
 } else {
     ip = "127.0.0.1";
 }

@@ -538,6 +538,10 @@ var displayAutomationModel = {
             {name: "splendid", desc: "福利活动", type: "check"},
             {name: "meal", desc: "勇者餐馆", type: "check"},
         ]},
+        {name: "autoWorldWar", desc: "创世", props: [
+            {name: "worldShop", desc: "符文制作", type: "check"},
+            {name: "runeType", desc: "符文类型", type: "number", limit: [1, 2], alias: ["1000玉", "5000玉"]},
+        ]},
     ],
     settingProps: [
         {name: "targeting", desc: "帝国战目标", props:[

@@ -634,6 +634,9 @@ Base.extends("GameConnection", {
                 vip: "vip", // vip 等级
                 friendship: "friendWarVal", //友谊值
                 summon_soul: "redSoul", // 红魂
+                mizunotama: "sourceWater", // 水之源
+                hinotama: "sourceFire", // 火之源
+                kinotama: "sourceWood", // 木之源
             };
             this.gameInfo = {
                 deltaTime: deltaTime,
@@ -3536,6 +3539,45 @@ Base.extends("GameConnection", {
             });
         }, this);
     },
+    autoWorldWar:function(config, done) {
+        var next = coroutine(function*() {
+            // 制作符文
+            if (config.worldShop && this.validator.checkHourly("autoWorldShop")) {
+                var data = yield this.sendMsg("WorldWar", "workshop", null, next);
+                if (data && data.list) {
+                    var usedSlots = {};
+                    for (var i = 0; i < data.list.length; ++i) {
+                        var slotNum = data.max;
+                        var item = data.list[i];
+                        if (item.done == 1) {
+                            var data_pick = yield this.sendMsg("WorldWar", "pickRune", { slot:item.slot }, next);
+                            if (!data_pick) {
+                                break;
+                            }
+                        } else if (item.done == 0) {
+                            slotNum--;
+                            usedSlots[item.slot] = true;
+                        }
+                    }
+                    var make_type = config.runeType;
+                    var make_cost = slotNum * (make_type == 1 ? 1000 : 5000);
+                    if (this.gameInfo.sourceWater >= make_cost && this.gameInfo.sourceFire >= make_cost && this.gameInfo.sourceWood >= make_cost) {
+                        for (var slot = 1; slot <= data.max; ++slot) {
+                            if (!usedSlots[slot]) {
+                                var data_make = yield this.sendMsg("WorldWar", "makeRune", { slot:slot, type:make_type }, next);
+                                if (!data_make) {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
     testProtocol:function(done) {
         var next = coroutine(function*() {
             console.log(new Date().getTime() / 1000);
@@ -3565,7 +3607,7 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("RoleMerge", "composeInfo", null, next); // 打造幸运条
             //var data = yield this.sendMsg("RoleMerge", "info", null, next); // 勇者刷新状态
 
-            var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next); //皇帝战
+            //var data = yield this.sendMsg("KingWar", "getEmperorRaceInfo", null, next); //皇帝战
             //var data = yield this.sendMsg("KingWar", "getRaceInfo", null, next); //皇帝战
             //var data = yield this.sendMsg("RoleMerge", "decompose", {type:0,value:"1,2,3,4",op:1}, next); // 分解
 
@@ -3578,6 +3620,17 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("ActSplendid", "getinfo", null, next);
             //var data = yield this.sendMsg("ActMagicalGirl", "getinfo", null, next);
             //var data = yield this.sendMsg("ActMagicalGirl", "fire", {level:1}, next);
+
+            //var data = yield this.sendMsg("WorldWar", "tips", null, next);
+            //var data = yield this.sendMsg("WorldWar", "getChatList", null, next);
+            var data = yield this.sendMsg("WorldWar", "getinfo", null, next);
+            //var data = yield this.sendMsg("WorldWar", "warlist", null, next);
+            //var data = yield this.sendMsg("WorldWar", "getMarkList", null, next);
+            //var data = yield this.sendMsg("WorldWar", "income", null, next);
+            //var data = yield this.sendMsg("WorldWar", "tech", null, next);
+            //var data = yield this.sendMsg("WorldWar", "workshop", null, next);
+            //var data = yield this.sendMsg("WorldWar", "pickRune", {slot:4}, next);
+            //var data = yield this.sendMsg("WorldWar", "makeRune", {slot:4, type:2}, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);

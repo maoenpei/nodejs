@@ -64,6 +64,10 @@
             ,"splendid":true
             ,"meal":true
         }
+        ,"autoWorldWar":{
+            "worldShop":true
+            ,"runeType":2
+        }
     }
     ,"automationOrder":[
         "autoSpecial"
@@ -81,6 +85,7 @@
         ,"autoConsume"
         ,"autoXReward"
         ,"autoReward"
+        ,"autoWorldWar"
     ]
     ,"periodic":{
         "interval":360
