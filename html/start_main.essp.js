@@ -541,6 +541,8 @@ var displayAutomationModel = {
         {name: "autoWorldWar", desc: "创世", props: [
             {name: "worldShop", desc: "符文制作", type: "check"},
             {name: "runeType", desc: "符文类型", type: "number", limit: [1, 2], alias: ["1000玉", "5000玉"]},
+            {name: "worldReward", desc: "领取新闻", type: "check"},
+            {name: "worldTasks", desc: "领取任务奖励", type: "check"},
         ]},
     ],
     settingProps: [

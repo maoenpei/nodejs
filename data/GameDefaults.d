@@ -67,6 +67,8 @@
         ,"autoWorldWar":{
             "worldShop":true
             ,"runeType":2
+            ,"worldReward":true
+            ,"worldTasks":true
         }
     }
     ,"automationOrder":[

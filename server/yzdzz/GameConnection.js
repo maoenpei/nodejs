@@ -3573,6 +3573,36 @@ Base.extends("GameConnection", {
                     }
                 }
             }
+            //领取奖励
+            if (config.worldReward && this.validator.checkDaily("autoWorldReward")) {
+                var data = yield this.sendMsg("WorldWar", "getNewsInfo", null, next);
+                if (data && data.list) {
+                    for (var i = 0; i < data.list.length; ++i) {
+                        var item_key = data.list[i];
+                        var data_reward = yield this.sendMsg("WorldWar", "getNewAward", { key:item_key }, next);
+                        if (!data_reward) {
+                            break;
+                        }
+                    }
+                }
+            }
+            // 领取任务
+            if (config.worldTasks && this.validator.checkDaily("autoWorldTasks")) {
+                for (var type = 1; type <= 3; ++type) {
+                    var data = yield this.sendMsg("WorldWar", "getTargetList", { type:type }, next);
+                    if (data && data.list) {
+                        for (var i = 0; i < data.list.length; ++i) {
+                            var item = data.list[i];
+                            if (item.state == 1) {
+                                var data_fetch = yield this.sendMsg("WorldWar", "fetchTargetRes", { id:item.id }, next);
+                                if (!data_fetch) {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             return safe(done)({
                 success: true,
             });
@@ -3623,7 +3653,7 @@ Base.extends("GameConnection", {
 
             //var data = yield this.sendMsg("WorldWar", "tips", null, next);
             //var data = yield this.sendMsg("WorldWar", "getChatList", null, next);
-            var data = yield this.sendMsg("WorldWar", "getinfo", null, next);
+            //var data = yield this.sendMsg("WorldWar", "getinfo", null, next);
             //var data = yield this.sendMsg("WorldWar", "warlist", null, next);
             //var data = yield this.sendMsg("WorldWar", "getMarkList", null, next);
             //var data = yield this.sendMsg("WorldWar", "income", null, next);
@@ -3631,6 +3661,12 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("WorldWar", "workshop", null, next);
             //var data = yield this.sendMsg("WorldWar", "pickRune", {slot:4}, next);
             //var data = yield this.sendMsg("WorldWar", "makeRune", {slot:4, type:2}, next);
+            //var data = yield this.sendMsg("WorldWar", "getNewsInfo", null, next);
+            //var data = yield this.sendMsg("WorldWar", "getNewInfo", {key:1532836860}, next);
+            //var data = yield this.sendMsg("WorldWar", "getNewAward", {key:1532836860}, next);
+            //var data = yield this.sendMsg("WorldWar", "getTargetList", { type:3 }, next);
+            //var data = yield this.sendMsg("WorldWar", "fetchTargetRes", { id:31037 }, next);
+            //var data = yield this.sendMsg("Resource", "fetch", null, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);
