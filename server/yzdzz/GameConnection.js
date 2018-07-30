@@ -3574,7 +3574,7 @@ Base.extends("GameConnection", {
                 }
             }
             //领取奖励
-            if (config.worldReward && this.validator.checkDaily("autoWorldReward")) {
+            if (config.worldReward && this.validator.checkHourly("autoWorldReward")) {
                 var data = yield this.sendMsg("WorldWar", "getNewsInfo", null, next);
                 if (data && data.list) {
                     for (var i = 0; i < data.list.length; ++i) {
@@ -3587,7 +3587,7 @@ Base.extends("GameConnection", {
                 }
             }
             // 领取任务
-            if (config.worldTasks && this.validator.checkDaily("autoWorldTasks")) {
+            if (config.worldTasks && this.validator.checkHourly("autoWorldTasks")) {
                 for (var type = 1; type <= 3; ++type) {
                     var data = yield this.sendMsg("WorldWar", "getTargetList", { type:type }, next);
                     if (data && data.list) {
