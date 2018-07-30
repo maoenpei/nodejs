@@ -3546,9 +3546,9 @@ Base.extends("GameConnection", {
                 var data = yield this.sendMsg("WorldWar", "workshop", null, next);
                 if (data && data.max) {
                     var usedSlots = {};
+                    var slotNum = data.max;
                     if (data.list) {
                         for (var i = 0; i < data.list.length; ++i) {
-                            var slotNum = data.max;
                             var item = data.list[i];
                             if (item.done == 1) {
                                 var data_pick = yield this.sendMsg("WorldWar", "pickRune", { slot:item.slot }, next);
