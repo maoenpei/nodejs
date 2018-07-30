@@ -3544,19 +3544,21 @@ Base.extends("GameConnection", {
             // 制作符文
             if (config.worldShop && this.validator.checkHourly("autoWorldShop")) {
                 var data = yield this.sendMsg("WorldWar", "workshop", null, next);
-                if (data && data.list) {
+                if (data && data.max) {
                     var usedSlots = {};
-                    for (var i = 0; i < data.list.length; ++i) {
-                        var slotNum = data.max;
-                        var item = data.list[i];
-                        if (item.done == 1) {
-                            var data_pick = yield this.sendMsg("WorldWar", "pickRune", { slot:item.slot }, next);
-                            if (!data_pick) {
-                                break;
+                    if (data.list) {
+                        for (var i = 0; i < data.list.length; ++i) {
+                            var slotNum = data.max;
+                            var item = data.list[i];
+                            if (item.done == 1) {
+                                var data_pick = yield this.sendMsg("WorldWar", "pickRune", { slot:item.slot }, next);
+                                if (!data_pick) {
+                                    break;
+                                }
+                            } else if (item.done == 0) {
+                                slotNum--;
+                                usedSlots[item.slot] = true;
                             }
-                        } else if (item.done == 0) {
-                            slotNum--;
-                            usedSlots[item.slot] = true;
                         }
                     }
                     var make_type = config.runeType;
