@@ -3541,66 +3541,124 @@ Base.extends("GameConnection", {
     },
     autoWorldWar:function(config, done) {
         var next = coroutine(function*() {
-            // 制作符文
-            if (config.worldShop && this.validator.checkHourly("autoWorldShop")) {
-                var data = yield this.sendMsg("WorldWar", "workshop", null, next);
-                if (data && data.max) {
-                    var usedSlots = {};
-                    var slotNum = data.max;
-                    if (data.list) {
-                        for (var i = 0; i < data.list.length; ++i) {
-                            var item = data.list[i];
-                            if (item.done == 1) {
-                                var data_pick = yield this.sendMsg("WorldWar", "pickRune", { slot:item.slot }, next);
-                                if (!data_pick) {
-                                    break;
+            if (this.validator.checkHourly("autoWorldWar")) {
+                var data = yield this.sendMsg("WorldWar", "getinfo", null, next);
+                if (!data || !data.city) {
+                    return safe(done)({
+                        success: false,
+                    });
+                }
+                var license = data.license_num;
+                var license_buy = 3 - data.license_buy;
+                // 制作符文
+                if (config.worldShop) {
+                    var data = yield this.sendMsg("WorldWar", "workshop", null, next);
+                    if (data && data.max) {
+                        var usedSlots = {};
+                        var slotNum = data.max;
+                        if (data.list) {
+                            for (var i = 0; i < data.list.length; ++i) {
+                                var item = data.list[i];
+                                if (item.done == 1) {
+                                    var data_pick = yield this.sendMsg("WorldWar", "pickRune", { slot:item.slot }, next);
+                                    if (!data_pick) {
+                                        break;
+                                    }
+                                } else if (item.done == 0) {
+                                    slotNum--;
+                                    usedSlots[item.slot] = true;
                                 }
-                            } else if (item.done == 0) {
-                                slotNum--;
-                                usedSlots[item.slot] = true;
                             }
                         }
-                    }
-                    var make_type = config.runeType;
-                    var make_cost = slotNum * (make_type == 1 ? 1000 : 5000);
-                    if (this.gameInfo.sourceWater >= make_cost && this.gameInfo.sourceFire >= make_cost && this.gameInfo.sourceWood >= make_cost) {
-                        for (var slot = 1; slot <= data.max; ++slot) {
-                            if (!usedSlots[slot]) {
-                                var data_make = yield this.sendMsg("WorldWar", "makeRune", { slot:slot, type:make_type }, next);
-                                if (!data_make) {
-                                    break;
+                        var make_type = config.runeType;
+                        var make_cost = slotNum * (make_type == 1 ? 1000 : 5000);
+                        if (this.gameInfo.sourceWater >= make_cost && this.gameInfo.sourceFire >= make_cost && this.gameInfo.sourceWood >= make_cost) {
+                            for (var slot = 1; slot <= data.max; ++slot) {
+                                if (!usedSlots[slot]) {
+                                    var data_make = yield this.sendMsg("WorldWar", "makeRune", { slot:slot, type:make_type }, next);
+                                    if (!data_make) {
+                                        break;
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
-            //领取奖励
-            if (config.worldReward && this.validator.checkHourly("autoWorldReward")) {
-                var data = yield this.sendMsg("WorldWar", "getNewsInfo", null, next);
-                if (data && data.list) {
-                    for (var i = 0; i < data.list.length; ++i) {
-                        var item_key = data.list[i];
-                        var data_reward = yield this.sendMsg("WorldWar", "getNewAward", { key:item_key }, next);
-                        if (!data_reward) {
-                            break;
-                        }
-                    }
-                }
-            }
-            // 领取任务
-            if (config.worldTasks && this.validator.checkHourly("autoWorldTasks")) {
-                for (var type = 1; type <= 3; ++type) {
-                    var data = yield this.sendMsg("WorldWar", "getTargetList", { type:type }, next);
+                //领取奖励
+                if (config.worldReward) {
+                    var data = yield this.sendMsg("WorldWar", "getNewsInfo", null, next);
                     if (data && data.list) {
                         for (var i = 0; i < data.list.length; ++i) {
-                            var item = data.list[i];
-                            if (item.state == 1) {
-                                var data_fetch = yield this.sendMsg("WorldWar", "fetchTargetRes", { id:item.id }, next);
-                                if (!data_fetch) {
-                                    break;
+                            var item_key = data.list[i];
+                            var data_reward = yield this.sendMsg("WorldWar", "getNewAward", { key:item_key }, next);
+                            if (!data_reward) {
+                                break;
+                            }
+                        }
+                    }
+                }
+                // 领取任务
+                if (config.worldTasks) {
+                    for (var type = 1; type <= 3; ++type) {
+                        var data = yield this.sendMsg("WorldWar", "getTargetList", { type:type }, next);
+                        if (data && data.list) {
+                            for (var i = 0; i < data.list.length; ++i) {
+                                var item = data.list[i];
+                                if (item.state == 1) {
+                                    var data_fetch = yield this.sendMsg("WorldWar", "fetchTargetRes", { id:item.id }, next);
+                                    if (!data_fetch) {
+                                        break;
+                                    }
                                 }
                             }
+                        }
+                    }
+                }
+                // 屯田
+                var attackCandidate = [
+                    {id:1, x:config.x1, y:config.y1},
+                    {id:2, x:config.x2, y:config.y2},
+                    {id:3, x:config.x3, y:config.y3},
+                    {id:4, x:config.x4, y:config.y4},
+                ];
+                var idToPos = {};
+                var neededLicense = 0;
+                for (var i = 0; i < attackCandidate.length; ++i) {
+                    if (attackCandidate[i].x >= 0 && attackCandidate[i].y >= 0) {
+                        neededLicense += 3;
+                        idToPos[attackCandidate[i].id] = {x:attackCandidate[i].x, y:attackCandidate[i].y};
+                    }
+                }
+                if (neededLicense > 0 && license + license_buy * 3>= neededLicense) {
+                    var data = yield this.sendMsg("WorldWar", "troop", { go:1 }, next);
+                    if (data && data.list) {
+                        var attacks = [];
+                        for (var i = 0; i < data.list.length; ++i) {
+                            var item = data.list[i];
+                            if (idToPos[item.id] && item.state == 0) {
+                                attacks.push({
+                                    id: item.id,
+                                    pos: idToPos[item.id],
+                                });
+                            }
+                        }
+                        if (attacks.length * 3 == neededLicense) {
+                            while (license < 17) {
+                                var data_buy = yield this.sendMsg("WorldWar", "buyLicense", null, next);
+                                if (!data_buy) {
+                                    break;
+                                }
+                                console.log("buy license 1");
+                                license += 3;
+                            }
+                        }
+                        for (var i = 0; i < attacks.length; ++i) {
+                            var item = attacks[i];
+                            var data_attack = yield this.sendMsg("WorldWar", "attack", { x:item.pos.x, y:item.pos.y, type:6, troop:item.id }, next);
+                            if (!data_attack) {
+                                break;
+                            }
+                            console.log("attack succeed", item);
                         }
                     }
                 }
@@ -3652,6 +3710,7 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("ActSplendid", "getinfo", null, next);
             //var data = yield this.sendMsg("ActMagicalGirl", "getinfo", null, next);
             //var data = yield this.sendMsg("ActMagicalGirl", "fire", {level:1}, next);
+            //var data = yield this.sendMsg("Resource", "fetch", null, next);
 
             //var data = yield this.sendMsg("WorldWar", "tips", null, next);
             //var data = yield this.sendMsg("WorldWar", "getChatList", null, next);
@@ -3668,7 +3727,12 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("WorldWar", "getNewAward", {key:1532836860}, next);
             //var data = yield this.sendMsg("WorldWar", "getTargetList", { type:3 }, next);
             //var data = yield this.sendMsg("WorldWar", "fetchTargetRes", { id:31037 }, next);
-            //var data = yield this.sendMsg("Resource", "fetch", null, next);
+            //var data = yield this.sendMsg("WorldWar", "tile", { x:999, y:999 }, next);
+            var data = yield this.sendMsg("WorldWar", "troop", { go:1 }, next);
+            //var data = yield this.sendMsg("WorldWar", "conscriptinfo", { troopid:4 }, next);
+            //var data = yield this.sendMsg("WorldWar", "getGrowRes", { x:502, y:506 }, next);
+            //var data = yield this.sendMsg("WorldWar", "attack", { x:502, y:506, type:6, troop:4 }, next);
+            //var data = yield this.sendMsg("WorldWar", "buyLicense", null, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);

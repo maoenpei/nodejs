@@ -69,6 +69,14 @@
             ,"runeType":2
             ,"worldReward":true
             ,"worldTasks":true
+            ,"x1":-1
+            ,"y1":-1
+            ,"x2":-1
+            ,"y2":-1
+            ,"x3":-1
+            ,"y3":-1
+            ,"x4":-1
+            ,"y4":-1
         }
     }
     ,"automationOrder":[
