@@ -82,7 +82,7 @@ $HttpModel.addClass("USER_CLASS", {
     listusers:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({POST:true, USER:3, AUTH:3}, next))) {
-                return;
+                return safe(done)();
             }
 
             var userStates = $StateManager.getState(USER_CONFIG);
@@ -141,7 +141,7 @@ $HttpModel.addClass("USER_CLASS", {
     promote:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({POST:true, USER:3, AUTH:3}, next))) {
-                return;
+                return safe(done)();
             }
 
             var userStates = $StateManager.getState(USER_CONFIG);
@@ -183,7 +183,7 @@ $HttpModel.addClass("USER_CLASS", {
     disable:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({POST:true, USER:3, AUTH:3}, next))) {
-                return;
+                return safe(done)();
             }
 
             var userStates = $StateManager.getState(USER_CONFIG);
@@ -244,7 +244,7 @@ $HttpModel.addClass("USER_CLASS", {
     rename:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({POST:true, USER:3, AUTH:3}, next))) {
-                return;
+                return safe(done)();
             }
 
             var userStates = $StateManager.getState(USER_CONFIG);
@@ -271,7 +271,7 @@ $HttpModel.addClass("USER_CLASS", {
     authorize:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({POST:true, USER:3, AUTH:3}, next))) {
-                return;
+                return safe(done)();
             }
 
             var userStates = $StateManager.getState(USER_CONFIG);
@@ -326,7 +326,7 @@ $HttpModel.addClass("USER_CLASS", {
     apply:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({POST:true, TOKEN:true}, next))) {
-                return;
+                return safe(done)();
             }
 
             var userStates = $StateManager.getState(USER_CONFIG);
@@ -372,7 +372,7 @@ $HttpModel.addClass("USER_CLASS", {
     requirement:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({POST:true, USER:3, AUTH:3}, next))) {
-                return;
+                return safe(done)();
             }
 
             var userStates = $StateManager.getState(USER_CONFIG);
@@ -424,7 +424,7 @@ $HttpModel.addClass("USER_CLASS", {
     userserver:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({POST:true, USER:3, AUTH:3}, next))) {
-                return;
+                return safe(done)();
             }
 
             var userStates = $StateManager.getState(USER_CONFIG);
@@ -476,7 +476,7 @@ $HttpModel.addClass("USER_CLASS", {
     listself:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({POST:true, USER:3, AUTH:1}, next))) {
-                return;
+                return safe(done)();
             }
 
             var detail = clone(session.getUserData());
@@ -491,7 +491,7 @@ $HttpModel.addClass("USER_CLASS", {
     question:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({POST:true}, next))) {
-                return;
+                return safe(done)();
             }
 
             var json = yield requestor.visitBodyJson(next);

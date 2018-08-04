@@ -226,12 +226,10 @@ function displayLogin() {
 // supported funcs
 var displayFuncsModel = {
     supports:{
-        //refresh:{name:"更新", click:clickRefresh, },
         kingwar:{name:"帝国战", show:displayKingWar, },
         playerlist:{name:"玩家", show:displayPlayerList, },
         serverInfo:{name:"信息", show:displayServerInfo, },
         automation:{name:"配置", show:displayAutomation, },
-        //setting:{name:"设置", },
         users:{name:"用户", show:displayUsers, },
         selfdesc:{name:"✺", show:displaySelf, },
     },

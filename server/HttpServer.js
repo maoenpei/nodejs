@@ -111,8 +111,9 @@ Base.extends("HttpServer", {
             }
 
             if (!responder.Ended()) {
-                this.errorPage(requestor, responder, safe(done));
+                this.errorPage(requestor, responder, next);
             }
+            safe(done)();
         }, this);
     },
 
@@ -124,8 +125,7 @@ Base.extends("HttpServer", {
 
             if (!requestor.compareModified(fileBlock.time)) {
                 responder.setCode(304);
-                responder.respondData(Buffer.alloc(0), safe(done));
-                return;
+                return responder.respondData(Buffer.alloc(0), safe(done));
             }
 
             responder.setLastModified(fileBlock.time);

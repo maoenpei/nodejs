@@ -919,7 +919,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     listheros:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({USER:3, REQ:"auto_heropanel"}, next))) {
-                return;
+                return safe(done)();
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -957,7 +957,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     operatehero:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({USER:3, REQ:"auto_heropanel"}, next))) {
-                return;
+                return safe(done)();
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1049,7 +1049,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     addaccount:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({USER:3, REQ:"automation"}, next))) {
-                return;
+                return safe(done)();
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1101,7 +1101,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     changepwd:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({USER:3, REQ:"automation"}, next))) {
-                return;
+                return safe(done)();
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1142,7 +1142,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     delaccount:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({USER:3, REQ:"automation"}, next))) {
-                return;
+                return safe(done)();
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1183,7 +1183,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     addplayer:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({USER:3, REQ:"automation"}, next))) {
-                return;
+                return safe(done)();
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1238,7 +1238,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     delplayer:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({USER:3, REQ:"automation"}, next))) {
-                return;
+                return safe(done)();
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1279,7 +1279,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     playersetting:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({USER:3, REQ:"automation"}, next))) {
-                return;
+                return safe(done)();
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1337,7 +1337,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     playerautomation:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({USER:3, REQ:"auto_daily"}, next))) {
-                return;
+                return safe(done)();
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1378,7 +1378,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     playermanual:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({USER:3, REQ:"auto_daily"}, next))) {
-                return;
+                return safe(done)();
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1413,7 +1413,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     listautomation:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({USER:3, REQ:"automation"}, next))) {
-                return;
+                return safe(done)();
             }
 
             var userData = session.getUserData();
@@ -1490,7 +1490,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     orderautomation:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({USER:3, REQ:"automation"}, next))) {
-                return;
+                return safe(done)();
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1529,7 +1529,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     checkrefresh:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({POST:true, USER:3, REQ:"view_refresh"}, next))) {
-                return;
+                return safe(done)();
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1547,7 +1547,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     manrefresh:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({POST:true, USER:3, REQ:"view_refresh"}, next))) {
-                return;
+                return safe(done)();
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1585,7 +1585,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     setheroshop:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({USER:3, REQ:"server_heroshop"}, next))) {
-                return;
+                return safe(done)();
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1619,7 +1619,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     listserverinfo:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({USER:3, REQ:"server"}, next))) {
-                return;
+                return safe(done)();
             }
 
             var json = yield requestor.visitBodyJson(next);
@@ -1647,7 +1647,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     listplayers:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({USER:3, REQ:"view_playerlist"}, next))) {
-                return;
+                return safe(done)();
             }
 
             var players = [];
@@ -1680,7 +1680,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     listkingwars:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({USER:3, REQ:"view_kingwar"}, next))) {
-                return;
+                return safe(done)();
             }
 
             var kingwarData = this.controller.getKingwar();
@@ -1700,7 +1700,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     functions:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({USER:3, AUTH:1}, next))) {
-                return;
+                return safe(done)();
             }
 
             var funcs = [];
