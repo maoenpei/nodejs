@@ -531,6 +531,7 @@ Base.extends("GameConnection", {
                     var obj = null;
                     while(!obj) {
                         obj = yield GameHTTP.servers(this.accountInfo.accountId, next);
+                        //yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvservers.json", JSON.stringify(obj, null, 2), next);
                     }
                     serverList = obj.list;
                     var data = JSON.stringify(obj.list, null, 2);
