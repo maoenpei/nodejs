@@ -18,6 +18,8 @@ GAME_KINGWAR_CONFIG = "GameKingwar.d";
 GAME_PLAYER_NAME_CONFIG = "GamePlayerNames.d";
 GAME_HEROSHOP_CONFIG = "GameHeroshop.d";
 
+GAME_USER_CONFIG = "GameUsers.d";
+
 var AllFuncs = [
     {name:"kingwar", requirement:"view_kingwar", },
     {name:"playerlist", requirement:"view_playerlist", },
@@ -43,6 +45,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         this.accounts = {};
         this.players = {};
         this.playerHerosInfo = {};
+        this.playerKey2UserKey = {};
 
         this.onRefreshEnd = [];
 
@@ -88,6 +91,17 @@ $HttpModel.addClass("YZDZZ_CLASS", {
 
         var next = coroutine(function*() {
             yield $StateManager.openState(GAME_ACCOUNTS_CONFIG, next);
+            yield $StateManager.openState(GAME_SETTING_CONFIG, next);
+            yield $StateManager.openState(GAME_DEFAULTS_CONFIG, next);
+            yield $StateManager.openState(GAME_POWER_MAX_CONFIG, next);
+            yield $StateManager.openState(GAME_UNIONS_CONFIG, next);
+            yield $StateManager.openState(GAME_KINGWAR_CONFIG, next);
+            yield $StateManager.openState(GAME_PLAYER_NAME_CONFIG, next);
+            yield $StateManager.openState(GAME_HEROSHOP_CONFIG, next);
+            yield $StateManager.openState(GAME_USER_CONFIG, next);
+
+            this.initPlayerToPayment();
+
             var accountStates = $StateManager.getState(GAME_ACCOUNTS_CONFIG);
             for (var accountKey in accountStates.accounts) {
                 var accountInfo = accountStates.accounts[accountKey];
@@ -98,14 +112,6 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 var playerInfo = accountStates.players[playerKey];
                 this.addPlayer(playerKey, playerInfo.account, playerInfo.server);
             }
-            yield $StateManager.openState(GAME_SETTING_CONFIG, next);
-            yield $StateManager.openState(GAME_DEFAULTS_CONFIG, next);
-            yield $StateManager.openState(GAME_POWER_MAX_CONFIG, next);
-            yield $StateManager.openState(GAME_UNIONS_CONFIG, next);
-            yield $StateManager.openState(GAME_KINGWAR_CONFIG, next);
-            yield $StateManager.openState(GAME_PLAYER_NAME_CONFIG, next);
-            yield $StateManager.openState(GAME_HEROSHOP_CONFIG, next);
-
             var allPowerMax = $StateManager.getState(GAME_POWER_MAX_CONFIG);
             this.playersMd5 = this.getTag(allPowerMax);
             this.updatePlayerIdKeys();
@@ -279,68 +285,65 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 }
             }
         }
-        var refreshCallback = (done) => {
-            var next = coroutine(function*() {
-                // Save all players
-                var players = this.controller.savePlayers();
-                var md5 = this.getTag(players);
-                if (this.playersMd5 != md5) {
-                    this.playersMd5 = md5;
-                    var allPowerMax = $StateManager.getState(GAME_POWER_MAX_CONFIG);
-                    for (var playerId in players) {
-                        allPowerMax[playerId] = players[playerId];
-                    }
-                    this.updatePlayerIdKeys();
-                    yield $StateManager.commitState(GAME_POWER_MAX_CONFIG, next);
+        var refreshCallback = () => {
+            // Save all players
+            var players = this.controller.savePlayers();
+            var md5 = this.getTag(players);
+            if (this.playersMd5 != md5) {
+                this.playersMd5 = md5;
+                var allPowerMax = $StateManager.getState(GAME_POWER_MAX_CONFIG);
+                for (var playerId in players) {
+                    allPowerMax[playerId] = players[playerId];
                 }
-                // Save all unions
-                var unions = this.controller.saveUnions();
-                var md5 = this.getTag(unions);
-                if (this.unionMd5 != md5) {
-                    this.unionMd5 = md5;
-                    var allUnions = $StateManager.getState(GAME_UNIONS_CONFIG);
-                    for (var unionId in unions) {
-                        allUnions[unionId] = unions[unionId];
-                    }
-                    this.updateUnionIdKeys();
-                    yield $StateManager.commitState(GAME_UNIONS_CONFIG, next);
+                this.updatePlayerIdKeys();
+                $StateManager.commitState(GAME_POWER_MAX_CONFIG);
+            }
+            // Save all unions
+            var unions = this.controller.saveUnions();
+            var md5 = this.getTag(unions);
+            if (this.unionMd5 != md5) {
+                this.unionMd5 = md5;
+                var allUnions = $StateManager.getState(GAME_UNIONS_CONFIG);
+                for (var unionId in unions) {
+                    allUnions[unionId] = unions[unionId];
                 }
-                // Save kingwars
-                var kingwarPlayers = this.controller.saveKingwar();
-                var md5 = this.getTag(kingwarPlayers);
-                if (this.kingwarMd5 != md5) {
-                    this.kingwarMd5 = md5;
-                    var allKingwars = $StateManager.getState(GAME_KINGWAR_CONFIG);
-                    for (var kingwarKey in kingwarPlayers) {
-                        allKingwars[kingwarKey] = kingwarPlayers[kingwarKey];
-                    }
-                    yield $StateManager.commitState(GAME_KINGWAR_CONFIG, next);
+                this.updateUnionIdKeys();
+                $StateManager.commitState(GAME_UNIONS_CONFIG);
+            }
+            // Save kingwars
+            var kingwarPlayers = this.controller.saveKingwar();
+            var md5 = this.getTag(kingwarPlayers);
+            if (this.kingwarMd5 != md5) {
+                this.kingwarMd5 = md5;
+                var allKingwars = $StateManager.getState(GAME_KINGWAR_CONFIG);
+                for (var kingwarKey in kingwarPlayers) {
+                    allKingwars[kingwarKey] = kingwarPlayers[kingwarKey];
                 }
-                // Save player names for added accounts
-                var allPlayerNames = $StateManager.getState(GAME_PLAYER_NAME_CONFIG);
-                var currDay = new Date().getDay();
-                allPlayerNames.savedDay = currDay;
-                for (var playerKey in this.players) {
-                    var playerData = this.players[playerKey];
-                    var brief = this.controller.getPlayerBrief(playerData);
-                    if (brief) {
-                        allPlayerNames.briefs[playerKey] = brief;
-                    }
-                    var daily = playerData.validator.getDailyState(currDay);
-                    if (daily.length > 0) {
-                        allPlayerNames.daily[playerKey] = daily;
-                    } else {
-                        delete allPlayerNames.daily[playerKey];
-                    }
+                $StateManager.commitState(GAME_KINGWAR_CONFIG);
+            }
+            // Save player names for added accounts
+            var allPlayerNames = $StateManager.getState(GAME_PLAYER_NAME_CONFIG);
+            var currDay = new Date().getDay();
+            allPlayerNames.savedDay = currDay;
+            for (var playerKey in this.players) {
+                var playerData = this.players[playerKey];
+                var brief = this.controller.getPlayerBrief(playerData);
+                if (brief) {
+                    allPlayerNames.briefs[playerKey] = brief;
                 }
-                var md5 = this.getTag(allPlayerNames);
-                if (this.playerNamesMd5 != md5) {
-                    this.playerNamesMd5 = md5;
-                    yield $StateManager.commitState(GAME_PLAYER_NAME_CONFIG, next);
+                var daily = playerData.validator.getDailyState(currDay);
+                if (daily.length > 0) {
+                    allPlayerNames.daily[playerKey] = daily;
+                } else {
+                    delete allPlayerNames.daily[playerKey];
                 }
-                invokeNoConflictions();
-                safe(done)();
-            }, this);
+            }
+            var md5 = this.getTag(allPlayerNames);
+            if (this.playerNamesMd5 != md5) {
+                this.playerNamesMd5 = md5;
+                $StateManager.commitState(GAME_PLAYER_NAME_CONFIG);
+            }
+            invokeNoConflictions();
         };
         var defaultsStates = $StateManager.getState(GAME_DEFAULTS_CONFIG);
         this.controller.cancelPeriodic();
@@ -356,6 +359,62 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         }
     },
 
+    initPlayerToPayment:function() {
+        var userStates = $StateManager.getState(USER_CONFIG);
+        for (var userKey in userStates.users) {
+            var userData = userStates.users[userKey];
+            if (userData.players) {
+                for (var i = 0; i < userData.players.length; ++i) {
+                    var playerKey = userData.players[i];
+                    this.playerKey2UserKey[playerKey] = userKey;
+                    console.log("[PAYMENT] init playerKey:{0} -> userKey:{1}".format(playerKey, userKey));
+                }
+            }
+        }
+    },
+    spendPayment:function(playerKey, payment) {
+        var userKey = this.playerKey2UserKey[playerKey];
+        var userStates = $StateManager.getState(USER_CONFIG);
+        var userData = userStates.users[userKey];
+        var totalPay = userData.totalPay || 0;
+        console.log("[PAYMENT] spend userData.totalPay:{0} -> payment:{1}, playerKey:{2}, userKey:{3}".format(userData.totalPay, payment, playerKey, userKey));
+        if (totalPay >= payment) {
+            totalPay -= payment;
+            userData.totalPay = totalPay;
+            $StateManager.commitState(USER_CONFIG);
+            return true;
+        }
+        return false;
+    },
+    hasDailyPayment:function(name, playerKey) {
+        var dateKey = "date_" + name;
+        var userKey = this.playerKey2UserKey[playerKey];
+        var gameUserStates = $StateManager.getState(GAME_USER_CONFIG);
+        var gameUserData = gameUserStates[userKey];
+        if (!gameUserData) {
+            console.log("[PAYMENT] check dateKey:{0} -> undef, playerKey:{1}, userKey:{2}".format(dateKey, playerKey, userKey));
+            return false;
+        }
+        var recordDate = gameUserData[dateKey];
+        var date = new Date();
+        var dateStr = String(date.getFullYear()) + "-" + String(date.getMonth()) + "-" + String(date.getDate());
+        console.log("[PAYMENT] check dateKey:{0} -> recordDate:{1}, dateStr:{2}, playerKey:{3}, userKey:{4}".format(dateKey, recordDate, dateStr, playerKey, userKey));
+        return dateStr == recordDate;
+    },
+    setDailyPayment:function(name, playerKey) {
+        var dateKey = "date_" + name;
+        var userKey = this.playerKey2UserKey[playerKey];
+        var gameUserStates = $StateManager.getState(GAME_USER_CONFIG);
+        var gameUserData = gameUserStates[userKey];
+        gameUserData = (gameUserData ? gameUserData : {});
+        gameUserStates[userKey] = gameUserData;
+        var date = new Date();
+        var dateStr = String(date.getFullYear()) + "-" + String(date.getMonth()) + "-" + String(date.getDate());
+        gameUserData[dateKey] = dateStr;
+        $StateManager.commitState(GAME_USER_CONFIG);
+        console.log("[PAYMENT] daily dateKey:{0} -> dateStr:{1}, playerKey:{2}, userKey:{3}".format(dateKey, dateStr, playerKey, userKey));
+    },
+
     startRefreshAutomation:function(playerKey, automationConfig) {
         var playerData = this.players[playerKey];
         if (!automationConfig || automationConfig.disabled) {
@@ -367,7 +426,16 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             this.controller.modifyPlayerAutomation(playerData.refreshAutomationKey, autoConfigs);
         } else {
             playerData.refreshAutomationKey =
-                this.controller.setPlayerAutomation(playerData, autoConfigs);
+                this.controller.setPlayerAutomation(playerData, autoConfigs, () => {
+                    if (this.hasDailyPayment("automation", playerKey)) {
+                        return true;
+                    }
+                    if (this.spendPayment(playerKey, 100)) {
+                        this.setDailyPayment("automation", playerKey);
+                        return true;
+                    }
+                    return false;
+                });
         }
     },
     stopRefreshAutomation:function(playerKey) {
@@ -609,6 +677,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         this.stopRefreshDropping(playerKey);
         this.stopRefreshHeroshop(playerKey);
         delete this.players[playerKey];
+        delete this.playerKey2UserKey[playerKey];
     },
     getAccountIndex:function(userData, accountKey) {
         var accountIndex = -1;
@@ -684,10 +753,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         }
         return true;
     },
-    getSettingBool:function(val) {
+    evaluateSettingBool:function(val) {
         return (val ? true : false);
     },
-    getSettingNumber:function(val, min, max, def) {
+    evaluateSettingNumber:function(val, min, max, def) {
         if (typeof(val) == "number") {
             if (val >= min && val <= max) {
                 return val;
@@ -698,8 +767,8 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     setSettingKingwar:function(playerKey, kingwar) {
         var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
         var kingwarConfig = {
-            area: this.getSettingNumber(kingwar.area, 0, 4, 0),
-            star: this.getSettingNumber(kingwar.star, 1, 10, 1),
+            area: this.evaluateSettingNumber(kingwar.area, 0, 4, 0),
+            star: this.evaluateSettingNumber(kingwar.star, 1, 10, 1),
         };
         if (kingwarConfig.area == 0) {
             kingwarConfig = undefined;
@@ -717,10 +786,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     setSettingListing:function(playerKey, listing) {
         var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
         var listingConfig = {
-            unionCount: this.getSettingNumber(listing.unionCount, 0, 20, 0),
+            unionCount: this.evaluateSettingNumber(listing.unionCount, 0, 20, 0),
             minPower: 300,
             limitPower: 800,
-            limitDay: this.getSettingNumber(listing.limitDay, 10, 20, 20),
+            limitDay: this.evaluateSettingNumber(listing.limitDay, 10, 20, 20),
         };
         if (listingConfig.unionCount == 0) {
             listingConfig = undefined;
@@ -737,10 +806,10 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
         var targetingConfig = {
             reachPLID: this.randKey2PlayerId[targeting.reachPLID] || "",
-            disableEmperor: this.getSettingBool(targeting.disableEmperor),
-            allowAssign: this.getSettingBool(targeting.allowAssign),
-            minStar: this.getSettingNumber(targeting.minStar, 1, 10, 1),
-            forceEmperor: this.getSettingBool(targeting.forceEmperor),
+            disableEmperor: this.evaluateSettingBool(targeting.disableEmperor),
+            allowAssign: this.evaluateSettingBool(targeting.allowAssign),
+            minStar: this.evaluateSettingNumber(targeting.minStar, 1, 10, 1),
+            forceEmperor: this.evaluateSettingBool(targeting.forceEmperor),
         };
         if (targetingConfig.reachPLID == "" && !targetingConfig.allowAssign) {
             targetingConfig = undefined;
@@ -756,7 +825,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     setSettingDropping:function(playerKey, dropping) {
         var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
         var droppingConfig = {
-            allowDrop: this.getSettingBool(dropping.allowDrop),
+            allowDrop: this.evaluateSettingBool(dropping.allowDrop),
         };
         if (!droppingConfig.allowDrop) {
             droppingConfig = undefined;
@@ -772,9 +841,9 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     setSettingHeroshop:function(playerKey, heroshop) {
         var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
         var heroshopConfig = {
-            enabled: this.getSettingBool(heroshop.enabled),
-            maxReduce: this.getSettingNumber(heroshop.maxReduce, 50, 60, 55),
-            refresh: this.getSettingNumber(heroshop.refresh, 0, 8, 0),
+            enabled: this.evaluateSettingBool(heroshop.enabled),
+            maxReduce: this.evaluateSettingNumber(heroshop.maxReduce, 50, 60, 55),
+            refresh: this.evaluateSettingNumber(heroshop.refresh, 0, 8, 0),
         };
         if (!heroshopConfig.enabled) {
             heroshopConfig = undefined;
@@ -790,9 +859,9 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     setSettingUnionwar:function(playerKey, unionwar) {
         var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
         var unionwarConfig = {
-            enabled: this.getSettingBool(unionwar.enabled),
-            onlyOccupy: this.getSettingBool(unionwar.onlyOccupy),
-            reverseOrder: this.getSettingBool(unionwar.reverseOrder),
+            enabled: this.evaluateSettingBool(unionwar.enabled),
+            onlyOccupy: this.evaluateSettingBool(unionwar.onlyOccupy),
+            reverseOrder: this.evaluateSettingBool(unionwar.reverseOrder),
             goodUNID: this.randKey2UnionId[unionwar.goodUNID] || "",
             badUNID: this.randKey2UnionId[unionwar.badUNID] || "",
         };
@@ -828,15 +897,13 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             }
         }
 
-        var next = coroutine(function*() {
-            if (info.settingsChanged) {
-                yield $StateManager.commitState(GAME_SETTING_CONFIG, next);
-            }
-            if (info.namesChanged) {
-                yield $StateManager.commitState(GAME_PLAYER_NAME_CONFIG, next);
-            }
-            yield $StateManager.commitState(GAME_ACCOUNTS_CONFIG, next);
-        }, this);
+        if (info.settingsChanged) {
+            $StateManager.commitState(GAME_SETTING_CONFIG);
+        }
+        if (info.namesChanged) {
+            $StateManager.commitState(GAME_PLAYER_NAME_CONFIG);
+        }
+        $StateManager.commitState(GAME_ACCOUNTS_CONFIG);
     },
     delUserPlayer:function(userData, playerBelong, info) {
         var playerKey = userData.players[playerBelong];
@@ -1089,8 +1156,8 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             userAccounts = (userAccounts ? userAccounts : []);
             userAccounts.push(accountKey);
             session.getUserData().accounts = userAccounts;
-            yield $StateManager.commitState(GAME_ACCOUNTS_CONFIG, next);
-            yield $StateManager.commitState(USER_CONFIG, next);
+            $StateManager.commitState(GAME_ACCOUNTS_CONFIG);
+            $StateManager.commitState(USER_CONFIG);
 
             responder.respondJson({
                 success: true,
@@ -1132,7 +1199,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
 
             var accountStates = $StateManager.getState(GAME_ACCOUNTS_CONFIG);
             accountStates.accounts[accountKey].password = password;
-            yield $StateManager.commitState(GAME_ACCOUNTS_CONFIG, next);
+            $StateManager.commitState(GAME_ACCOUNTS_CONFIG);
 
             responder.respondJson({
                 success: true,
@@ -1167,13 +1234,13 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             this.delUserAccount(session.getUserData(), accountBelong, info);
 
             if (info.settingsChanged) {
-                yield $StateManager.commitState(GAME_SETTING_CONFIG, next);
+                $StateManager.commitState(GAME_SETTING_CONFIG);
             }
             if (info.namesChanged) {
-                yield $StateManager.commitState(GAME_PLAYER_NAME_CONFIG, next);
+                $StateManager.commitState(GAME_PLAYER_NAME_CONFIG);
             }
-            yield $StateManager.commitState(GAME_ACCOUNTS_CONFIG, next);
-            yield $StateManager.commitState(USER_CONFIG, next);
+            $StateManager.commitState(GAME_ACCOUNTS_CONFIG);
+            $StateManager.commitState(USER_CONFIG);
 
             responder.respondJson({
                 success: true,
@@ -1220,13 +1287,14 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 account: accountKey,
                 server: server,
             };
+            this.playerKey2UserKey[playerKey] = session.getUserKey();
             this.addPlayer(playerKey, accountKey, server);
             var userPlayers = session.getUserData().players;
             userPlayers = (userPlayers ? userPlayers : []);
             userPlayers.push(playerKey);
             session.getUserData().players = userPlayers;
-            yield $StateManager.commitState(GAME_ACCOUNTS_CONFIG, next);
-            yield $StateManager.commitState(USER_CONFIG, next);
+            $StateManager.commitState(GAME_ACCOUNTS_CONFIG);
+            $StateManager.commitState(USER_CONFIG);
 
             var playerAuto = this.setupPlayerAuto(playerKey, session, {
                 success: true,
@@ -1263,13 +1331,13 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             this.delUserPlayer(session.getUserData(), playerBelong, info);
 
             if (info.settingsChanged) {
-                yield $StateManager.commitState(GAME_SETTING_CONFIG, next);
+                $StateManager.commitState(GAME_SETTING_CONFIG);
             }
             if (info.namesChanged) {
-                yield $StateManager.commitState(GAME_PLAYER_NAME_CONFIG, next);
+                $StateManager.commitState(GAME_PLAYER_NAME_CONFIG);
             }
-            yield $StateManager.commitState(GAME_ACCOUNTS_CONFIG, next);
-            yield $StateManager.commitState(USER_CONFIG, next);
+            $StateManager.commitState(GAME_ACCOUNTS_CONFIG);
+            $StateManager.commitState(USER_CONFIG);
 
             responder.respondJson({
                 success: true,
@@ -1326,7 +1394,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 changed = this.setSettingListing(playerKey, settings.listing) || changed;
             }
             if (changed) {
-                yield $StateManager.commitState(GAME_SETTING_CONFIG, next);
+                $StateManager.commitState(GAME_SETTING_CONFIG);
             }
 
             responder.respondJson({
@@ -1368,7 +1436,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
 
             playerData.validator.resetHourly();
             this.setSettingAutomation(playerKey, automationConfig);
-            yield $StateManager.commitState(GAME_SETTING_CONFIG, next);
+            $StateManager.commitState(GAME_SETTING_CONFIG);
 
             responder.respondJson({
                 success: true,
@@ -1401,8 +1469,9 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             }
 
             var autoConfigs = this.getSettingAutomation(playerKey);
+            var heroshopConfig = this.getSettingTyped("heroshop", playerKey);
             playerData.validator.resetHourly();
-            var data = yield this.controller.manualPlayerAutomation(playerData, autoConfigs, next);
+            var data = yield this.controller.manualPlayerAutomation(playerData, autoConfigs, heroshopConfig, next);
             console.log("Manual finished!");
 
             responder.respondJson({
@@ -1519,7 +1588,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 newAccounts.push(oldAccounts[i]);
             }
             userData.accounts = newAccounts;
-            yield $StateManager.commitState(USER_CONFIG, next);
+            $StateManager.commitState(USER_CONFIG);
 
             responder.respondJson({
                 success: true,
@@ -1609,7 +1678,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 delete userHeros[heroId];
             }
             session.getUserData().heros = userHeros;
-            yield $StateManager.commitState(USER_CONFIG, next);
+            $StateManager.commitState(USER_CONFIG);
 
             responder.respondJson({
                 success: true,

@@ -32,7 +32,6 @@ Base.extends("StateManager", {
         later(done);
 
         if (!status.pending) {
-            status.pending = 1;
             var doSave = () => {
                 var path = "/data/" + fileName;
                 var state = this.fileStates[fileName];
@@ -45,6 +44,7 @@ Base.extends("StateManager", {
                     }
                 });
             };
+            status.pending = 1;
             doSave();
         } else {
             console.log("state saving pending...", fileName);

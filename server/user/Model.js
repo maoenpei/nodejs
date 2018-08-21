@@ -175,7 +175,7 @@ $HttpModel.addClass("USER_CLASS", {
             }
 
             userData.auth = targetAuth;
-            yield $StateManager.commitState(USER_CONFIG, next);
+            $StateManager.commitState(USER_CONFIG);
 
             responder.respondJson({success:true}, done);
         }, this);
@@ -236,7 +236,7 @@ $HttpModel.addClass("USER_CLASS", {
                 delete targetKeyData.dead; // possible field
             }
             delete targetKeyData.name;
-            yield $StateManager.commitState(USER_CONFIG, next);
+            $StateManager.commitState(USER_CONFIG);
 
             responder.respondJson({success:true}, done);
         }, this);
@@ -263,7 +263,7 @@ $HttpModel.addClass("USER_CLASS", {
             }
 
             targetKeyData.name = targetName;
-            yield $StateManager.commitState(USER_CONFIG, next);
+            $StateManager.commitState(USER_CONFIG);
 
             responder.respondJson({success:true}, done);
         }, this);
@@ -318,7 +318,7 @@ $HttpModel.addClass("USER_CLASS", {
             }
 
             currentData.userKey = nextUserKey;
-            yield $StateManager.commitState(USER_CONFIG, next);
+            $StateManager.commitState(USER_CONFIG);
 
             responder.respondJson({success:true}, done);
         }, this);
@@ -357,11 +357,11 @@ $HttpModel.addClass("USER_CLASS", {
                 keyData.name = "Breaker";
                 keyData.userKey = userKey;
                 delete breakinStates[name];
-                yield $StateManager.commitState(BREAKIN_CONFIG, next);
+                $StateManager.commitState(BREAKIN_CONFIG);
             } else {
                 keyData.name = name;
             }
-            yield $StateManager.commitState(USER_CONFIG, next);
+            $StateManager.commitState(USER_CONFIG);
 
             responder.respondJson({
                 state: (keyData.userKey ? 2 : 1),
@@ -414,7 +414,7 @@ $HttpModel.addClass("USER_CLASS", {
                 remoteReq(reqRelation);
             }
             userStates.users[userKey].req = req;
-            yield $StateManager.commitState(USER_CONFIG, next);
+            $StateManager.commitState(USER_CONFIG);
 
             responder.respondJson({
                 success: true,
@@ -466,7 +466,7 @@ $HttpModel.addClass("USER_CLASS", {
                 sev.splice(sevIndex, 1);
             }
             userStates.users[userKey].sev = sev;
-            yield $StateManager.commitState(USER_CONFIG, next);
+            $StateManager.commitState(USER_CONFIG);
 
             responder.respondJson({
                 success: true,
@@ -515,7 +515,7 @@ $HttpModel.addClass("USER_CLASS", {
             }
             userStates.keys = keys;
             if (newSerial) {
-                yield $StateManager.commitState(USER_CONFIG, next);
+                $StateManager.commitState(USER_CONFIG);
             }
             var state = 0;
             if (keyData.userKey) {

@@ -80,19 +80,23 @@ Base.extends("GameController", {
     },
 
     // automation
-    setPlayerAutomation:function(playerData, autoConfigs) {
+    setPlayerAutomation:function(playerData, autoConfigs, readyFunc) {
         return this.appendRefresh(playerData, "automation", 2, (conn, done) => {
             this.refreshAutomation(conn, autoConfigs, done);
-        });
+        }, readyFunc);
     },
     modifyPlayerAutomation:function(key, autoConfigs) {
         return this.setRefreshFunc(key, (conn, done) => {
             this.refreshAutomation(conn, autoConfigs, done);
         });
     },
-    manualPlayerAutomation:function(playerData, autoConfigs, done) {
+    manualPlayerAutomation:function(playerData, autoConfigs, heroshopConfig, done) {
         this.manualOnePlayer(playerData, (conn, tdone) => {
-            this.refreshAutomation(conn, autoConfigs, tdone);
+            var next = coroutine(function*() {
+                yield this.refreshAutomation(conn, autoConfigs, next);
+                yield this.refreshHeroshop(conn, heroshopConfig, next);
+                safe(tdone)();
+            }, this);
         }, done);
     },
     refreshAutomation:function(conn, autoConfigs, done) {
@@ -1549,7 +1553,7 @@ Base.extends("GameController", {
 
                 var endTime = new Date().getTime();
                 if (periodicUnique.callback) {
-                    yield periodicUnique.callback(next);
+                    safe(periodicUnique.callback)();
                     if (this.periodicUnique !== periodicUnique) {
                         break;
                     }
@@ -1633,7 +1637,7 @@ Base.extends("GameController", {
             }
         }
     },
-    appendRefresh:function(playerData, refreshType, initState, func) {
+    appendRefresh:function(playerData, refreshType, initState, func, ready) {
         var accountGameKey = playerData.account + "$" + playerData.server;
         var refreshInfo = this.refreshData[accountGameKey];
         refreshInfo = (refreshInfo ? refreshInfo : {
@@ -1644,7 +1648,8 @@ Base.extends("GameController", {
             mutex: playerData.mutex,
         });
         var funcObj = {
-            func:func,
+            func: func,
+            ready: ready,
             refresh: refreshType,
             state: initState,
         };
@@ -1722,7 +1727,9 @@ Base.extends("GameController", {
             for (var i = 0; i < refreshInfo.funcs.length; ++i) {
                 var funcObj = refreshInfo.funcs[i];
                 if (checkFun(funcObj)) {
-                    executables.push(funcObj.func);
+                    if (funcObj.ready ? (funcObj.ready)() : true) {
+                        executables.push(funcObj.func);
+                    }
                 }
             }
 

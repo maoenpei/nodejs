@@ -32,7 +32,7 @@ Base.extends("HttpModel", {
     },
     getClasses:function() {
         return this.models;
-    }
+    },
 });
 require("./user/Model.js");
 require("./yzdzz/Model.js");
