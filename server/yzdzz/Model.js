@@ -37,9 +37,9 @@ for (var i = 0; i < AllFuncs.length; ++i) {
     AllFuncMap[funcItem.name] = funcItem;
 }
 
-var paymentData = {
+var PaymentData = {
     "automation":{ pay:100, max:1 },
-    "manual":{ pay:10, max:3 },
+    "manual":{ pay:10, max:5 },
 };
 
 $HttpModel.addClass("YZDZZ_CLASS", {
@@ -393,36 +393,85 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         console.log("[PAYMENT] spend failed");
         return false;
     },
-    hasDailyPayment:function(playerKey, name) {
-        var dateKey = "date_" + name;
+    hasDailyPayment:function(playerKey, name, index) {
+        var dateKey = "date_" + name + "_" + String(index);
         var userKey = this.playerKey2UserKey[playerKey];
         var gameUserStates = $StateManager.getState(GAME_USER_CONFIG);
         var gameUserData = gameUserStates[userKey];
         if (!gameUserData) {
-            console.log("[PAYMENT] check dateKey:{0} -> undef, playerKey:{1}, userKey:{2}".format(dateKey, playerKey, userKey));
+            console.log("[PAYMENT] checkDaily dateKey:{0} -> undef, playerKey:{1}, userKey:{2}".format(dateKey, playerKey, userKey));
             return false;
         }
-        var recordDate = gameUserData[dateKey];
+        var gameUserPlayerData = gameUserData[playerKey];
+        if (!gameUserPlayerData) {
+            console.log("[PAYMENT] checkDaily dateKey:{0} -> undef2, playerKey:{1}, userKey:{2}".format(dateKey, playerKey, userKey));
+            return false;
+        }
+        var recordDate = gameUserPlayerData[dateKey];
         var date = new Date();
         var dateStr = String(date.getFullYear()) + "-" + String(date.getMonth()) + "-" + String(date.getDate());
-        console.log("[PAYMENT] check dateKey:{0} -> recordDate:{1}, dateStr:{2}, playerKey:{3}, userKey:{4}".format(dateKey, recordDate, dateStr, playerKey, userKey));
+        console.log("[PAYMENT] checkDaily dateKey:{0} -> recordDate:{1}, dateStr:{2}, playerKey:{3}, userKey:{4}".format(dateKey, recordDate, dateStr, playerKey, userKey));
         return dateStr == recordDate;
     },
-    setDailyPayment:function(playerKey, name) {
-        var dateKey = "date_" + name;
+    setDailyPayment:function(playerKey, name, index) {
+        var dateKey = "date_" + name + "_" + String(index);
         var userKey = this.playerKey2UserKey[playerKey];
         var gameUserStates = $StateManager.getState(GAME_USER_CONFIG);
         var gameUserData = gameUserStates[userKey];
         gameUserData = (gameUserData ? gameUserData : {});
         gameUserStates[userKey] = gameUserData;
+        var gameUserPlayerData = gameUserData[playerKey];
+        gameUserPlayerData = (gameUserPlayerData ? gameUserPlayerData : {});
+        gameUserData[playerKey] = gameUserPlayerData;
         var date = new Date();
         var dateStr = String(date.getFullYear()) + "-" + String(date.getMonth()) + "-" + String(date.getDate());
-        gameUserData[dateKey] = dateStr;
+        gameUserPlayerData[dateKey] = dateStr;
         $StateManager.commitState(GAME_USER_CONFIG);
-        console.log("[PAYMENT] daily dateKey:{0} -> dateStr:{1}, playerKey:{2}, userKey:{3}".format(dateKey, dateStr, playerKey, userKey));
+        console.log("[PAYMENT] setDaily dateKey:{0} -> dateStr:{1}, playerKey:{2}, userKey:{3}".format(dateKey, dateStr, playerKey, userKey));
+    },
+    getTodayPayment:function(playerKey) {
+        var maxPay = 0;
+        for (var name in PaymentData) {
+            var data = PaymentData[name];
+            for (var i = 0; i < data.max; ++i) {
+                var pay = data.pay * (i + 1);
+                if (pay < maxPay) {
+                    continue;
+                }
+                if (this.hasDailyPayment(playerKey, name, i)) {
+                    maxPay = pay;
+                }
+            }
+        }
+        return maxPay;
     },
     spendPaymentName:function(playerKey, name) {
-        
+        var oriPay = this.getTodayPayment(playerKey);
+        var data = PaymentData[name];
+        var spendIndex = -1;
+        for (var i = 0; i < data.max; ++i) {
+            if (!this.hasDailyPayment(playerKey, name, i)) {
+                spendIndex = i;
+                break;
+            }
+        }
+        if (spendIndex < 0) {
+            console.log("[PAYMENT] byname0 name:{0} -> spendIndex:{1}, playerKey:{2}".format(name, spendIndex, playerKey));
+            return true;
+        }
+        var nowPay = data.pay * (spendIndex + 1);
+        if (nowPay <= oriPay) {
+            this.setDailyPayment(playerKey, name, spendIndex);
+            console.log("[PAYMENT] byname1 name:{0} -> spendIndex:{1}, playerKey:{2}".format(name, spendIndex, playerKey));
+            return true;
+        }
+        if (this.spendPayment(playerKey, nowPay - oriPay)) {
+            this.setDailyPayment(playerKey, name, spendIndex);
+            console.log("[PAYMENT] byname2 name:{0} -> spendIndex:{1}, playerKey:{2}".format(name, spendIndex, playerKey));
+            return true;
+        }
+        console.log("[PAYMENT] byname3 name:{0} -> spendIndex:{1}, playerKey:{2}".format(name, spendIndex, playerKey));
+        return false;
     },
 
     startRefreshAutomation:function(playerKey, automationConfig) {
@@ -437,14 +486,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         } else {
             playerData.refreshAutomationKey =
                 this.controller.setPlayerAutomation(playerData, autoConfigs, () => {
-                    if (this.hasDailyPayment(playerKey, "automation")) {
-                        return true;
-                    }
-                    if (this.spendPayment(playerKey, 100)) {
-                        this.setDailyPayment(playerKey, "automation");
-                        return true;
-                    }
-                    return false;
+                    return this.spendPaymentName(playerKey, "automation");
                 });
         }
     },
@@ -1475,6 +1517,11 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             var playerBelong = this.getPlayerIndex(session.getUserData(), playerKey);
             if (playerBelong < 0) {
                 responder.addError("Player doesn't belong to user.");
+                return responder.respondJson({}, done);
+            }
+
+            if (!this.spendPaymentName(playerKey, "manual")) {
+                responder.addError("Player payment not enough.");
                 return responder.respondJson({}, done);
             }
 
