@@ -21,6 +21,8 @@ $HttpModel.addClass("USER_CLASS", {
         httpServer.registerCommand("apply", this);
         httpServer.registerCommand("requirement", this);
         httpServer.registerCommand("userserver", this);
+        httpServer.registerCommand("listuserpay", this);
+        httpServer.registerCommand("setuserpay", this);
         httpServer.registerCommand("listself", this);
         httpServer.registerCommand("question", this);
     },
@@ -466,6 +468,71 @@ $HttpModel.addClass("USER_CLASS", {
                 sev.splice(sevIndex, 1);
             }
             userStates.users[userKey].sev = sev;
+            $StateManager.commitState(USER_CONFIG);
+
+            responder.respondJson({
+                success: true,
+            }, done);
+        }, this);
+    },
+    listuserpay:function(requestor, responder, session, done) {
+        var next = coroutine(function*() {
+            if (!(yield session.checkConnection({POST:true, USER:3, REQ:"payment"}, next))) {
+                return safe(done)();
+            }
+
+            var userStates = $StateManager.getState(USER_CONFIG);
+            var userInfo = [];
+            for (var serial in userStates.keys) {
+                var keyData = userStates.keys[serial];
+                if (!keyData.name || !keyData.userKey) {
+                    continue;
+                }
+                var userData = userStates.users[keyData.userKey];
+                userInfo.push({
+                    serial: serial,
+                    name: keyData.name,
+                    account_num: (userData.accounts ? userData.accounts.length : 0),
+                    player_num: (userData.players ? userData.players.length : 0),
+                    pay: userData.totalPay || 0,
+                });
+            }
+
+            responder.respondJson({
+                users: userInfo,
+            }, done);
+        }, this);
+    },
+    setuserpay:function(requestor, responder, session, done) {
+        var next = coroutine(function*() {
+            if (!(yield session.checkConnection({POST:true, USER:3, REQ:"payment"}, next))) {
+                return safe(done)();
+            }
+
+            var userStates = $StateManager.getState(USER_CONFIG);
+            var json = yield requestor.visitBodyJson(next);
+            if (!json || !json.target || typeof(json.pay) != "number") {
+                responder.addError("Parameter data not correct.");
+                return responder.respondJson({}, done);
+            }
+
+            var targetSerial = json.target;
+            var pay = json.pay;
+            if (pay < 0 || pay > 100000) {
+                responder.addError("No such user.");
+                return responder.respondJson({}, done);
+            }
+
+            var targetKeyData = userStates.keys[targetSerial];
+            if (!targetKeyData) {
+                responder.addError("No such user.");
+                return responder.respondJson({}, done);
+            }
+
+            var userKey = targetKeyData.userKey;
+            var oldPay = userStates.users[userKey].pay || 0;
+            console.log("[PAYMENT] raise pay from user:{0}({1}), to:{2}({3}), Pay:{4} -> {5}".format(session.getUserName(), session.getUserKey(), targetKeyData.name, userKey, oldPay, pay));
+            userStates.users[userKey].totalPay = pay;
             $StateManager.commitState(USER_CONFIG);
 
             responder.respondJson({

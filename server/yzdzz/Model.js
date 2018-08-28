@@ -25,7 +25,7 @@ var AllFuncs = [
     {name:"playerlist", requirement:"view_playerlist", },
     {name:"serverInfo", requirement:"server", },
     {name:"automation", requirement:"automation", },
-    //{name:"setting", authBase:3, requirement:"setting", },
+    {name:"payment", requirement:"payment", },
     {name:"users", authBase:3, },
     {name:"selfdesc", authBase:1, },
 ];
@@ -36,6 +36,11 @@ for (var i = 0; i < AllFuncs.length; ++i) {
     AllFuncStr += funcItem.name + ";";
     AllFuncMap[funcItem.name] = funcItem;
 }
+
+var paymentData = {
+    "automation":{ pay:100, max:1 },
+    "manual":{ pay:10, max:3 },
+};
 
 $HttpModel.addClass("YZDZZ_CLASS", {
     _constructor:function(httpServer) {
@@ -382,11 +387,13 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             totalPay -= payment;
             userData.totalPay = totalPay;
             $StateManager.commitState(USER_CONFIG);
+            console.log("[PAYMENT] spend success");
             return true;
         }
+        console.log("[PAYMENT] spend failed");
         return false;
     },
-    hasDailyPayment:function(name, playerKey) {
+    hasDailyPayment:function(playerKey, name) {
         var dateKey = "date_" + name;
         var userKey = this.playerKey2UserKey[playerKey];
         var gameUserStates = $StateManager.getState(GAME_USER_CONFIG);
@@ -401,7 +408,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         console.log("[PAYMENT] check dateKey:{0} -> recordDate:{1}, dateStr:{2}, playerKey:{3}, userKey:{4}".format(dateKey, recordDate, dateStr, playerKey, userKey));
         return dateStr == recordDate;
     },
-    setDailyPayment:function(name, playerKey) {
+    setDailyPayment:function(playerKey, name) {
         var dateKey = "date_" + name;
         var userKey = this.playerKey2UserKey[playerKey];
         var gameUserStates = $StateManager.getState(GAME_USER_CONFIG);
@@ -413,6 +420,9 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         gameUserData[dateKey] = dateStr;
         $StateManager.commitState(GAME_USER_CONFIG);
         console.log("[PAYMENT] daily dateKey:{0} -> dateStr:{1}, playerKey:{2}, userKey:{3}".format(dateKey, dateStr, playerKey, userKey));
+    },
+    spendPaymentName:function(playerKey, name) {
+        
     },
 
     startRefreshAutomation:function(playerKey, automationConfig) {
@@ -427,11 +437,11 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         } else {
             playerData.refreshAutomationKey =
                 this.controller.setPlayerAutomation(playerData, autoConfigs, () => {
-                    if (this.hasDailyPayment("automation", playerKey)) {
+                    if (this.hasDailyPayment(playerKey, "automation")) {
                         return true;
                     }
                     if (this.spendPayment(playerKey, 100)) {
-                        this.setDailyPayment("automation", playerKey);
+                        this.setDailyPayment(playerKey, "automation");
                         return true;
                     }
                     return false;

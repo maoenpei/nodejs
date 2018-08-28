@@ -230,6 +230,7 @@ var displayFuncsModel = {
         playerlist:{name:"玩家", show:displayPlayerList, },
         serverInfo:{name:"信息", show:displayServerInfo, },
         automation:{name:"配置", show:displayAutomation, },
+        payment:{name:"支付", show:displayPayment, },
         users:{name:"用户", show:displayUsers, },
         selfdesc:{name:"✺", show:displaySelf, },
     },
@@ -417,6 +418,72 @@ playerCommon.serverItem = function(server) {
         name: server,
         desc: server.substr(1) + "服",
     };
+}
+
+var displayPaymentModel = {
+};
+
+displayPaymentModel.get = function(callback) {
+    $this = this;
+    requestPost("listuserpay", {}, function(json) {
+        $this.users = json.users;
+        callback(json);
+    });
+}
+displayPaymentModel.setPay = function(user, pay, callback) {
+    $this = this;
+    requestPost("setuserpay", { target:user.serial, pay:pay }, function(json) {
+        if (json.success) {
+            user.pay = pay;
+            callback();
+        }
+    });
+}
+
+function displayPayment() {
+    var divContentPanel = $(".div_content_panel");
+    var waitingTemplate = templates.read(".hd_display_loading");
+    divContentPanel.html(waitingTemplate({refreshing_data: true}));
+
+    var refreshPayment = function(data) {
+        var paymentsAllTemplate = templates.read(".hd_payments_all");
+        divContentPanel.html(paymentsAllTemplate(data));
+
+        var operatingUser = null;
+        divContentPanel.find(".div_payment_add_pay_cancel").click(function() {
+            divContentPanel.find(".div_payment_add_pay_mask").hide();
+        });
+        divContentPanel.find(".div_payment_add_pay_confirm").click(function() {
+            divContentPanel.find(".div_payment_add_pay_mask").hide();
+            var numStr = divContentPanel.find(".input_payment_add_pay_content").val();
+            if (numStr != String(Number(numStr))) {
+                alert("不是数字");
+            } else {
+                var num = Number(numStr);
+                if (num != Math.round(num) || num <= 0) {
+                    alert("不是正整数");
+                } else {
+                    displayPaymentModel.setPay(operatingUser, operatingUser.pay + num, function() {
+                        refreshPayment(data);
+                    });
+                }
+            }
+        });
+        var editingButtons = divContentPanel.find(".div_payment_editing");
+        for (var i = 0; i < data.users.length; ++i) {
+            (function() {
+                var user = data.users[i];
+                var editButton = $(editingButtons[i]);
+                editButton.click(function() {
+                    operatingUser = user;
+                    divContentPanel.find(".input_payment_add_pay_content").val("");
+                    divContentPanel.find(".div_payment_add_pay_mask").show();
+                    divContentPanel.find(".input_payment_add_pay_content").focus();
+                });
+            })();
+        }
+    };
+    displayPaymentModel.get(refreshPayment);
 }
 
 var displayAutomationModel = {

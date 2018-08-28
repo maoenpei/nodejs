@@ -110,6 +110,7 @@
         ,{"hour":18,"minute":0,"second":55}
         ,{"hour":21,"minute":0,"second":55}
         ,{"hour":23,"minute":0,"second":55}
+        ,{"hour":19,"minute":19,"second":55}
     ]
     ,"repeatRange":{
         "start":{"hour":2,"minute":0,"second":0}

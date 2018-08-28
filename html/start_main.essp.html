@@ -424,5 +424,35 @@
                     {{/if}}
                 </div>
 </script>
+<script type="text/x-handlebars-template" class="hd_payments_all">
+        <div class="div_payment_all">
+            <div class="div_payment_item">
+                <div class="div_payment_item_name div_payment_title">用户</div>
+                <div class="div_payment_item_accounts div_payment_title">账号数</div>
+                <div class="div_payment_item_players div_payment_title">角色数</div>
+                <div class="div_payment_item_pay div_payment_title">积分</div>
+                <div class="div_payment_item_edit div_payment_title"></div>
+            </div>
+            {{#each users}}
+            <div class="div_payment_item">
+                <div class="div_payment_item_name div_payment_name">{{name}}</div>
+                <div class="div_payment_item_accounts div_payment_element">{{account_num}}</div>
+                <div class="div_payment_item_players div_payment_element">{{player_num}}</div>
+                <div class="div_payment_item_pay div_payment_element">{{pay}}</div>
+                <div class="div_payment_item_edit div_payment_editing visit_label">添加</div>
+            </div>
+            {{/each}}
+        </div>
+        <div class="div_payment_add_pay_mask common_mask" style="display: none;">
+            <div class="common_mask_content">
+                <div class="div_payment_add_pay_text">输入添加积分(100积分自动化一天)</div>
+                <input type="text" class="input_payment_add_pay_content">
+                <div class="div_payment_add_pay_field">
+                    <div class="div_payment_add_pay_cancel visit_label">取消</div>
+                    <div class="div_payment_add_pay_confirm visit_label">确定</div>
+                </div>
+            </input>
+        </div>
+</script>
 </body>
 </html>

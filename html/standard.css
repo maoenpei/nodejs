@@ -599,3 +599,44 @@ input[type='checkbox']{
     color: rgb(0, 127, 255);
     width: 60%;
 }
+
+.div_payment_item{
+    margin-top: 0.1rem;
+    padding-bottom: 0.1rem;
+    border-top: 1px solid #ccc;
+    background-color: #aaa;
+    font-size: 0.7rem;
+}
+.div_payment_item_name{
+    display:inline-block;
+    width: 30%;
+}
+.div_payment_item_accounts{
+    display:inline-block;
+    width: 15%;
+}
+.div_payment_item_players{
+    display:inline-block;
+    width: 15%;
+}
+.div_payment_item_pay{
+    display:inline-block;
+    width: 15%;
+}
+.div_payment_item_edit{
+    display:inline-block;
+    width: 15%;
+}
+.div_payment_title{
+    color:#fff;
+}
+.div_payment_name{
+    color:#ff0;
+}
+.div_payment_element{
+    color: rgb(0, 127, 255);
+}
+
+.div_payment_add_pay_text{
+    color: rgb(0, 127, 255);
+}
