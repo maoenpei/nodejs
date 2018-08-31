@@ -483,19 +483,26 @@ $HttpModel.addClass("USER_CLASS", {
 
             var userStates = $StateManager.getState(USER_CONFIG);
             var userInfo = [];
+            var insertIndex = 0;
             for (var serial in userStates.keys) {
                 var keyData = userStates.keys[serial];
                 if (!keyData.name || !keyData.userKey) {
                     continue;
                 }
                 var userData = userStates.users[keyData.userKey];
-                userInfo.push({
+                var payItem = {
                     serial: serial,
                     name: keyData.name,
                     account_num: (userData.accounts ? userData.accounts.length : 0),
                     player_num: (userData.players ? userData.players.length : 0),
                     pay: userData.totalPay || 0,
-                });
+                };
+                if (payItem.account_num || payItem.player_num || payItem.pay) {
+                    userInfo.splice(insertIndex, 0, payItem);
+                    insertIndex++;
+                } else {
+                    userInfo.push(payItem);
+                }
             }
 
             responder.respondJson({

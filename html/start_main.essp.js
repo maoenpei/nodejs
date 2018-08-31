@@ -230,7 +230,7 @@ var displayFuncsModel = {
         playerlist:{name:"玩家", show:displayPlayerList, },
         serverInfo:{name:"信息", show:displayServerInfo, },
         automation:{name:"配置", show:displayAutomation, },
-        payment:{name:"支付", show:displayPayment, },
+        payment:{name:"积分", show:displayPayment, },
         users:{name:"用户", show:displayUsers, },
         selfdesc:{name:"✺", show:displaySelf, },
     },
