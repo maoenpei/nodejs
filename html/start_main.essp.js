@@ -427,6 +427,7 @@ displayPaymentModel.get = function(callback) {
     $this = this;
     requestPost("listuserpay", {}, function(json) {
         $this.users = json.users;
+        $this.maxPay = json.maxPay;
         callback(json);
     });
 }
@@ -438,6 +439,9 @@ displayPaymentModel.setPay = function(user, pay, callback) {
             callback();
         }
     });
+}
+displayPaymentModel.getMaxPay = function() {
+    return this.maxPay;
 }
 
 function displayPayment() {
@@ -462,6 +466,8 @@ function displayPayment() {
                 var num = Number(numStr);
                 if (num != Math.round(num) || num <= 0) {
                     alert("不是正整数");
+                } else if (num > displayPaymentModel.getMaxPay()) {
+                    alert("超过单次积分调整限制：" + displayPaymentModel.getMaxPay());
                 } else {
                     displayPaymentModel.setPay(operatingUser, operatingUser.pay + num, function() {
                         refreshPayment(data);

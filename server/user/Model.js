@@ -507,6 +507,7 @@ $HttpModel.addClass("USER_CLASS", {
 
             responder.respondJson({
                 users: userInfo,
+                maxPay: (session.authorized(4) ? 1000000000 : 10000),
             }, done);
         }, this);
     },
@@ -525,8 +526,13 @@ $HttpModel.addClass("USER_CLASS", {
 
             var targetSerial = json.target;
             var pay = json.pay;
-            if (pay < 0 || pay > 100000) {
-                responder.addError("No such user.");
+            if (pay < 0 || pay > 1000000000) {
+                responder.addError("Pay value exceed.");
+                return responder.respondJson({}, done);
+            }
+
+            if (!session.authorized(4) && pay > 10000) {
+                responder.addError("Pay value exceed.");
                 return responder.respondJson({}, done);
             }
 
