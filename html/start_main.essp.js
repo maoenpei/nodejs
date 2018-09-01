@@ -2660,6 +2660,9 @@ function displaySelf() {
         if (detail.players) {
             $(selfItemTemplate({type:"角色", value:detail.players.length})).appendTo(divSelfPanel);
         }
+        if (detail.totalPay) {
+            $(selfItemTemplate({type:"积分", value:detail.totalPay})).appendTo(divSelfPanel);
+        }
         if (detail.heros) {
             var heroCount = 0;
             for (var i in detail.heros) {
