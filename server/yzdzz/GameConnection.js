@@ -3104,7 +3104,7 @@ Base.extends("GameConnection", {
                         var equipMerge = null;
                         for (var i = 0; i < data.list.length; ++i) {
                             var item = data.list[i];
-                            if (item.short == "超级打造") {
+                            if (item.short.indexOf("打造") == item.short.length - 2) {
                                 equipMerge = item;
                                 break;
                             }
