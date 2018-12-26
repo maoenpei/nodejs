@@ -137,6 +137,48 @@ GameSock.send = function(sock, c, m, data, options, done) {
 
 GameHTTP = {};
 
+var heimaAccess = "oversea.hoolai.com"; // 119.28.109.102
+var heimaAccess2 = "api.gameboss.com.tw"; // 219.84.164.137
+
+GameHTTP.loginHeimei = function(done) {
+    var loginOptions = {
+        hostname:heimaAccess,
+        path:'/api/public/validatechannel/gameboss',
+        method:'POST',
+        headers:{
+            'bundle_id': 'com.gamebosshk.ios.baf',
+            'device_unique': '4FF508A1-0C0C-46B6-83DA-7A7E774C6005',
+            'language': 'zh-Hans-CN',
+            'User-Agent': 'ProductName/107 CFNetwork/902.2 Darwin/17.7.0',
+            'sdk_version': 'v2.3.2',
+            'network_type': 'wifi',
+            'region': 'Asia/Shanghai',
+            'device_id': '3EDF9FA1-7779-4475-9936-AA12F8C39258',
+            'channel': 'gameboss',
+            'device_mark': '8DC49A8D-CBD0-489C-A02E-08E57E627A35',
+            'request_at': '2018-09-02T13:31:37Z+0800',
+            'os': 'iOS',
+            'os_system': 'iOS',
+            'Content-Length': '167',
+            'Connection': 'keep-alive',
+            'product_id': '14',
+            'client_version': '1.107.1',
+            'Accept-Language': 'zh-cn',
+            'os_version': '11.4.1',
+            'model': 'iPhone8,1',
+            'channel_id': '10002',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': '*/*',
+            'Accept-Encoding': 'gzip, deflate',
+        },
+    };
+    SendHTTP(loginOptions, 'sign=c3fd10dedfb45d092917c0138dcd90f8&nickName=patronummei@gmail.com&channelToken=ZHdlCsTkmEuFJKROjA0cbuE6gZdEr4i0j5WQjcws&channelId=10002&channelUid=10115358633065740', (buf) => {
+        if (!buf){ return safe(done)(null); }
+        var obj = JSON.parse(buf.toString());
+        return safe(done)(obj);
+    });
+}
+
 var hulaiAccess = "access.hoolai.com";
 var hulaiGame = "d1.yongzhe.hulai.com";
 
