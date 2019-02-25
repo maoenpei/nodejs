@@ -6,4 +6,7 @@ pid
 pid_daemon
 logs
 alive.out
-
+nodejs.sublime-project
+nodejs.sublime-workspace
+localRun.js
+overSea.js
