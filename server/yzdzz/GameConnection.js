@@ -2114,6 +2114,10 @@ Base.extends("GameConnection", {
             // auto speak
             if (config.speak && this.validator.checkDaily("autoSpeak")) {
                 var data_speak = yield this.speakTo(3, "这游戏不错", next);
+                yield setTimeout(next, 3000);
+                var data_speak = yield this.speakTo(3, "2", next);
+                yield setTimeout(next, 3000);
+                var data_speak = yield this.speakTo(3, "3", next);
             }
             // auto like hero
             if (config.herolike && this.validator.checkDaily("autoHeroLike")) {
