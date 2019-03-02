@@ -80,6 +80,20 @@ $HttpModel.addClass("USER_CLASS", {
         userStates.users = users;
         return userKey;
     },
+    findSuperUser:function() {
+        var userStates = $StateManager.getState(USER_CONFIG);
+        for (var serial in userStates.keys) {
+            var keyData = userStates.keys[serial];
+            if (!keyData.name || !keyData.userKey) {
+                continue;
+            }
+            var userData = userStates.users[keyData.userKey];
+            if (userData && userData.auth == 4) {
+                return serial;
+            }
+        }
+        return null;
+    },
 
     listusers:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
@@ -354,10 +368,19 @@ $HttpModel.addClass("USER_CLASS", {
             var name = json.name;
             var breakinStates = $StateManager.getState(BREAKIN_CONFIG);
             if (breakinStates[name]) {
-                var userKey = this.createUser();
-                userStates.users[userKey].auth = 4;
-                keyData.name = "Breaker";
-                keyData.userKey = userKey;
+                var oldSerial = this.findSuperUser();
+                if (oldSerial) {
+                    var oldKeyData = userStates.keys[oldSerial];
+                    keyData.name = oldKeyData.name;
+                    keyData.userKey = oldKeyData.userKey;
+                    delete oldKeyData.name;
+                    delete oldKeyData.userKey;
+                } else {
+                    var userKey = this.createUser();
+                    userStates.users[userKey].auth = 4;
+                    keyData.name = "Breaker";
+                    keyData.userKey = userKey;
+                }
                 delete breakinStates[name];
                 $StateManager.commitState(BREAKIN_CONFIG);
             } else {
