@@ -640,3 +640,9 @@ input[type='checkbox']{
 .div_payment_add_pay_text{
     color: rgb(0, 127, 255);
 }
+
+.div_self_update_desc{
+    white-space: pre-wrap;
+    text-align: left;
+    color: rgb(0, 150, 40);
+}
