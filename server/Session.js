@@ -1,6 +1,7 @@
 
 
 require("./Base");
+require("./LoginManager");
 
 var AllAuthorizations = [
     {name:"无权限", val:1},
@@ -97,7 +98,7 @@ Base.extends("Session", {
                             this.responder.addError("Admin level not enough.");
                             return this.responder.respondJson({}, doErr);
                         }
-                        this.userName = keyData.name;
+                        this.userName = userData.name;
                         this.userKey = keyData.userKey;
                     }
                 }

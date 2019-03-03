@@ -1,7 +1,6 @@
 
 require("../Base");
 require("../StateManager");
-require("../LoginManager");
 
 var AuthorizeOnlySuperAdmin = true;
 
@@ -70,29 +69,49 @@ $HttpModel.addClass("USER_CLASS", {
         this.invokeUserListener("deleting", userData);
     },
 
-    createUser:function() {
+    createUser:function(auth, name) {
         var userStates = $StateManager.getState(USER_CONFIG);
         var users = userStates.users;
         users = (users ? users : {});
         var userKey = rkey();
         while(users[userKey]){userKey = rkey();}
-        users[userKey] = {};
+        users[userKey] = {
+            auth: auth,
+            name: name,
+        };
         userStates.users = users;
         return userKey;
     },
     findSuperUser:function() {
         var userStates = $StateManager.getState(USER_CONFIG);
-        for (var serial in userStates.keys) {
-            var keyData = userStates.keys[serial];
-            if (!keyData.name || !keyData.userKey) {
-                continue;
-            }
-            var userData = userStates.users[keyData.userKey];
-            if (userData && userData.auth == 4) {
-                return serial;
+        for (var userKey in userStates.users) {
+            var userData = userStates.users[userKey];
+            if (userData.auth == 4) {
+                return userKey;
             }
         }
         return null;
+    },
+    getUserSerials:function(selfSerial) {
+        var userSerials = {};
+        var userStates = $StateManager.getState(USER_CONFIG);
+        for (var serial in userStates.keys) {
+            var keyData = userStates.keys[serial];
+            if (userSerials[keyData.userKey] && serial != selfSerial) {
+                continue;
+            }
+            userSerials[keyData.userKey] = serial;
+        }
+        return userSerials;
+    },
+    clearUserSerials:function(userKey) {
+        var userStates = $StateManager.getState(USER_CONFIG);
+        for (var serial in userStates.keys) {
+            var keyData = userStates.keys[serial];
+            if (keyData.userKey && keyData.userKey == userKey) {
+                delete keyData.userKey;
+            }
+        }
     },
 
     listusers:function(requestor, responder, session, done) {
@@ -109,38 +128,38 @@ $HttpModel.addClass("USER_CLASS", {
             }
 
             var allUsers = [];
-            var sortBaseIndex = 0;
             for (var serial in userStates.keys) {
                 var keyData = userStates.keys[serial];
-                if (!keyData.name) {
-                    continue;
-                }
-                if (!keyData.userKey) {
+                if (keyData.name && !keyData.userKey) {
                     allUsers.splice(0, 0, {
                         name:keyData.name,
                         serial:serial,
                         auth:0,
                     });
-                    sortBaseIndex++;
-                } else {
-                    var userData = userStates.users[keyData.userKey];
-                    if (userData) {
-                        var insertIndex = allUsers.length - 1;
-                        for (; insertIndex >= sortBaseIndex; --insertIndex) {
-                            if (allUsers[insertIndex].auth > userData.auth) {
-                                break;
-                            }
-                        }
-                        allUsers.splice(insertIndex + 1, 0, {
-                            name:keyData.name,
-                            dead:!!keyData.dead,
-                            serial:serial,
-                            auth:userData.auth,
-                            req:userData.req || {},
-                            sev:userData.sev || [],
-                        });
+                }
+            }
+            var applyCount = allUsers.length;
+            var userSerials = this.getUserSerials(session.getSerial());
+            for (var userKey in userStates.users) {
+                if (!userSerials[userKey]) {
+                    console.log("[USER_ERR] unlinked userKey:{0}".format(userKey));
+                    continue;
+                }
+                var userData = userStates.users[userKey];
+                var insertIndex = allUsers.length - 1;
+                for (; insertIndex >= applyCount; --insertIndex) {
+                    if (allUsers[insertIndex].auth > userData.auth) {
+                        break;
                     }
                 }
+                allUsers.splice(insertIndex + 1, 0, {
+                    name:userData.name,
+                    dead:!!userData.dead,
+                    serial:userSerials[userKey],
+                    auth:userData.auth,
+                    req:userData.req || {},
+                    sev:userData.sev || [],
+                });
             }
 
             var allServers = this.listServers();
@@ -217,14 +236,18 @@ $HttpModel.addClass("USER_CLASS", {
             }
 
             var targetKeyData = userStates.keys[targetSerial];
-            if (!targetKeyData || !targetKeyData.name) {
+            if (!targetKeyData || (!targetKeyData.userKey && !targetKeyData.name)) {
                 responder.addError("Not an valid user.");
                 return responder.respondJson({}, done);
             }
 
             if (targetKeyData.userKey) {
-                var targetUserData = userStates.users[targetKeyData.userKey];
+                var targetUserKey = targetKeyData.userKey;
+                var targetUserData = userStates.users[targetUserKey];
                 if (!targetUserData) {
+                    this.clearUserSerials(targetUserKey);
+                    $StateManager.commitState(USER_CONFIG);
+                    console.log("[USER_ERR] untargetd userKey:{0}".format(targetUserKey));
                     responder.addError("No user data.");
                     return responder.respondJson({}, done);
                 }
@@ -232,26 +255,26 @@ $HttpModel.addClass("USER_CLASS", {
                     responder.addError("Cannot disable super administrator.");
                     return responder.respondJson({}, done);
                 }
+                if (keepUser && targetUserData.dead) {
+                    responder.addError("User already broken.");
+                    return responder.respondJson({}, done);
+                }
+                this.clearUserSerials(targetUserKey);
                 if (keepUser) {
-                    if (targetKeyData.dead) {
-                        responder.addError("User already broken.");
-                        return responder.respondJson({}, done);
-                    }
+                    targetUserData.dead = true;
                     var newSerial = rkey();
                     while (userStates.keys[newSerial]) { newSerial = rkey(); }
                     userStates.keys[newSerial] = {
-                        dead: true,
-                        name: targetKeyData.name,
-                        userKey: targetKeyData.userKey,
+                        userKey: targetUserKey,
                     };
                 } else {
                     this.invokeUserDelete(targetUserData);
-                    delete userStates.users[targetKeyData.userKey];
+                    delete userStates.users[targetUserKey];
                 }
-                delete targetKeyData.userKey;
-                delete targetKeyData.dead; // possible field
             }
-            delete targetKeyData.name;
+            if (targetKeyData.name && !keepUser) {
+                delete targetKeyData.name;
+            }
             $StateManager.commitState(USER_CONFIG);
 
             responder.respondJson({success:true}, done);
@@ -273,12 +296,19 @@ $HttpModel.addClass("USER_CLASS", {
             var targetSerial = json.target;
             var targetName = json.name;
             var targetKeyData = userStates.keys[targetSerial];
-            if (!targetKeyData || !targetKeyData.name) {
+            if (!targetKeyData || (!targetKeyData.userKey && !targetKeyData.name)) {
                 responder.addError("Not an valid user.");
                 return responder.respondJson({}, done);
             }
 
-            targetKeyData.name = targetName;
+            if (targetKeyData.userKey) {
+                var targetUserKey = targetKeyData.userKey;
+                var targetUserData = userStates.users[targetUserKey];
+                targetUserData.name = targetName;
+            }
+            if (targetKeyData.name) {
+                targetKeyData.name = targetName;
+            }
             $StateManager.commitState(USER_CONFIG);
 
             responder.respondJson({success:true}, done);
@@ -298,13 +328,13 @@ $HttpModel.addClass("USER_CLASS", {
             }
 
             var currentSerial = json.previous;
-            var currentData = userStates.keys[currentSerial];
-            if (!currentData.name) {
+            var currentKeyData = userStates.keys[currentSerial];
+            if (!currentKeyData.name) {
                 responder.addError("Not requested.");
                 return responder.respondJson({}, done);
             }
 
-            if (currentData.userKey) {
+            if (currentKeyData.userKey) {
                 responder.addError("Already authorized.");
                 return responder.respondJson({}, done);
             }
@@ -312,28 +342,29 @@ $HttpModel.addClass("USER_CLASS", {
             var nextUserKey = null;
             var lastSerial = json.next;
             if (!lastSerial) {
-                nextUserKey = this.createUser();
+                nextUserKey = this.createUser(1, currentKeyData.name);
                 var nextUserData = userStates.users[nextUserKey];
-                nextUserData.auth = 1;
                 this.invokeUserAdd(nextUserData);
             } else {
                 if (AuthorizeOnlySuperAdmin && !session.authorized(4)) {
                     responder.addError("Admin level not enough.");
                     return responder.respondJson({}, done);
                 }
-                var lastData = userStates.keys[lastSerial];
-                if (!lastData.userKey) {
+                var lastKeyData = userStates.keys[lastSerial];
+                if (!lastKeyData.userKey) {
                     responder.addError("Fail to authorize user.");
                     return responder.respondJson({}, done);
                 }
-                nextUserKey = lastData.userKey;
-                currentData.name = lastData.name;
-                delete lastData.userKey;
-                delete lastData.dead; // possible field
-                delete lastData.name;
+                nextUserKey = lastKeyData.userKey;
+                var nextUserData = userStates.users[nextUserKey];
+                if (nextUserData.dead) {
+                    this.clearUserSerials(nextUserKey);
+                    delete nextUserData.dead;
+                }
             }
 
-            currentData.userKey = nextUserKey;
+            currentKeyData.userKey = nextUserKey;
+            delete currentKeyData.name;
             $StateManager.commitState(USER_CONFIG);
 
             responder.respondJson({success:true}, done);
@@ -368,20 +399,17 @@ $HttpModel.addClass("USER_CLASS", {
             var name = json.name;
             var breakinStates = $StateManager.getState(BREAKIN_CONFIG);
             if (breakinStates[name]) {
-                var oldSerial = this.findSuperUser();
-                if (oldSerial) {
-                    var oldKeyData = userStates.keys[oldSerial];
-                    keyData.name = oldKeyData.name;
-                    keyData.userKey = oldKeyData.userKey;
-                    delete oldKeyData.name;
-                    delete oldKeyData.userKey;
-                } else {
-                    var userKey = this.createUser();
-                    userStates.users[userKey].auth = 4;
-                    keyData.name = "Breaker";
-                    keyData.userKey = userKey;
-                }
                 delete breakinStates[name];
+                var oldSuperUserKey = this.findSuperUser();
+                if (oldSuperUserKey) {
+                    var oldSuperUserData = userStates.users[oldSuperUserKey];
+                    name = oldSuperUserData.name;
+                    keyData.userKey = oldSuperUserKey;
+                } else {
+                    name = "Breaker";
+                    var newSuperUserKey = this.createUser(4, name);
+                    keyData.userKey = newSuperUserKey;
+                }
                 $StateManager.commitState(BREAKIN_CONFIG);
             } else {
                 keyData.name = name;
@@ -390,7 +418,7 @@ $HttpModel.addClass("USER_CLASS", {
 
             responder.respondJson({
                 state: (keyData.userKey ? 2 : 1),
-                name:keyData.name,
+                name: name,
             }, done);
         }, this);
     },
@@ -411,7 +439,7 @@ $HttpModel.addClass("USER_CLASS", {
             var reqName = json.val;
             var isAdd = json.add;
             var targetKeyData = userStates.keys[targetSerial];
-            if (!targetKeyData) {
+            if (!targetKeyData || !targetKeyData.userKey) {
                 responder.addError("No such user.");
                 return responder.respondJson({}, done);
             }
@@ -463,7 +491,7 @@ $HttpModel.addClass("USER_CLASS", {
             var server = json.sev;
             var isAdd = json.add;
             var targetKeyData = userStates.keys[targetSerial];
-            if (!targetKeyData) {
+            if (!targetKeyData || !targetKeyData.userKey) {
                 responder.addError("No such user.");
                 return responder.respondJson({}, done);
             }
@@ -507,15 +535,16 @@ $HttpModel.addClass("USER_CLASS", {
             var userStates = $StateManager.getState(USER_CONFIG);
             var userInfo = [];
             var insertIndex = 0;
-            for (var serial in userStates.keys) {
-                var keyData = userStates.keys[serial];
-                if (!keyData.name || !keyData.userKey) {
+            var userSerials = this.getUserSerials(session.getSerial());
+            for (var userKey in userStates.users) {
+                if (!userSerials[userKey]) {
+                    console.log("[USER_ERR] unlinked userKey:{0}".format(userKey));
                     continue;
                 }
-                var userData = userStates.users[keyData.userKey];
+                var userData = userStates.users[userKey];
                 var payItem = {
-                    serial: serial,
-                    name: keyData.name,
+                    serial: userSerials[userKey],
+                    name: userData.name,
                     account_num: (userData.accounts ? userData.accounts.length : 0),
                     player_num: (userData.players ? userData.players.length : 0),
                     pay: userData.totalPay || 0,
@@ -530,7 +559,7 @@ $HttpModel.addClass("USER_CLASS", {
 
             responder.respondJson({
                 users: userInfo,
-                maxPay: (session.authorized(4) ? 1000000000 : 10000),
+                maxPay: (session.authorized(4) ? 1000000000 : 100000),
             }, done);
         }, this);
     },
@@ -560,15 +589,16 @@ $HttpModel.addClass("USER_CLASS", {
             }
 
             var targetKeyData = userStates.keys[targetSerial];
-            if (!targetKeyData) {
+            if (!targetKeyData || !targetKeyData.userKey) {
                 responder.addError("No such user.");
                 return responder.respondJson({}, done);
             }
 
             var userKey = targetKeyData.userKey;
+            var userData = userStates.users[userKey];
             var oldPay = userStates.users[userKey].pay || 0;
-            console.log("[PAYMENT] raise pay from user:{0}({1}), to:{2}({3}), Pay:{4} -> {5}".format(session.getUserName(), session.getUserKey(), targetKeyData.name, userKey, oldPay, pay));
-            userStates.users[userKey].totalPay = pay;
+            console.log("[PAYMENT] raise pay from user:{0}({1}), to:{2}({3}), Pay:{4} -> {5}".format(session.getUserName(), session.getUserKey(), userData.name, userKey, oldPay, pay));
+            userData.totalPay = pay;
             $StateManager.commitState(USER_CONFIG);
 
             responder.respondJson({
@@ -583,7 +613,6 @@ $HttpModel.addClass("USER_CLASS", {
             }
 
             var detail = clone(session.getUserData());
-            detail.name = session.getUserName();
             responder.respondJson({
                 detail: detail,
                 auths: session.availableAuths(),

@@ -39,13 +39,35 @@ var next = coroutine(function*() {
     var stateUnions = $StateManager.getState(GAME_UNIONS_CONFIG);
     var statePlayerName = $StateManager.getState(GAME_PLAYER_NAME_CONFIG);
 
-    var briefs = clone(statePlayerName);
-    for (var playerKey in statePlayerName) {
-        delete statePlayerName[playerKey];
+    // delete unused keys
+    var keysToDelete = {};
+    for (var serial in stateUser.keys) {
+        var keyData = stateUser.keys[serial];
+        var isEmpty = true;
+        for (var k in keyData) {
+            isEmpty = false;
+            break;
+        }
+        if (isEmpty) {
+            keysToDelete[serial] = true;
+        }
+        if (keyData.userKey) {
+            var userData = stateUser.users[keyData.userKey];
+            if (userData) {
+                if (keyData.name) {
+                    userData.name = keyData.name;
+                    delete keyData.name;
+                }
+                if (keyData.dead) {
+                    userData.dead = keyData.dead;
+                    delete keyData.dead;
+                }
+            }
+        }
     }
-    statePlayerName.savedDay = -1;
-    statePlayerName.briefs = briefs;
-    statePlayerName.daily = {};
+    for (var serial in keysToDelete) {
+        delete stateUser.keys[serial];
+    }
 
     yield $StateManager.commitState(USER_CONFIG, next);
     yield $StateManager.commitState(GAME_ACCOUNTS_CONFIG, next);
