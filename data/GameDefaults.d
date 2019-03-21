@@ -103,12 +103,21 @@
     ,"dailyTask":[
         {"hour":0,"minute":0,"second":55}
         ,{"hour":1,"minute":0,"second":55}
+        ,{"hour":8,"minute":0,"second":55}
         ,{"hour":9,"minute":0,"second":55}
+        ,{"hour":10,"minute":0,"second":55}
+        ,{"hour":11,"minute":0,"second":55}
         ,{"hour":12,"minute":0,"second":55}
         ,{"hour":13,"minute":0,"second":55}
+        ,{"hour":14,"minute":0,"second":55}
+        ,{"hour":15,"minute":0,"second":55}
         ,{"hour":16,"minute":0,"second":55}
+        ,{"hour":17,"minute":0,"second":55}
         ,{"hour":18,"minute":0,"second":55}
+        ,{"hour":19,"minute":0,"second":55}
+        ,{"hour":19,"minute":56,"second":55}
         ,{"hour":21,"minute":0,"second":55}
+        ,{"hour":22,"minute":0,"second":55}
         ,{"hour":23,"minute":0,"second":55}
     ]
     ,"repeatRange":{
