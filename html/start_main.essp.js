@@ -611,9 +611,11 @@ var displayAutomationModel = {
         ]},
         {name: "autoWorldWar", desc: "创世", props: [
             {name: "worldShop", desc: "符文制作", type: "check"},
-            {name: "runeType", desc: "符文类型", type: "number", limit: [1, 2], alias: ["1000玉", "5000玉"]},
+            {name: "runeType", desc: "符文类型", type: "number", limit: [1, 2], alias: ["600玉", "3000玉"]},
             {name: "worldReward", desc: "领取新闻", type: "check"},
             {name: "worldTasks", desc: "领取任务奖励", type: "check"},
+            {name: "worldLogin", desc: "领取登陆奖励", type: "check"},
+            {name: "worldMail", desc: "领取系统邮件", type: "check"},
             {name: "x1", desc: "屯田1队x坐标", type: "number", limit:[-1, 999]},
             {name: "y1", desc: "屯田1队y坐标", type: "number", limit:[-1, 999]},
             {name: "x2", desc: "屯田2队x坐标", type: "number", limit:[-1, 999]},

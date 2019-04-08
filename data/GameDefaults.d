@@ -69,6 +69,8 @@
             ,"runeType":2
             ,"worldReward":true
             ,"worldTasks":true
+            ,"worldLogin":true
+            ,"worldMail":true
             ,"x1":-1
             ,"y1":-1
             ,"x2":-1

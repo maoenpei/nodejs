@@ -3451,7 +3451,7 @@ Base.extends("GameConnection", {
             // 任务
             if (config.quest && this.validator.checkHourly("autoQuest")) {
                 var hasQuest = true;
-                while(hasQuest) {
+                while (hasQuest) {
                     hasQuest = false;
                     var data = yield this.sendMsg("Quest", "getinfo", null, next);
                     if (data && data.list) {
@@ -3547,14 +3547,14 @@ Base.extends("GameConnection", {
     autoWorldWar:function(config, done) {
         var next = coroutine(function*() {
             if (this.validator.checkHourly("autoWorldWar")) {
-                var data = yield this.sendMsg("WorldWar", "getinfo", null, next);
-                if (!data || !data.city) {
+                var data_worldwar = yield this.sendMsg("WorldWar", "getinfo", null, next);
+                if (!data_worldwar || !data_worldwar.city) {
                     return safe(done)({
                         success: false,
                     });
                 }
-                var license = data.license_num;
-                var license_buy = 3 - data.license_buy;
+                var license = data_worldwar.license_num;
+                var license_buy = 3 - data_worldwar.license_buy;
                 // 制作符文
                 if (config.worldShop) {
                     var data = yield this.sendMsg("WorldWar", "workshop", null, next);
@@ -3576,7 +3576,7 @@ Base.extends("GameConnection", {
                             }
                         }
                         var make_type = config.runeType;
-                        var make_cost = slotNum * (make_type == 1 ? 1000 : 5000);
+                        var make_cost = slotNum * (make_type == 1 ? 600 : 3000);
                         if (this.gameInfo.sourceWater >= make_cost && this.gameInfo.sourceFire >= make_cost && this.gameInfo.sourceWood >= make_cost) {
                             for (var slot = 1; slot <= data.max; ++slot) {
                                 if (!usedSlots[slot]) {
@@ -3604,16 +3604,58 @@ Base.extends("GameConnection", {
                 }
                 // 领取任务
                 if (config.worldTasks) {
-                    for (var type = 1; type <= 3; ++type) {
-                        var data = yield this.sendMsg("WorldWar", "getTargetList", { type:type }, next);
-                        if (data && data.list) {
-                            for (var i = 0; i < data.list.length; ++i) {
-                                var item = data.list[i];
-                                if (item.state == 1) {
-                                    var data_fetch = yield this.sendMsg("WorldWar", "fetchTargetRes", { id:item.id }, next);
-                                    if (!data_fetch) {
-                                        break;
+                    // 1:个人目标 2:联盟成就 3:世界成就 4:限时目标
+                    for (var type = 1; type <= 4; ++type) {
+                        var hasQuest = true;
+                        while (hasQuest) {
+                            hasQuest = false;
+                            var data = yield this.sendMsg("WorldWar", "getTargetList", { type:type }, next);
+                            if (data && data.list) {
+                                for (var i = 0; i < data.list.length; ++i) {
+                                    var item = data.list[i];
+                                    if (item.state == 1) {
+                                        var data_fetch = yield this.sendMsg("WorldWar", "fetchTargetRes", { id:item.id }, next);
+                                        if (!data_fetch) {
+                                            break;
+                                        }
+                                        hasQuest = true;
                                     }
+                                }
+                            }
+                        }
+                    }
+                }
+                // 登陆奖励
+                if (config.worldLogin) {
+                    if (data_worldwar.login && data_worldwar.login.reward) {
+                        var reward_login = data_worldwar.login.reward;
+                        for (var i = 1; i <= 7; ++i) {
+                            var item = reward_login[i];
+                            if (item.state == 1) {
+                                var data_reward = yield this.sendMsg("WorldWar", "loginReward", { day:item.id }, next);
+                                if (!data_reward) {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                // 收取邮件
+                if (config.worldMail) {
+                    var data = yield this.sendMsg("WorldWar", "getmsgList", { type:3 }, next);
+                    if (data && data.list) {
+                        for (var i = 0; i < data.list.length; ++i) {
+                            var item = data.list[i];
+                            if (item.isnew) {
+                                var data_read = yield this.sendMsg("WorldWar", "readMsg", { id:item.id, type:3 }, next);
+                                if (!data_read) {
+                                    break;
+                                }
+                            }
+                            if (!item.done) {
+                                var data_fetch = yield this.sendMsg("WorldWar", "fetchMsgRes", { id:item.id, type:3 }, next);
+                                if (!data_fetch) {
+                                    break;
                                 }
                             }
                         }
@@ -3719,7 +3761,6 @@ Base.extends("GameConnection", {
 
             //var data = yield this.sendMsg("WorldWar", "tips", null, next);
             //var data = yield this.sendMsg("WorldWar", "getChatList", null, next);
-            //var data = yield this.sendMsg("WorldWar", "getinfo", null, next);
             //var data = yield this.sendMsg("WorldWar", "warlist", null, next);
             //var data = yield this.sendMsg("WorldWar", "getMarkList", null, next);
             //var data = yield this.sendMsg("WorldWar", "income", null, next);
@@ -3733,7 +3774,7 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("WorldWar", "getTargetList", { type:3 }, next);
             //var data = yield this.sendMsg("WorldWar", "fetchTargetRes", { id:31037 }, next);
             //var data = yield this.sendMsg("WorldWar", "tile", { x:999, y:999 }, next);
-            var data = yield this.sendMsg("WorldWar", "troop", { go:1 }, next);
+            //var data = yield this.sendMsg("WorldWar", "troop", { go:1 }, next);
             //var data = yield this.sendMsg("WorldWar", "conscriptinfo", { troopid:4 }, next);
             //var data = yield this.sendMsg("WorldWar", "getGrowRes", { x:502, y:506 }, next);
             //var data = yield this.sendMsg("WorldWar", "attack", { x:502, y:506, type:6, troop:4 }, next);
