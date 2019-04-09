@@ -364,20 +364,31 @@ playerCommon.areastarName = function(areastarKey) {
     }
     return this.areaNames[String(area)] + star + "星";
 }
+playerCommon.serverDetail = function(name) {
+    var matches = /^s(\d+)\.(.*)$/.exec(name);
+    if (matches) {
+        return {
+            serverid: matches[1],
+            restname: matches[2],
+        };
+    }
+    return null;
+}
 playerCommon.unionColor = function(union) {
     if (union == "s96.火") {
         return "display_player_green";
     }
-    var serv = (union ? union.substr(0, 3) : "");
-    switch(serv) {
-    case "s93":
-        return "display_player_blue";
-    case "s94":
-        return "display_player_orange";
-    case "s95":
-        return "display_player_red";
-    case "s96":
+    var dat = playerCommon.serverDetail(union);
+    var serv = (dat ? dat.serverid : 0);
+    switch(serv % 4) {
+    case 0:
         return "display_player_purple";
+    case 1:
+        return "display_player_blue";
+    case 2:
+        return "display_player_orange";
+    case 3:
+        return "display_player_red";
     }
     return "";
 }
@@ -2050,7 +2061,7 @@ displayKingWarModel.get = function(callback) {
             for (var i = 0; i < areastarData.length; ++i) {
                 var player = areastarData[i];
                 player.showMax = player.maxPower > player.power + 200000;
-                player.unionShort = (player.union ? player.union.substr(4) : "");
+                player.unionShort = (player.union ? playerCommon.serverDetail(player.union).restname : "");
             }
         }
         callback(json);
