@@ -1992,10 +1992,19 @@ function displayPlayerList() {
             loadPlayers();
         });
 
+        var selectShowAmount = divContentPanel.find(".select_player_sub_show_amount");
+        selectShowAmount.change(function() {
+            var amount = Number(selectShowAmount.val());
+            if (amount >= 20 && amount <= 300) {
+                StorageItem().showAmount = amount;
+                loadPlayers();
+            }
+        });
+
         loadPlayers();
 
         function loadPlayers() {
-            var showKingwar = StorageItem().showKingwar == "true";
+            var showKingwar = StorageItem().showKingwar != "false";
             if (showKingwar) {
                 inputShowKingwar.attr("checked", "checked");
             } else {
@@ -2009,11 +2018,15 @@ function displayPlayerList() {
                 inputShowQuit.removeAttr("checked");
             }
 
+            var showAmount = StorageItem().showAmount;
+            showAmount = (showAmount ? showAmount : 100);
+            selectShowAmount.val(showAmount);
+
             var divPlayerList = divContentPanel.find(".div_player_list");
             divPlayerList.html(waitingTemplate({loading_data: true}));
 
             var playerInfo = [];
-            for (var i = 0; i < data.players.length; ++i) {
+            for (var i = 0; i < data.players.length && playerInfo.length < showAmount; ++i) {
                 var playerData = data.players[i];
                 if (!showKingwar && playerData.kingwar > 0) {
                     continue;
@@ -2023,7 +2036,7 @@ function displayPlayerList() {
                     continue;
                 }
                 playerInfo.push({
-                    index: i+1,
+                    index: playerInfo.length+1,
                     union_short: playerData.server + "." + playerData.uShort,
                     name: playerData.name,
                     power: Math.floor(playerData.power / 10000),

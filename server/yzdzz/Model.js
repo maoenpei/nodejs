@@ -1777,7 +1777,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             }
 
             var players = [];
-            var playersData = this.controller.getSortedPlayers(100);
+            var playersData = this.controller.getSortedPlayers(500);
             for (var i = 0; i < playersData.length; ++i) {
                 var playerItem = playersData[i];
                 players.push({
