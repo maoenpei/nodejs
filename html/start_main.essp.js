@@ -171,6 +171,7 @@ var usedKeys = {
     "serial":true,
     "showKingwar":true,
     "showQuit":true,
+    "showAmount":true,
     "hero_upgrade":true,
     "hero_food":true,
     "hero_stone":true,
@@ -1996,7 +1997,7 @@ function displayPlayerList() {
         selectShowAmount.change(function() {
             var amount = Number(selectShowAmount.val());
             if (amount >= 20 && amount <= 300) {
-                StorageItem().showAmount = amount;
+                StorageItem().showAmount = String(amount);
                 loadPlayers();
             }
         });
@@ -2018,7 +2019,7 @@ function displayPlayerList() {
                 inputShowQuit.removeAttr("checked");
             }
 
-            var showAmount = StorageItem().showAmount;
+            var showAmount = Number(StorageItem().showAmount);
             showAmount = (showAmount ? showAmount : 100);
             selectShowAmount.val(showAmount);
 
