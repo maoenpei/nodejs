@@ -1370,6 +1370,7 @@ Base.extends("GameController", {
     },
     getSortedPlayers:function(count) {
         var sortedPlayerIds = this.sortedPlayerIds;
+        // merge 'playerId's from allPlayerIds to sortedPlayerIds
         var allPlayerIds = {};
         for (var playerId in this.allPlayers) {
             allPlayerIds[playerId] = true;
@@ -1379,8 +1380,12 @@ Base.extends("GameController", {
             delete allPlayerIds[playerId];
         }
         for (var playerId in allPlayerIds) {
-            sortedPlayerIds.push(playerId);
+            var player = this.allPlayers[playerId];
+            if (player.server) {
+                sortedPlayerIds.push(playerId);
+            }
         }
+        // do insert sorting
         for (var i = 1; i < sortedPlayerIds.length; ++i) {
             var player = this.allPlayers[sortedPlayerIds[i]];
             var prevPlayer = this.allPlayers[sortedPlayerIds[i - 1]];
