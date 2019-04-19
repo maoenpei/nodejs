@@ -1505,6 +1505,7 @@ Base.extends("GameController", {
                     if (!heroObj) {
                         safe(tdone)();
                         safe(done)([]);
+                        return;
                     }
                     yield operate(heroId, heroObj, next);
                 }
