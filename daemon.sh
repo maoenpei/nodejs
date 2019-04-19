@@ -3,7 +3,7 @@ echo "$$">pid_daemon
 while true
 do
   pid=`cat pid`
-  psr=`ps -A | grep ${pid}`
+  psr=`ps -A | grep -e "^${pid} "`
   if [ ! "$psr" ]; then
     dt=`date +%s`
     mv nohup.out logs/nohup_${dt}.out

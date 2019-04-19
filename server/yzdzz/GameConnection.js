@@ -3631,7 +3631,7 @@ Base.extends("GameConnection", {
                         var reward_login = data_worldwar.login.reward;
                         for (var i = 1; i <= 7; ++i) {
                             var item = reward_login[i];
-                            if (item.state == 1) {
+                            if (item && item.state == 1) {
                                 var data_reward = yield this.sendMsg("WorldWar", "loginReward", { day:item.id }, next);
                                 if (!data_reward) {
                                     break;
