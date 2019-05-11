@@ -2547,7 +2547,7 @@ Base.extends("GameConnection", {
                     }
                 }
                 // auto boss
-                var boss_max = 20;
+                var boss_max = 30;
                 if (data.boss_id <= boss_max) {
                     for (var boss_id = data.boss_id; boss_id <= boss_max; ++boss_id) {
                         var data_boss = yield this.sendMsg("League", "boss", null, next);
