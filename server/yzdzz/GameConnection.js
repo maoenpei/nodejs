@@ -593,6 +593,9 @@ Base.extends("GameConnection", {
             this.sock = sock;
             this.serverInfo = server;
             GameSock.receive(sock, this, (c, m, data, change) => {
+                if (!this.gameInfo) {
+                    return;
+                }
                 this.updateDiamondCost(change);
                 if (change) {
                     //console.log("change happen -", c, m, change);
