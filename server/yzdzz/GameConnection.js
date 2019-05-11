@@ -1882,7 +1882,7 @@ Base.extends("GameConnection", {
         return true;
     },
     updateDiamondCost:function(change) {
-        if (change && typeof(change.ticket) == "number" && change.ticket < this.gameInfo.whiteDiamond) {
+        if (change && this.gameInfo && typeof(change.ticket) == "number" && change.ticket < this.gameInfo.whiteDiamond) {
             this.diamondCost = this.gameInfo.whiteDiamond - change.ticket;
         } else {
             this.diamondCost = 0;
