@@ -2367,8 +2367,18 @@ Base.extends("GameConnection", {
                     }
                 }
                 var winNumber = data.win_num;
+                var incomplete = false;
                 for (var i = data.fight_num; i < 7; ++i) {
+                    if (incomplete || !data.list[i]) {
+                        this.log("FriendWar list incomplete", i);
+                        break;
+                    }
                     for (var j = 0; j < 6; ++j) {
+                        if (!data.list[j]) {
+                            incomplete = true;
+                            this.log("FriendWar list incomplete", j);
+                            break;
+                        }
                         var dead = data.list[j].died == 1;
                         if (!dead) {
                             var data_fight = yield this.sendMsg("FriendWar", "fight", {index:j, auto:0}, next);

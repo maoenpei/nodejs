@@ -22,7 +22,7 @@ console.log("argv root: '" + urlRoot + "'");
 
 var ip;
 if (isHost) {
-    ip = "192.168.1.8";
+    ip = getLocalIP();
 } else {
     ip = "127.0.0.1";
 }
@@ -37,3 +37,27 @@ $FileManager.saveFile("/pid", String(process.pid));
 
 var host = new HttpServer(urlRoot, isHost);
 http.createServer((req, res) => {host.onVisit(req, res)}).listen(port, ip);
+
+function getLocalIP() {
+    const os = require('os');
+    const osType = os.type();
+    const netInfo = os.networkInterfaces();
+    let ip = '';
+    if (osType === 'Windows_NT') { 
+        for (let dev in netInfo) {
+            if (dev === 'Ethernet') {
+                for (let j = 0; j < netInfo[dev].length; j++) {
+                    if (netInfo[dev][j].family === 'IPv4') {
+                        ip = netInfo[dev][j].address;
+                        break;
+                    }
+                }
+            }
+        }
+
+    } else if (osType === 'Linux') {
+        ip = netInfo.eth0[0].address;
+    }
+
+    return ip;
+}
