@@ -1575,32 +1575,36 @@ $HttpModel.addClass("YZDZZ_CLASS", {
                 }
             }
             var players = [];
-            var playersData = this.controller.getSortedPlayers(40);
-            for (var i = 0; i < playersData.length; ++i) {
-                var playerItem = playersData[i];
-                var rawKey = this.playerId2RandKey[playerItem.key];
-                if (rawKey) {
-                    players.push({
-                        key: rawKey,
-                        server: playerItem.server,
-                        uShort: playerItem.uShort,
-                        name: playerItem.name,
-                        power: playerItem.power,
-                    });
+            if (session.authorized(0, "auto_kingwar")) {
+                var playersData = this.controller.getSortedPlayers(40);
+                for (var i = 0; i < playersData.length; ++i) {
+                    var playerItem = playersData[i];
+                    var rawKey = this.playerId2RandKey[playerItem.key];
+                    if (rawKey) {
+                        players.push({
+                            key: rawKey,
+                            server: playerItem.server,
+                            uShort: playerItem.uShort,
+                            name: playerItem.name,
+                            power: playerItem.power,
+                        });
+                    }
                 }
             }
             var unions = [];
-            var allUnions = $StateManager.getState(GAME_UNIONS_CONFIG);
-            for (var unionId in allUnions) {
-                var unionItem = allUnions[unionId];
-                var rawKey = this.unionId2RandKey[unionId];
-                if (rawKey) {
-                    unions.push({
-                        key: rawKey,
-                        server: unionItem.server,
-                        name: unionItem.name,
-                        short: unionItem.short,
-                    });
+            if (session.authorized(0, "auto_unionwar")) {
+                var allUnions = $StateManager.getState(GAME_UNIONS_CONFIG);
+                for (var unionId in allUnions) {
+                    var unionItem = allUnions[unionId];
+                    var rawKey = this.unionId2RandKey[unionId];
+                    if (rawKey) {
+                        unions.push({
+                            key: rawKey,
+                            server: unionItem.server,
+                            name: unionItem.name,
+                            short: unionItem.short,
+                        });
+                    }
                 }
             }
 
