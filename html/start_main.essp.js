@@ -494,6 +494,8 @@ function displayPayment() {
                 var editButton = $(editingButtons[i]);
                 editButton.click(function() {
                     operatingUser = user;
+                    var displayText = "为'" + user.name + "'添加积分(100积分自动化一天)";
+                    divContentPanel.find(".div_payment_add_pay_text").html(displayText);
                     divContentPanel.find(".input_payment_add_pay_content").val("");
                     divContentPanel.find(".div_payment_add_pay_mask").show();
                     divContentPanel.find(".input_payment_add_pay_content").focus();
