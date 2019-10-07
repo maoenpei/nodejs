@@ -136,6 +136,9 @@ Database.heroCollectInfo = function(heroName) {
 
 Database.weaponUpdateCount = function(level, weaponNumber) {
     var last = this.weapon_costs.last;
+    if (level >= 450) {
+        return 0;
+    }
     if (level >= last.level) {
         return Math.floor(weaponNumber / last.cost);
     }
