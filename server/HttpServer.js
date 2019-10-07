@@ -111,7 +111,7 @@ Base.extends("HttpServer", {
             }
 
             if (!responder.Ended()) {
-                this.errorPage(requestor, responder, next);
+                yield this.errorPage(requestor, responder, next);
             }
             safe(done)();
         }, this);
@@ -147,7 +147,7 @@ Base.extends("HttpServer", {
 
             if (!fileBlock.data) {
                 responder.addError("Cannot find file.");
-                return safe(done);
+                return safe(done)();
             }
 
             if (!requestor.compareModified(fileBlock.time)) {
