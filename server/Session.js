@@ -26,6 +26,7 @@ var AllRequirements = [
         {name:"领地战", val:"auto_unionwar", extends:[]},
         {name:"信息查询", val:"auto_detail", extends:[]},
         {name:"勇者操作", val:"auto_heropanel", extends:[]},
+        {name:"道具操作", val:"auto_itempanel", extends:[]},
     ]},
     {name:"消耗设置", val:"payment", extends:[]},
 ];

@@ -646,3 +646,30 @@ input[type='checkbox']{
     text-align: left;
     color: rgb(0, 150, 40);
 }
+
+.div_items_title{
+    color: rgb(240, 240, 240);
+    font-size: 0.8rem;
+    margin-top: 0.1rem;
+    background-color: rgba(0, 0, 0, 0.4);
+    padding: 0.05rem;
+}
+.div_items_item{
+    color: rgb(0, 127, 255);
+    margin-top: 0.1rem;
+    border-top: 1px solid #ccc;
+    background-color: #aaa;
+    font-size: 0.7rem;
+}
+.div_items_item_name{
+    display: inline-block;
+    width: 40%;
+}
+.div_items_item_count{
+    display: inline-block;
+    width: 20%;
+}
+.div_items_item_operation{
+    display: inline-block;
+    width: 20%;
+}

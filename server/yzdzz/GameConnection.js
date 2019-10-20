@@ -752,7 +752,7 @@ Base.extends("GameConnection", {
             }
         }
     },
-    getItems:function(done) {
+    requestGetItems:function(done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("RoleItem", "list", null, next);
             if (!data || !data.list) {
@@ -770,9 +770,31 @@ Base.extends("GameConnection", {
             });
         }, this);
     },
-    useItem:function(detail, done) {
+    requestUseItem:function(detail, done) {
         var next = coroutine(function*() {
             var data = yield this.sendMsg("RoleItem", "use", detail, next);
+            if (!data) {
+                return safe(done)({});
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    requestMergeItem:function(itemName, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("RoleItem", "merge", {itemid:itemName}, next);
+            if (!data) {
+                return safe(done)({});
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    requestMergeStone:function(itemName, done) {
+        var next = coroutine(function*() {
+            var data = yield this.sendMsg("RoleWake", "merge", {id:itemName}, next);
             if (!data) {
                 return safe(done)({});
             }
@@ -788,7 +810,7 @@ Base.extends("GameConnection", {
             }
             yield this.itemsLock.lock(next);
             if (!this.itemsInfo || !this.itemsQuick) {
-                var data = yield this.getItems(next);
+                var data = yield this.requestGetItems(next);
                 if (data.items && data.quick) {
                     this.itemsInfo = data.items;
                     this.itemsQuick = data.quick;
@@ -853,6 +875,108 @@ Base.extends("GameConnection", {
             // wake: 神石
             // weapon_type: 专精
             return safe(done)();
+        }, this);
+    },
+
+    // Items
+    getItems:function(done) {
+        var next = coroutine(function*() {
+            yield this.readAllItems(next);
+
+            if (!this.itemsInfo) {
+                return safe(done)({});
+            }
+
+            var items = {};
+            var counts = {};
+            var merges = {};
+            for (var itemName in this.itemsInfo) {
+                var itemData = this.itemsInfo[itemName];
+                if (itemData.count > 0) {
+                    var itemInfo = Database.itemInfo(itemName);
+                    itemInfo = itemInfo || { id:itemName, name:itemName };
+                    items[itemInfo.id] = items[itemInfo.id] || itemInfo;
+                    counts[itemInfo.id] = counts[itemInfo.id] || 0;
+                    counts[itemInfo.id] += itemData.count;
+                    merges[itemInfo.id] = merges[itemInfo.id] || (itemInfo.piece && itemData.count >= itemInfo.piece);
+                }
+            }
+            return safe(done)({
+                items: items,
+                counts: counts,
+                merges: merges,
+            });
+        }, this);
+    },
+    useItem:function(itemId, done) {
+        var next = coroutine(function*() {
+            yield this.readAllItems(next);
+
+            if (!this.itemsInfo) {
+                return safe(done)({});
+            }
+
+            for (var itemName in this.itemsInfo) {
+                var itemData = this.itemsInfo[itemName];
+                var itemInfo = Database.itemInfo(itemName);
+                if (itemInfo && itemInfo.id == itemId && itemData.count > 0 && itemData.details) {
+                    var itemDetails = clone(itemData.details);
+                    for (var i = 0; i < itemDetails.length; ++i) {
+                        var detail = itemDetails[i];
+                        yield this.requestUseItem(detail, next);
+                    }
+                }
+            }
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    mergeItem:function(itemId, done) {
+        var next = coroutine(function*() {
+            yield this.readAllItems(next);
+
+            if (!this.itemsInfo) {
+                return safe(done)({});
+            }
+
+            for (var itemName in this.itemsInfo) {
+                var itemData = this.itemsInfo[itemName];
+                var itemInfo = Database.itemInfo(itemName);
+                if (itemInfo && itemInfo.id == itemId && itemInfo.piece) {
+                    while (itemData.count >= itemInfo.piece) {
+                        var data = yield this.requestMergeItem(itemName, next);
+                        if (!data.success) {
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return safe(done)({
+                success: true,
+            });
+        }, this);
+    },
+    mergeStone:function(itemId, done) {
+        var next = coroutine(function*() {
+            yield this.readAllItems(next);
+
+            if (!this.itemsInfo) {
+                return safe(done)({});
+            }
+
+            var itemData = this.itemsInfo[itemId];
+            var itemInfo = Database.itemInfo(itemId);
+            if (!itemData || !itemInfo || !itemInfo.merge_to || itemData.count < 6) {
+                return safe(done)({});
+            }
+
+            yield this.requestMergeStone(itemInfo.merge_to, next);
+
+            return safe(done)({
+                success: true,
+            });
         }, this);
     },
 
@@ -1082,8 +1206,8 @@ Base.extends("GameConnection", {
                 return safe(done)({});
             }
             var detail = itemData.details[0];
-            var data_use = yield this.sendMsg("RoleItem", "use", detail, next);
-            if (!data_use) {
+            var data_use = yield this.requestUseItem(detail, next);
+            if (!data_use.success) {
                 return safe(done)({});
             }
             return safe(done)({
@@ -3006,8 +3130,8 @@ Base.extends("GameConnection", {
                                 var itemDetails = clone(itemData.details);
                                 for (var i = 0; i < itemDetails.length; ++i) {
                                     var detail = itemDetails[i];
-                                    var data_use = yield this.sendMsg("RoleItem", "use", detail, next);
-                                    if (!data_use) {
+                                    var data_use = yield this.requestUseItem(detail, next);
+                                    if (!data_use.success) {
                                         hasItems = false;
                                         this.log("using item failed, id '{0}'".format(itemName));
                                         break;
@@ -3016,8 +3140,8 @@ Base.extends("GameConnection", {
                             } else if (config.mergeItem && itemInfo.piece && itemData.count >= itemInfo.piece) {
                                 this.log("--- merge item", itemName, itemInfo, itemData);
                                 hasItems = true;
-                                var data_merge = yield this.sendMsg("RoleItem", "merge", {itemid:itemName}, next);
-                                if (!data_merge) {
+                                var data_merge = yield this.requestMergeItem(itemName, next);
+                                if (!data_merge.success) {
                                     hasItems = false;
                                 }
                             }

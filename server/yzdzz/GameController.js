@@ -1517,6 +1517,87 @@ Base.extends("GameController", {
         }, null);
     },
 
+    // control items
+    iterateItems:function(itemArray, data, check) {
+        for (var itemId in data.items) {
+            var itemData = data.items[itemId];
+            if (check(itemId)) {
+                var item = clone(itemData);
+                item.count = data.counts[itemId];
+                item.merge = data.merges[itemId];
+                itemArray.push(item);
+            }
+        }
+    },
+    readPlayerItems:function(conn, done) {
+        conn.getItems((data) => {
+            if (!data.items) {
+                safe(done)([]);
+            }
+
+            var itemArray = [];
+            this.iterateItems(itemArray, data, (itemId) => {
+                return data.items[itemId].use;
+            });
+            this.iterateItems(itemArray, data, (itemId) => {
+                return data.merges[itemId];
+            });
+            this.iterateItems(itemArray, data, (itemId) => {
+                return data.items[itemId].merge_to;
+            });
+            this.iterateItems(itemArray, data, (itemId) => {
+                var itemData = data.items[itemId];
+                return !itemData.use && !itemData.merge_to && !data.merges[itemId];
+            });
+
+            safe(done)(itemArray);
+        });
+    },
+    getPlayerItemData:function(playerData, done) {
+        this.manualOnePlayer(playerData, (conn, tdone) => {
+            this.readPlayerItems(conn, (itemsData) => {
+                safe(tdone)();
+                safe(done)(itemsData);
+            });
+        }, null);
+    },
+    dealWithPlayerItems:function(playerData, itemOps, done) {
+        this.manualOnePlayer(playerData, (conn, tdone) => {
+            var next = coroutine(function*() {
+                if (itemOps.use) {
+                    for (var itemId in itemOps.use) {
+                        var data = yield conn.useItem(itemId, next);
+                        if (!data.success) {
+                            break;
+                        }
+                    }
+                }
+                if (itemOps.merge) {
+                    for (var itemId in itemOps.merge) {
+                        var data = yield conn.mergeItem(itemId, next);
+                        if (!data.success) {
+                            break;
+                        }
+                    }
+                }
+                if (itemOps.merge_to) {
+                    for (var itemId in itemOps.merge_to) {
+                        var count = itemOps.merge_to[itemId];
+                        for (var i = 0; i < count; ++i) {
+                            var data = yield conn.mergeStone(itemId, next);
+                            if (!data.success) {
+                                break;
+                            }
+                        }
+                    }
+                }
+                var itemsData = yield this.readPlayerItems(conn, next);
+                safe(tdone)();
+                safe(done)(itemsData);
+            }, this);
+        }, null);
+    },
+
     // unset player
     unsetPlayer:function(key) {
         return this.removeRefresh(key);

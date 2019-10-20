@@ -103,31 +103,56 @@ Database.heroCardInfo = function(sysid) {
     return this.heros[heroid];
 }
 
+Database.itemInfoCache = {};
+
+Database.updateItemCache = function(sysid, value) {
+    this.itemInfoCache[sysid] = value;
+    return value;
+}
+
 Database.itemInfo = function(sysid) {
-    var heroId = undefined;
+    var originSysId = sysid;
+    var cacheValue = this.itemInfoCache[sysid];
+    if (cacheValue || cacheValue === null) {
+        return cacheValue;
+    }
+
+    for (var equip_base in this.equipbase) {
+        if (sysid.substr(0, equip_base.length) == equip_base) {
+            return this.updateItemCache(sysid, this.equipbase[equip_base]);
+        }
+    }
+
+    var is_hero;
     for (var i = 0; i < this.herobase.length; ++i) {
         var id_base = this.herobase[i];
         if (sysid.substr(0, id_base.length) == id_base && Number(sysid.substr(id_base.length, 1)) > 0) {
-            heroId = sysid.substr(id_base.length);
             sysid = sysid.substr(0, id_base.length + 1);
+            is_hero = true;
             break;
         }
     }
-    for (var equip_base in this.equipbase) {
-        if (sysid.substr(0, equip_base.length) == equip_base) {
-            return this.equipbase[equip_base];
-        }
+
+    cacheValue = this.itemInfoCache[sysid];
+    if (cacheValue || cacheValue === null) {
+        return this.updateItemCache(originSysId, cacheValue);
     }
+
     var item_info = this.items[sysid];
     if (!item_info) {
-        return null;
+        cacheValue = null;
+    } else {
+        cacheValue = {
+            id: sysid,
+            name: item_info.name,
+            use: item_info.use,
+            piece: item_info.piece,
+            merge_to: item_info.merge_to,
+            is_hero: is_hero,
+        };
     }
-    return {
-        name: item_info.name,
-        piece: item_info.piece,
-        use: item_info.use,
-        heroId: heroId,
-    };
+    this.itemInfoCache[sysid] = cacheValue;
+    return this.updateItemCache(originSysId, cacheValue);
 }
 
 Database.heroCollectInfo = function(heroName) {
@@ -269,22 +294,22 @@ Database.items = {
     "sp_weapon_material_3":{name:"法师精华", },
     "sp_weapon_material_4":{name:"战士精华", },
     "sp_weapon_material_5":{name:"医者精华", },
-    "stone_atk_2":{name:"绿色强攻石", },
-    "stone_crit_2":{name:"绿色致命石", },
-    "stone_def_2":{name:"绿色守护石", },
-    "stone_dodge_2":{name:"绿色精巧石", },
-    "stone_hit_2":{name:"绿色鹰眼石", },
-    "stone_hp_2":{name:"绿色生命石", },
-    "stone_speed_2":{name:"绿色疾风石", },
-    "stone_tenacity_2":{name:"绿色恩惠石", },
-    "stone_atk_3":{name:"蓝色强攻石", },
-    "stone_crit_3":{name:"蓝色致命石", },
-    "stone_def_3":{name:"蓝色守护石", },
-    "stone_dodge_3":{name:"蓝色精巧石", },
-    "stone_hit_3":{name:"蓝色鹰眼石", },
-    "stone_hp_3":{name:"蓝色生命石", },
-    "stone_speed_3":{name:"蓝色疾风石", },
-    "stone_tenacity_3":{name:"蓝色恩惠石", },
+    "stone_atk_2":{name:"绿色强攻石", merge_to:"stone_atk_3", },
+    "stone_crit_2":{name:"绿色致命石", merge_to:"stone_crit_3", },
+    "stone_def_2":{name:"绿色守护石", merge_to:"stone_def_3", },
+    "stone_dodge_2":{name:"绿色精巧石", merge_to:"stone_dodge_3", },
+    "stone_hit_2":{name:"绿色鹰眼石", merge_to:"stone_hit_3", },
+    "stone_hp_2":{name:"绿色生命石", merge_to:"stone_hp_3", },
+    "stone_speed_2":{name:"绿色疾风石", merge_to:"stone_speed_3", },
+    "stone_tenacity_2":{name:"绿色恩惠石", merge_to:"stone_tenacity_3", },
+    "stone_atk_3":{name:"蓝色强攻石", merge_to:"stone_atk_4", },
+    "stone_crit_3":{name:"蓝色致命石", merge_to:"stone_crit_4", },
+    "stone_def_3":{name:"蓝色守护石", merge_to:"stone_def_4", },
+    "stone_dodge_3":{name:"蓝色精巧石", merge_to:"stone_dodge_4", },
+    "stone_hit_3":{name:"蓝色鹰眼石", merge_to:"stone_hit_4", },
+    "stone_hp_3":{name:"蓝色生命石", merge_to:"stone_hp_4", },
+    "stone_speed_3":{name:"蓝色疾风石", merge_to:"stone_speed_4", },
+    "stone_tenacity_3":{name:"蓝色恩惠石", merge_to:"stone_tenacity_4", },
     "stone_piece_atk_3":{name:"蓝色强攻石碎片", piece:5, },
     "stone_piece_crit_3":{name:"蓝色致命石碎片", piece:5, },
     "stone_piece_def_3":{name:"蓝色守护石碎片", piece:5, },
@@ -293,14 +318,14 @@ Database.items = {
     "stone_piece_hp_3":{name:"蓝色生命石碎片", piece:5, },
     "stone_piece_speed_3":{name:"蓝色疾风石碎片", piece:5, },
     "stone_piece_tenacity_3":{name:"蓝色恩惠石碎片", piece:5, },
-    "stone_atk_4":{name:"紫色强攻石", },
-    "stone_crit_4":{name:"紫色致命石", },
-    "stone_def_4":{name:"紫色守护石", },
-    "stone_dodge_4":{name:"紫色精巧石", },
-    "stone_hit_4":{name:"紫色鹰眼石", },
-    "stone_hp_4":{name:"紫色生命石", },
-    "stone_speed_4":{name:"紫色疾风石", },
-    "stone_tenacity_4":{name:"紫色恩惠石", },
+    "stone_atk_4":{name:"紫色强攻石", merge_to:"stone_atk_5", },
+    "stone_crit_4":{name:"紫色致命石", merge_to:"stone_crit_5", },
+    "stone_def_4":{name:"紫色守护石", merge_to:"stone_def_5", },
+    "stone_dodge_4":{name:"紫色精巧石", merge_to:"stone_dodge_5", },
+    "stone_hit_4":{name:"紫色鹰眼石", merge_to:"stone_hit_5", },
+    "stone_hp_4":{name:"紫色生命石", merge_to:"stone_hp_5", },
+    "stone_speed_4":{name:"紫色疾风石", merge_to:"stone_speed_5", },
+    "stone_tenacity_4":{name:"紫色恩惠石", merge_to:"stone_tenacity_5", },
     "stone_piece_atk_4":{name:"紫色强攻石碎片", piece:10, },
     "stone_piece_crit_4":{name:"紫色致命石碎片", piece:10, },
     "stone_piece_def_4":{name:"紫色守护石碎片", piece:10, },
@@ -309,14 +334,14 @@ Database.items = {
     "stone_piece_hp_4":{name:"紫色生命石碎片", piece:10, },
     "stone_piece_speed_4":{name:"紫色疾风石碎片", piece:10, },
     "stone_piece_tenacity_4":{name:"紫色恩惠石碎片", piece:10, },
-    "stone_atk_5":{name:"橙色强攻石", },
-    "stone_crit_5":{name:"橙色致命石", },
-    "stone_def_5":{name:"橙色守护石", },
-    "stone_dodge_5":{name:"橙色精巧石", },
-    "stone_hit_5":{name:"橙色鹰眼石", },
-    "stone_hp_5":{name:"橙色生命石", },
-    "stone_speed_5":{name:"橙色疾风石", },
-    "stone_tenacity_5":{name:"橙色恩惠石", },
+    "stone_atk_5":{name:"橙色强攻石", merge_to:"stone_atk_6", },
+    "stone_crit_5":{name:"橙色致命石", merge_to:"stone_crit_6", },
+    "stone_def_5":{name:"橙色守护石", merge_to:"stone_def_6", },
+    "stone_dodge_5":{name:"橙色精巧石", merge_to:"stone_dodge_6", },
+    "stone_hit_5":{name:"橙色鹰眼石", merge_to:"stone_hit_6", },
+    "stone_hp_5":{name:"橙色生命石", merge_to:"stone_hp_6", },
+    "stone_speed_5":{name:"橙色疾风石", merge_to:"stone_speed_6", },
+    "stone_tenacity_5":{name:"橙色恩惠石", merge_to:"stone_tenacity_6", },
     "stone_piece_atk_5":{name:"橙色强攻石碎片", piece:20, },
     "stone_piece_crit_5":{name:"橙色致命石碎片", piece:20, },
     "stone_piece_def_5":{name:"橙色守护石碎片", piece:20, },
@@ -325,14 +350,14 @@ Database.items = {
     "stone_piece_hp_5":{name:"橙色生命石碎片", piece:20, },
     "stone_piece_speed_5":{name:"橙色疾风石碎片", piece:20, },
     "stone_piece_tenacity_5":{name:"橙色恩惠石碎片", piece:20, },
-    "stone_atk_6":{name:"红色强攻石", },
-    "stone_crit_6":{name:"红色致命石", },
-    "stone_def_6":{name:"红色守护石", },
-    "stone_dodge_6":{name:"红色精巧石", },
-    "stone_hit_6":{name:"红色鹰眼石", },
-    "stone_hp_6":{name:"红色生命石", },
-    "stone_speed_6":{name:"红色疾风石", },
-    "stone_tenacity_6":{name:"红色恩惠石", },
+    "stone_atk_6":{name:"红色强攻石", merge_to:"stone_atk_7", },
+    "stone_crit_6":{name:"红色致命石", merge_to:"stone_crit_7", },
+    "stone_def_6":{name:"红色守护石", merge_to:"stone_def_7", },
+    "stone_dodge_6":{name:"红色精巧石", merge_to:"stone_dodge_7", },
+    "stone_hit_6":{name:"红色鹰眼石", merge_to:"stone_hit_7", },
+    "stone_hp_6":{name:"红色生命石", merge_to:"stone_hp_7", },
+    "stone_speed_6":{name:"红色疾风石", merge_to:"stone_speed_7", },
+    "stone_tenacity_6":{name:"红色恩惠石", merge_to:"stone_tenacity_7", },
     "stone_piece_atk_6":{name:"红色强攻石碎片", piece:30, },
     "stone_piece_crit_6":{name:"红色致命石碎片", piece:30, },
     "stone_piece_def_6":{name:"红色守护石碎片", piece:30, },
@@ -341,14 +366,14 @@ Database.items = {
     "stone_piece_hp_6":{name:"红色生命石碎片", piece:30, },
     "stone_piece_speed_6":{name:"红色疾风石碎片", piece:30, },
     "stone_piece_tenacity_6":{name:"红色恩惠石碎片", piece:30, },
-    "stone_atk_7":{name:"金色强攻石", },
-    "stone_crit_7":{name:"金色致命石", },
-    "stone_def_7":{name:"金色守护石", },
-    "stone_dodge_7":{name:"金色精巧石", },
-    "stone_hit_7":{name:"金色鹰眼石", },
-    "stone_hp_7":{name:"金色生命石", },
-    "stone_speed_7":{name:"金色疾风石", },
-    "stone_tenacity_7":{name:"金色恩惠石", },
+    "stone_atk_7":{name:"金色强攻石", merge_to:"stone_atk_8", },
+    "stone_crit_7":{name:"金色致命石", merge_to:"stone_crit_8", },
+    "stone_def_7":{name:"金色守护石", merge_to:"stone_def_8", },
+    "stone_dodge_7":{name:"金色精巧石", merge_to:"stone_dodge_8", },
+    "stone_hit_7":{name:"金色鹰眼石", merge_to:"stone_hit_8", },
+    "stone_hp_7":{name:"金色生命石", merge_to:"stone_hp_8", },
+    "stone_speed_7":{name:"金色疾风石", merge_to:"stone_speed_8", },
+    "stone_tenacity_7":{name:"金色恩惠石", merge_to:"stone_tenacity_8", },
     "stone_piece_atk_7":{name:"金色强攻石碎片", piece:30, },
     "stone_piece_crit_7":{name:"金色致命石碎片", piece:30, },
     "stone_piece_def_7":{name:"金色守护石碎片", piece:30, },
@@ -407,11 +432,15 @@ Database.items = {
     "pray_ticket":{name:"祈祷票"},
     "1st_coin":{name:"庆典代币"},
 
-    "pumpkin":{name:"万圣节南瓜", use:true},
-    "coin_pack":{name:"亿万金币包", use:true},
-    "giving_thanks":{name:"感恩节礼物", use:true},
-    "x_coin_pack":{name:"暗金币随即包", use:true},
-    "christmas_gift":{name:"圣诞袜", use:true},
+    "pumpkin":{name:"万圣节南瓜", use:true, },
+    "coin_pack":{name:"亿万金币包", use:true, },
+    "giving_thanks":{name:"感恩节礼物", use:true, },
+    "x_coin_pack":{name:"暗金币随机包", use:true, },
+    "christmas_gift":{name:"圣诞袜", use:true, },
+    "lucky_bag":{name:"新年福袋", use:true, },
+    "artifact_pack":{name:"勇者神石包", use:true, },
+    "2st_giftpack":{name:"魂石", use:true, },
+    "hansel":{name:"新年礼物", use:true, },
 };
 
 Database.herobase = [
@@ -421,16 +450,16 @@ Database.herobase = [
 ];
 
 Database.equipbase = {
-    "amulet":{name:"护身符"},
-    "armor":{name:"护肩"},
-    "boots":{name:"靴子"},
-    "certificate":{name:"证书"},
-    "legs":{name:"护腿"},
-    "mask":{name:"面罩"},
-    "pet":{name:"宠物"},
-    "ring":{name:"戒指"},
-    "shield":{name:"盾牌"},
-    "weapon":{name:"武器"},
+    "amulet":{name:"护身符", id:"amulet", },
+    "armor":{name:"护肩", id:"armor", },
+    "boots":{name:"靴子", id:"boots", },
+    "certificate":{name:"证书", id:"certificate", },
+    "legs":{name:"护腿", id:"legs", },
+    "mask":{name:"面罩", id:"mask", },
+    "pet":{name:"宠物", id:"pet", },
+    "ring":{name:"戒指", id:"ring", },
+    "shield":{name:"盾牌", id:"shield", },
+    "weapon":{name:"武器", id:"weapon", },
 };
 
 Database.goblin_item = {

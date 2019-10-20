@@ -908,6 +908,8 @@ displayAutomationModel.addPlayer = function(server, callback) {
                 key: json.key,
                 configs: json.configs,
                 settings: json.settings,
+                heroPanel: json.heroPanel,
+                itemPanel: json.itemPanel,
             });
             callback();
         }
@@ -1313,6 +1315,17 @@ function displayAutomation() {
                     displayDetail();
                 });
             }
+
+            // itempanel
+            if (lastPlayer.itemPanel) {
+                var divAutoItemsBlock = $(autoItemTemplate({name: "道具详细"}));
+                divAutoItemsBlock.appendTo(divAutomationContent);
+
+                divAutoItemsBlock.find(".clickable").click(function() {
+                    displayAutomationModel.toCatalog({ name: "道具详细", func: displayItemPanel, });
+                    displayDetail();
+                });
+            }
         }
         function displayHeroPanel() {
             displayCommands({name: "刷新", func: function() {
@@ -1320,6 +1333,13 @@ function displayAutomation() {
             }});
 
             displayHeros(divAutomationContent, displayAutomationModel.getLastPlayer());
+        }
+        function displayItemPanel() {
+            displayCommands({name: "刷新", func: function() {
+                displayItems(divAutomationContent, displayAutomationModel.getLastPlayer(), true);
+            }});
+
+            displayItems(divAutomationContent, displayAutomationModel.getLastPlayer());
         }
         var displayProperties = function(divContent, propertyInfo, propertyExtraInfo, propertyValues, commitValue) {
             var properties = [];
@@ -1827,6 +1847,113 @@ function displayHeros(parentPanel, player, isForce) {
             }
         }
         updateOperate();
+    });
+}
+
+var displayItemsModel = {
+    playerKey: null,
+};
+
+displayItemsModel.setPlayerKey = function(playerKey) {
+    this.playerKey = playerKey;
+}
+displayItemsModel.get = function(force, callback) {
+    $this = this;
+    requestPost("listitems", { force:force, key:this.playerKey }, function(json) {
+        $this.items = json.items;
+        callback();
+    });
+}
+displayItemsModel.itemsInfo = function() {
+    return this.items;
+}
+displayItemsModel.useItem = function(itemId, callback) {
+    requestPost("operateitems", { key:this.playerKey, item_id:itemId, item_ops:{ use:true } }, function(json) {
+        if (json.success) {
+            callback();
+        }
+    });
+}
+displayItemsModel.mergeItem = function(itemId, callback) {
+    requestPost("operateitems", { key:this.playerKey, item_id:itemId, item_ops:{ merge:true } }, function(json) {
+        if (json.success) {
+            callback();
+        }
+    });
+}
+displayItemsModel.mergeStone = function(itemId, count, callback) {
+    requestPost("operateitems", { key:this.playerKey, item_id:itemId, item_ops:{ merge_to:true }, item_count:count }, function(json) {
+        if (json.success) {
+            callback();
+        }
+    });
+}
+
+function displayItems(parentPanel, player, isForce) {
+    var waitingTemplate = templates.read(".hd_display_loading");
+    parentPanel.html(waitingTemplate({loading_data: true}));
+
+    var itemsPanelTemplate = templates.read(".hd_items_panel");
+
+    displayItemsModel.setPlayerKey(player.key);
+    displayItemsModel.get(isForce, function() {
+        var items = displayItemsModel.itemsInfo();
+        parentPanel.html(itemsPanelTemplate({
+            items: items,
+        }));
+
+        var mergeStoneItemId;
+        var mergeStoneItemLimit;
+        var mergeStoneConfirmMask = parentPanel.find(".div_items_merge_stone_mask");
+        mergeStoneConfirmMask.find(".div_items_merge_stone_confirm").click(function() {
+            var countVal = mergeStoneConfirmMask.find(".input_items_merge_stone_content").val();
+            var count = Number(countVal);
+            if (String(count) != countVal || Math.round(count) != count || count <= 0) {
+                alert("不是正整数");
+                return;
+            }
+            if (count > mergeStoneItemLimit) {
+                alert("最多融合" + mergeStoneItemLimit + "个");
+                return;
+            }
+            mergeStoneConfirmMask.hide();
+            displayItemsModel.mergeStone(mergeStoneItemId, count, function() {
+                displayItems(parentPanel, player);
+            });
+        });
+        mergeStoneConfirmMask.find(".div_items_merge_stone_cancel").click(function() {
+            mergeStoneConfirmMask.hide();
+        });
+        var itemBlocks = parentPanel.find(".div_items_item_click");
+        for (var i = 0; i < itemBlocks.length; ++i) {
+            (function() {
+                var itemBlock = $(itemBlocks[i]);
+                var itemInfo = items[i];
+                if (itemInfo.use) {
+                    itemBlock.click(function() {
+                        displayItemsModel.useItem(itemInfo.id, function() {
+                            displayItems(parentPanel, player);
+                        });
+                    });
+                } else if (itemInfo.merge) {
+                    itemBlock.click(function() {
+                        displayItemsModel.mergeItem(itemInfo.id, function() {
+                            displayItems(parentPanel, player);
+                        });
+                    });
+                } else if (itemInfo.merge_to) {
+                    itemBlock.click(function() {
+                        mergeStoneItemId = itemInfo.id;
+                        mergeStoneItemLimit = Math.floor(itemInfo.count / 6);
+                        var displayText = "合成'" + itemInfo.name + "'的下一阶神石";
+                        mergeStoneConfirmMask.find(".div_items_merge_stone_text").html(displayText);
+                        mergeStoneConfirmMask.find(".input_items_merge_stone_content").val("");
+                        mergeStoneConfirmMask.find(".input_items_merge_stone_content").focus();
+                        mergeStoneConfirmMask.show();
+                    });
+                }
+            })();
+        }
     });
 }
 

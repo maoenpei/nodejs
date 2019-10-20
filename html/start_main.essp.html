@@ -479,5 +479,35 @@
             </input>
         </div>
 </script>
+<script type="text/x-handlebars-template" class="hd_items_panel">
+    <div class="div_items_panel_main">
+        <div class="div_items_title">
+            <div class="div_items_item_name">道具名</div>
+            <div class="div_items_item_count">数量</div>
+            <div class="div_items_item_operation">操作</div>
+        </div>
+        {{#each items}}
+            <div class="div_items_item">
+                <div class="div_items_item_name">{{name}}</div>
+                <div class="div_items_item_count">{{count}}</div>
+                <div class="div_items_item_operation">
+                    {{#if use}}<div class="div_items_item_click visit_label">使用</div>{{/if}}
+                    {{#if merge}}<div class="div_items_item_click visit_label">合成</div>{{else}}{{#if piece}}碎片{{/if}}{{/if}}
+                    {{#if merge_to}}<div class="div_items_item_click visit_label">融合神石</div>{{/if}}
+                </div>
+            </div>
+        {{/each}}
+    </div>
+    <div class="div_items_merge_stone_mask common_mask" style="display: none;">
+        <div class="common_mask_content">
+            <div class="div_items_merge_stone_text"></div>
+            <input type="text" class="input_items_merge_stone_content">
+            <div class="div_items_merge_stone_field">
+                <div class="div_items_merge_stone_cancel visit_label">取消</div>
+                <div class="div_items_merge_stone_confirm visit_label">确定</div>
+            </div>
+        </input>
+    </div>
+</script>
 </body>
 </html>

@@ -49,7 +49,8 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         this.accountManager = this.controller.getAccountManager();
         this.accounts = {};
         this.players = {};
-        this.playerHerosInfo = {};
+        this.playerHerosCache = {};
+        this.playerItemsCache = {};
         this.playerKey2UserKey = {};
 
         this.onRefreshEnd = [];
@@ -60,6 +61,8 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         this.randKey2UnionId = {};
         this.unionId2RandKey = {};
 
+        httpServer.registerCommand("listitems", this);
+        httpServer.registerCommand("operateitems", this);
         httpServer.registerCommand("listheros", this);
         httpServer.registerCommand("operatehero", this);
         httpServer.registerCommand("addaccount", this);
@@ -988,7 +991,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
 
     findHeroCache:function(playerKey) {
-        var heroCache = this.playerHerosInfo[playerKey];
+        var heroCache = this.playerHerosCache[playerKey];
         if (heroCache) {
             var nowTime = new Date().getTime();
             if (nowTime - heroCache.time < 5 * 60 * 1000) {
@@ -998,15 +1001,35 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         return null;
     },
     commitHeroCache:function(playerKey, heros) {
-        this.playerHerosInfo[playerKey] = {
+        this.playerHerosCache[playerKey] = {
             time: new Date().getTime(),
             heros: heros,
+        };
+    },
+
+    findItemsCache:function(playerKey) {
+        var itemsCache = this.playerItemsCache[playerKey];
+        if (itemsCache) {
+            var nowTime = new Date().getTime();
+            if (nowTime - itemsCache.time < 5 * 60 * 1000) {
+                return itemsCache.items;
+            }
+        }
+        return null;
+    },
+    commitItemsCache:function(playerKey, items) {
+        this.playerItemsCache[playerKey] = {
+            time: new Date().getTime(),
+            items: items,
         };
     },
 
     setupPlayerAuto:function(playerKey, session, playerAuto) {
         if (session.authorized(0, "auto_heropanel")) {
             playerAuto.heroPanel = true;
+        }
+        if (session.authorized(0, "auto_itempanel")) {
+            playerAuto.itemPanel = true;
         }
         if (session.authorized(0, "auto_daily")) {
             playerAuto.configs = this.getSettingAutomation(playerKey);
@@ -1035,6 +1058,100 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         return playerAuto;
     },
 
+    listitems:function(requestor, responder, session, done) {
+        var next = coroutine(function*() {
+            if (!(yield session.checkConnection({USER:3, REQ:"auto_itempanel"}, next))) {
+                return safe(done)();
+            }
+
+            var json = yield requestor.visitBodyJson(next);
+            if (!json || !json.key) {
+                responder.addError("Parameter data not correct.");
+                return responder.respondJson({}, done);
+            }
+
+            var playerKey = json.key;
+            var isForce = json.force;
+            var playerData = this.players[playerKey];
+            if (!playerData) {
+                responder.addError("Invalid player key.");
+                return responder.respondJson({}, done);
+            }
+
+            var playerBelong = this.getPlayerIndex(session.getUserData(), playerKey);
+            if (playerBelong < 0) {
+                responder.addError("Player doesn't belong to user.");
+                return responder.respondJson({}, done);
+            }
+
+            var items = (!isForce ? this.findItemsCache(playerKey) : null);
+            if (!items) {
+                items = yield this.controller.getPlayerItemData(playerData, next);
+                if (items.length > 0) {
+                    this.commitItemsCache(playerKey, items);
+                }
+            }
+            responder.respondJson({
+                items: items,
+            }, done);
+        }, this);
+    },
+    operateitems:function(requestor, responder, session, done) {
+        var next = coroutine(function*() {
+            if (!(yield session.checkConnection({USER:3, REQ:"auto_itempanel"}, next))) {
+                return safe(done)();
+            }
+
+            var json = yield requestor.visitBodyJson(next);
+            if (!json || !json.key || !json.item_id) {
+                responder.addError("Parameter data not correct.");
+                return responder.respondJson({}, done);
+            }
+
+            var playerKey = json.key;
+            var itemId = json.item_id;
+            var itemOps = json.item_ops;
+            var itemCount = json.item_count;
+            if (itemOps.merge_to && !itemCount) {
+                responder.addError("No count specified for merging");
+                return responder.respondJson({}, done);
+            }
+
+            var playerData = this.players[playerKey];
+            if (!playerData) {
+                responder.addError("Invalid player key.");
+                return responder.respondJson({}, done);
+            }
+
+            var playerBelong = this.getPlayerIndex(session.getUserData(), playerKey);
+            if (playerBelong < 0) {
+                responder.addError("Player doesn't belong to user.");
+                return responder.respondJson({}, done);
+            }
+
+            var itemOperates = {};
+            if (itemOps.use) {
+                itemOperates.use = {};
+                itemOperates.use[itemId] = true;
+            }
+            if (itemOps.merge) {
+                itemOperates.merge = {};
+                itemOperates.merge[itemId] = true;
+            }
+            if (itemOps.merge_to) {
+                itemOperates.merge_to = {};
+                itemOperates.merge_to[itemId] = itemCount;
+            }
+            var items = yield this.controller.dealWithPlayerItems(playerData, itemOperates, next);
+            if (items.length > 0) {
+                this.commitItemsCache(playerKey, items);
+            }
+
+            responder.respondJson({
+                success: true,
+            }, done);
+        }, this);
+    },
     listheros:function(requestor, responder, session, done) {
         var next = coroutine(function*() {
             if (!(yield session.checkConnection({USER:3, REQ:"auto_heropanel"}, next))) {
