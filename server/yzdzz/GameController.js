@@ -1518,17 +1518,6 @@ Base.extends("GameController", {
     },
 
     // control items
-    iterateItems:function(itemArray, data, check) {
-        for (var itemId in data.items) {
-            var itemData = data.items[itemId];
-            if (check(itemId)) {
-                var item = clone(itemData);
-                item.count = data.counts[itemId];
-                item.merge = data.merges[itemId];
-                itemArray.push(item);
-            }
-        }
-    },
     readPlayerItems:function(conn, done) {
         conn.getItems((data) => {
             if (!data.items) {
@@ -1536,19 +1525,13 @@ Base.extends("GameController", {
             }
 
             var itemArray = [];
-            this.iterateItems(itemArray, data, (itemId) => {
-                return data.items[itemId].use;
-            });
-            this.iterateItems(itemArray, data, (itemId) => {
-                return data.merges[itemId];
-            });
-            this.iterateItems(itemArray, data, (itemId) => {
-                return data.items[itemId].merge_to;
-            });
-            this.iterateItems(itemArray, data, (itemId) => {
+            for (var itemId in data.items) {
                 var itemData = data.items[itemId];
-                return !itemData.use && !itemData.merge_to && !data.merges[itemId];
-            });
+                var item = clone(itemData);
+                item.count = data.counts[itemId];
+                item.merge = data.merges[itemId] || undefined;
+                itemArray.push(item);
+            }
 
             safe(done)(itemArray);
         });

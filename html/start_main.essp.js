@@ -1860,9 +1860,39 @@ displayItemsModel.setPlayerKey = function(playerKey) {
 displayItemsModel.get = function(force, callback) {
     $this = this;
     requestPost("listitems", { force:force, key:this.playerKey }, function(json) {
-        $this.items = json.items;
+        $this.initialize(json.items);
         callback();
     });
+}
+displayItemsModel.initialize = function(items) {
+    this.items = items;
+    var index = 0;
+    var checkFunc = function(a, b) {
+        if (!!a.use != !!b.use) {
+            return (a.use ? -1 : 1);
+        }
+        if (!!a.merge != !!b.merge) {
+            return (a.merge ? -1 : 1);
+        }
+        if (!!a.merge_to != !!b.merge_to) {
+            return (!!a.merge_to ? -1 : 1);
+        }
+        if (!!a.merge_to && !!b.merge_to) {
+            var level_a = a.id.substr(a.id.length - 1);
+            var level_b = b.id.substr(b.id.length - 1);
+            if (level_a > level_b) {
+                return -1;
+            }
+            if (level_a < level_b) {
+                return 1;
+            }
+        }
+        if (!!a.piece != !!b.piece) {
+            return (!!a.piece ? -1 : 1);
+        }
+        return (a.name > b.name ? -1 : 1);
+    };
+    this.items.sort(checkFunc);
 }
 displayItemsModel.itemsInfo = function() {
     return this.items;
