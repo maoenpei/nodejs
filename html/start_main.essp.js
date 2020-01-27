@@ -476,8 +476,8 @@ function displayPayment() {
                 alert("不是数字");
             } else {
                 var num = Number(numStr);
-                if (num != Math.round(num) || num <= 0) {
-                    alert("不是正整数");
+                if (num != Math.round(num)) {
+                    alert("不是整数");
                 } else if (num > displayPaymentModel.getMaxPay()) {
                     alert("超过单次积分调整限制：" + displayPaymentModel.getMaxPay());
                 } else {

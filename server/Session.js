@@ -93,6 +93,10 @@ Base.extends("Session", {
                     var vAUTH = validation.AUTH;
                     var vREQ = validation.REQ;
                     if (validation.USER >= 3 && (vAUTH || vREQ)) {
+                        var serverSettings = $StateManager.getState(SERVER_SETTINGS_CONFIG);
+                        if (serverSettings.disabled) {
+                            this.Disabled = true;
+                        }
                         var userData = userStates.users[keyData.userKey];
                         var authed = this.checkRequirement(userData, vAUTH, vREQ);
                         if (!userData || !authed) {
@@ -138,6 +142,9 @@ Base.extends("Session", {
         return userData;
     },
     checkRequirement:function(userData, auth, req) {
+        if (this.Disabled) {
+            userData = { auth:1, req:[] };
+        }
         return (userData.auth >= 4) || (auth ? userData.auth >= auth : false) || ((userData.auth >= 2) && (req ? userData.req && userData.req[req] : false));
     },
     availableAuths:function() {

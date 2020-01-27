@@ -19,6 +19,7 @@ GAME_PLAYER_NAME_CONFIG = "GamePlayerNames.d";
 GAME_HEROSHOP_CONFIG = "GameHeroshop.d";
 
 GAME_USER_CONFIG = "GameUsers.d";
+SERVER_SETTINGS_CONFIG = "ServerSettings.d";
 
 var AllFuncs = [
     {name:"kingwar", requirement:"view_kingwar", },
@@ -107,6 +108,7 @@ $HttpModel.addClass("YZDZZ_CLASS", {
             yield $StateManager.openState(GAME_PLAYER_NAME_CONFIG, next);
             yield $StateManager.openState(GAME_HEROSHOP_CONFIG, next);
             yield $StateManager.openState(GAME_USER_CONFIG, next);
+            yield $StateManager.openState(SERVER_SETTINGS_CONFIG, next);
 
             this.initPlayerToPayment();
 
@@ -211,6 +213,11 @@ $HttpModel.addClass("YZDZZ_CLASS", {
     },
     startRefreshSettings:function(done) {
         var next = coroutine(function*() {
+            var serverSettings = $StateManager.getState(SERVER_SETTINGS_CONFIG);
+            if (serverSettings.disabled) {
+                return safe(done)();
+            }
+
             var settingStates = $StateManager.getState(GAME_SETTING_CONFIG);
             for (var playerKey in settingStates.automation) {
                 var automationConfig = settingStates.automation[playerKey];
@@ -284,6 +291,11 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         }
     },
     doRefresh:function(refreshType) {
+        var serverSettings = $StateManager.getState(SERVER_SETTINGS_CONFIG);
+        if (serverSettings.disabled) {
+            return;
+        }
+
         var invokeNoConflictions = () => {
             if (this.onRefreshEnd.length > 0) {
                 var onRefreshEnd = this.onRefreshEnd;
@@ -358,6 +370,11 @@ $HttpModel.addClass("YZDZZ_CLASS", {
         this.controller.startPeriodic(defaultsStates.periodic.interval, refreshType, refreshCallback);
     },
     noConfliction:function(fun) {
+        var serverSettings = $StateManager.getState(SERVER_SETTINGS_CONFIG);
+        if (serverSettings.disabled) {
+            return false;
+        }
+
         if (this.controller.duringPeriodic()) {
             this.onRefreshEnd.push(fun);
             return true;
