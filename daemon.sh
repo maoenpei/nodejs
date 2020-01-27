@@ -1,5 +1,9 @@
 
 echo "$$">pid_daemon
+if ! [ -d "logs" ]; then
+  mkdir logs
+fi
+
 while true
 do
   if [ -f "./pid" ]; then
