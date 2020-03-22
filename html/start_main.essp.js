@@ -626,6 +626,15 @@ var displayAutomationModel = {
         {name: "autoWorldWar", desc: "创世", props: [
             {name: "worldShop", desc: "符文制作", type: "check"},
             {name: "runeType", desc: "符文类型", type: "number", limit: [1, 2], alias: ["600玉", "3000玉"]},
+            {name: "resolveRune", desc: "分解符文", type: "number", limit: [0, 6], alias: [
+                "不分解",
+                "绿色以下分解",
+                "蓝色以下分解",
+                "紫色以下分解",
+                "橙色以下分解",
+                "红色以下分解",
+                "金色以下分解",
+            ]},
             {name: "worldReward", desc: "领取新闻", type: "check"},
             {name: "worldTasks", desc: "领取任务奖励", type: "check"},
             {name: "worldLogin", desc: "领取登陆奖励", type: "check"},

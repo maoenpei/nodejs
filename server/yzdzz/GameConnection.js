@@ -3717,6 +3717,33 @@ Base.extends("GameConnection", {
                         }
                     }
                 }
+                // 分解符文
+                if (config.resolveRune > 0 && config.resolveRune <= 6) {
+                    var data = yield this.sendMsg("WorldWar", "getRuneList", null, next);
+                    if (data && data.list) {
+                        var ids = [];
+                        for (var i = 0; i < data.list.length; ++i) {
+                            // id, sysid, heroid, enchant, pro_ex, upgrade
+                            var item = data.list[i];
+                            if (item.id && item.sysid && !item.heroid && !item.enchant && !item.pro_ex && !item.upgrade) {
+                                if (Database.runeInfo(item.sysid).quality < config.resolveRune) {
+                                    ids.push(item.id);
+                                    if (ids.length >= 600) {
+                                        this.log("resolve rune", ids.length, item);
+                                        var data_resolve = yield this.sendMsg("WorldWar", "resolveRune", { id:ids.join(",") }, next);
+                                        // Ignore wrong error
+                                        ids = [];
+                                    }
+                                }
+                            }
+                        }
+                        if (ids.length > 0) {
+                            this.log("resolve rune", ids.length, data.list[data.list.length - 1]);
+                            var data_resolve = yield this.sendMsg("WorldWar", "resolveRune", { id:ids.join(",") }, next);
+                            // Ignore wrong error
+                        }
+                    }
+                }
                 //领取奖励
                 if (config.worldReward) {
                     var data = yield this.sendMsg("WorldWar", "getNewsInfo", null, next);
@@ -3823,7 +3850,7 @@ Base.extends("GameConnection", {
                                 if (!data_buy) {
                                     break;
                                 }
-                                console.log("buy license 1");
+                                this.log("buy license 1");
                                 license += 3;
                             }
                         }
@@ -3833,7 +3860,7 @@ Base.extends("GameConnection", {
                             if (!data_attack) {
                                 break;
                             }
-                            console.log("attack succeed", item);
+                            this.log("attack succeed", item);
                         }
                     }
                 }
@@ -3907,6 +3934,10 @@ Base.extends("GameConnection", {
             //var data = yield this.sendMsg("WorldWar", "getGrowRes", { x:502, y:506 }, next);
             //var data = yield this.sendMsg("WorldWar", "attack", { x:502, y:506, type:6, troop:4 }, next);
             //var data = yield this.sendMsg("WorldWar", "buyLicense", null, next);
+            //var data = yield this.sendMsg("WorldWar", "getRuneList", null, next); // id, sysid, heroid, enchant, pro_ex, upgrade
+            //var data = yield this.sendMsg("WorldWar", "getHeroRune", null, next);
+            //var data = yield this.sendMsg("WorldWar", "resolveRes", {id:"137800,65489"}, next);
+            //var data = yield this.sendMsg("WorldWar", "resolveRune", {id:"137800"}, next);
 
             console.log(data);
             yield $FileManager.saveFile("/../20170925_yongzhe_hack/recvdata.json", JSON.stringify(data), next);

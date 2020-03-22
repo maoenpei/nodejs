@@ -1311,3 +1311,51 @@ Database.level_coefs = ((level_exp) => {
     return coefs;
 })(Database.level_exp);
 
+Database.runeShapes = [
+    /*0:*/"六边形",
+    /*1:*/"水滴形",
+    /*2:*/"圆形",
+    /*3:*/"盾牌形",
+];
+Database.runeType = [
+    /*0:*/"强壮",
+    /*1:*/"灵巧",
+    /*2:*/"神速",
+    /*3:*/"猛攻",
+    /*4:*/"护佑",
+    /*5:*/"幸运",
+    /*6:*/"防御",
+    /*7:*/"专注",
+];
+Database.runeQuality = [
+    /*0:*/"绿色", // 分解10
+    /*1:*/"蓝色", // 分解10
+    /*2:*/"紫色", // 分解20
+    /*3:*/"橙色", // 分解50
+    /*4:*/"红色", // 分解100
+    /*5:*/"金色", // 分解200
+    /*6:*/"暗金", // 分解500
+];
+/*
+* sysid = a0bc01, (a in [2, 8], b in [1, 8], c in [1, 4])
+* index = (a - 2) * 32 + (b - 1) * 4 + (c - 1)
+* shapeIndex = index / 56
+* typeIndex = (index % 56) / 7
+* qualityIndex = index % 7
+*/
+Database.runeInfo = function(sysid)
+{
+    var value = Number(sysid);
+    var a = Math.floor(value / 100000) % 10;
+    var b = Math.floor(value / 1000) % 10;
+    var c = Math.floor(value / 100) % 10;
+    var index = (a - 2) * 32 + (b - 1) * 4 + (c - 1);
+    var shapeIndex = Math.floor(index / 56);
+    var typeIndex = Math.floor((index % 56) / 7);
+    var qualityIndex = index % 7;
+    return {
+        shape: shapeIndex,// Database.runeShapes[shapeIndex],
+        type: typeIndex,//Database.runeType[typeIndex],
+        quality: qualityIndex,//Database.runeQuality[qualityIndex],
+    };
+}
