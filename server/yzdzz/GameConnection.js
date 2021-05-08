@@ -4064,6 +4064,7 @@ Base.extends("GameConnection", {
         this.regMsg("UnionRace", "notify", (data) => {});
         this.regMsg("UnionWar", "kill", (data) => {});
         this.regMsg("UnionWar", "sync", (data) => {});
+        this.regMsg("UnionWar", "card", (data) => {});
         this.regMsg("UnionWar", "occupy", (data) => {});
         this.regMsg("UnionWar", "leave", (data) => {});
         this.regMsg("League", "warClose", (data) => {}); // notification
@@ -4072,5 +4073,6 @@ Base.extends("GameConnection", {
         this.regMsg("League", "kill", (data) => {}); // notification
         this.regMsg("League", "updateTop", (data) => {}); // notification
         this.regMsg("League", "joinwar", (data) => {}); // notification
+        this.regMsg("WorldWar", "putnew", (data) => {}); // notification
     },
 });
